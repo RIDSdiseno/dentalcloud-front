@@ -115,31 +115,6 @@ function GlanceCard({
   );
 }
 
-function TabPlaceholder({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof ClockIcon;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-2xl bg-white px-10 py-20 text-center shadow-sm ring-1 ring-slate-200">
-      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500">
-        <Icon className="h-8 w-8" />
-      </span>
-      <div className="flex flex-col gap-1.5">
-        <h3 className="text-base font-semibold text-slate-800">{title}</h3>
-        <p className="max-w-sm text-sm text-slate-500">{description}</p>
-      </div>
-      <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600">
-        En desarrollo
-      </span>
-    </div>
-  );
-}
-
 export default function FichaPaciente() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
