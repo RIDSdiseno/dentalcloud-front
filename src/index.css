@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Poppins', ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --color-brand-50: #eefbff;
+  --color-brand-100: #d7f4ff;
+  --color-brand-200: #b3ecff;
+  --color-brand-300: #7ee0ff;
+  --color-brand-400: #3ccbfa;
+  --color-brand-500: #00aeef;
+  --color-brand-600: #0089c7;
+  --color-brand-700: #00699b;
+  --color-brand-800: #075577;
+  --color-brand-900: #0b4763;
+  --color-brand-950: #072e42;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  color: var(--color-slate-800);
+  background: var(--color-slate-100);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-950);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-slate-300) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-slate-300);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-slate-400);
+  background-clip: content-box;
+}
