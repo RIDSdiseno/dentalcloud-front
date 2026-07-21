@@ -8,14 +8,19 @@ import AgendaDiaria from './pages/agenda/AgendaDiaria';
 import Pacientes from './pages/pacientes/Pacientes';
 import FichaPaciente from './pages/pacientes/FichaPaciente';
 import Profesionales from './pages/profesionales/Profesionales';
+import ConsentimientoPublico from './pages/consentimiento/ConsentimientoPublico';
+import Clinicas from './pages/superadmin/Clinicas';
+import ModuloConsumo from './pages/superadmin/ModuloConsumo';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminRoute } from './components/AdminRoute';
+import { SuperAdminRoute } from './components/SuperAdminRoute';
 import { AppLayout } from './components/layout/AppLayout';
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/consentimiento/:token" element={<ConsentimientoPublico />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
@@ -27,6 +32,10 @@ function App() {
           <Route path="/terminos" element={<ComingSoon title="Términos y políticas" />} />
           <Route element={<AdminRoute />}>
             <Route path="/profesionales" element={<Profesionales />} />
+          </Route>
+          <Route element={<SuperAdminRoute />}>
+            <Route path="/admin/clinicas" element={<Clinicas />} />
+            <Route path="/admin/modulos/:moduleKey" element={<ModuloConsumo />} />
           </Route>
         </Route>
       </Route>

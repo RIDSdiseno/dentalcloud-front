@@ -257,7 +257,7 @@ export function RxTab({ patient }: { patient: Patient }) {
 
       {showCreateOrder && (
         <CreateRxOrderModal
-          patientId={patient.id}
+          patient={patient}
           onClose={() => setShowCreateOrder(false)}
           onCreated={() => {
             setShowCreateOrder(false);

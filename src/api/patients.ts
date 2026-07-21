@@ -1,5 +1,7 @@
 import { api } from './client';
 
+export type PrivacyConsentStatus = 'pendiente' | 'firmado' | 'rechazado' | 'expirado';
+
 export type Patient = {
   id: string;
   rut: string;
@@ -11,6 +13,13 @@ export type Patient = {
   address: string | null;
   createdAt: string;
   updatedAt: string;
+  privacyConsentStatus: PrivacyConsentStatus;
+  privacyConsentMethod: 'email' | 'presencial' | null;
+  privacyConsentSentAt: string | null;
+  privacyConsentExpiresAt: string | null;
+  privacyConsentAt: string | null;
+  privacyConsentSignerName: string | null;
+  privacyConsentSignerRut: string | null;
 };
 
 export type PatientInput = {

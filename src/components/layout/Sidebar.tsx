@@ -1,31 +1,62 @@
-import { useState } from 'react';
+import { useState, type SVGProps } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
+  ActivityIcon,
   CalendarIcon,
+  ChatIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
+  ClipboardIcon,
   CloseIcon,
+  FolderIcon,
   IdBadgeIcon,
+  ReceiptIcon,
   ShieldIcon,
   ToothCloudIcon,
   UsersIcon,
+  XrayIcon,
 } from '../icons';
 
-const NAV_ITEMS = [
+type NavItem = {
+  label: string;
+  icon: (props: SVGProps<SVGSVGElement>) => React.JSX.Element;
+  to?: string;
+  adminOnly?: boolean;
+  basePath?: string;
+  children?: { to: string; label: string }[];
+};
+
+type NavModuleKey = 'agenda' | 'pacientes';
+
+const NAV_ITEMS: (NavItem & { moduleKey?: NavModuleKey })[] = [
   {
     label: 'Agenda',
     icon: CalendarIcon,
     basePath: '/agenda',
+    moduleKey: 'agenda',
     children: [
       { to: '/agenda', label: 'General' },
       { to: '/agenda/sillones-libres', label: 'Sillones libres' },
       { to: '/agenda/diaria', label: 'Agenda diaria' },
     ],
   },
-  { to: '/pacientes', label: 'Pacientes', icon: UsersIcon },
+  { to: '/pacientes', label: 'Pacientes', icon: UsersIcon, moduleKey: 'pacientes' },
   { to: '/profesionales', label: 'Profesionales', icon: IdBadgeIcon, adminOnly: true },
   { to: '/terminos', label: 'Términos y políticas', icon: ShieldIcon },
+];
+
+const SUPER_ADMIN_NAV_ITEMS: NavItem[] = [
+  { to: '/admin/clinicas', label: 'Resumen', icon: ToothCloudIcon },
+  { to: '/admin/modulos/pacientes', label: 'Pacientes', icon: UsersIcon },
+  { to: '/admin/modulos/agenda', label: 'Agenda y citas', icon: CalendarIcon },
+  { to: '/admin/modulos/tratamientos', label: 'Planes de tratamiento', icon: ClipboardIcon },
+  { to: '/admin/modulos/documentosClinicos', label: 'Documentos clínicos', icon: FolderIcon },
+  { to: '/admin/modulos/cartola', label: 'Cartola', icon: ReceiptIcon },
+  { to: '/admin/modulos/evoluciones', label: 'Evoluciones', icon: ActivityIcon },
+  { to: '/admin/modulos/observaciones', label: 'Observaciones', icon: ChatIcon },
+  { to: '/admin/modulos/consentimientos', label: 'Consentimientos', icon: ShieldIcon },
+  { to: '/admin/modulos/rx', label: 'Módulo Rx', icon: XrayIcon },
 ];
 
 type SidebarProps = {
@@ -38,10 +69,16 @@ type SidebarProps = {
 export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: SidebarProps) {
   const location = useLocation();
   const { user } = useAuth();
-  const navItems = NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === 'admin');
+  const isSuperAdmin = user?.role === 'super_admin';
+  const navItems = isSuperAdmin
+    ? SUPER_ADMIN_NAV_ITEMS
+    : NAV_ITEMS.filter(
+        (item) =>
+          (!item.adminOnly || user?.role === 'admin') &&
+          (!item.moduleKey || user?.clinicaModules?.[item.moduleKey] !== false)
+      );
   const [openGroup, setOpenGroup] = useState<string | null>(
-    NAV_ITEMS.find((item) => item.basePath && location.pathname.startsWith(item.basePath))?.label ??
-      null
+    navItems.find((item) => item.basePath && location.pathname.startsWith(item.basePath))?.label ?? null
   );
 
   return (
@@ -88,7 +125,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
               return (
                 <NavLink
                   key={item.to}
-                  to={item.to}
+                  to={item.to!}
                   onClick={onCloseMobile}
                   title={collapsed ? item.label : undefined}
                   className={({ isActive }) =>
@@ -106,7 +143,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
             }
 
             const isOpen = openGroup === item.label;
-            const isGroupActive = location.pathname.startsWith(item.basePath);
+            const isGroupActive = location.pathname.startsWith(item.basePath!);
 
             return (
               <div key={item.label}>

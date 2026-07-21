@@ -9,7 +9,14 @@ import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatCLP } from '../../utils/treatmentStatus';
 import { CheckIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
-import { Odontogram } from './Odontogram';
+import { Odontogram, type OdontogramMark, type OdontogramMode, type ToothSelection } from './Odontogram';
+import {
+  areaLabel,
+  formatOdontogramSelection,
+  getOdontogramConfig,
+  selectionFromDefaults,
+  toothNumberForBackend,
+} from './odontogramConfig';
 
 type ItemRow = {
   key: string;
@@ -19,7 +26,49 @@ type ItemRow = {
   listPrice: number;
   convenioDiscountPercent: number;
   cost: number;
+  odontogramMode: OdontogramMode;
+  odontogramSelection: ToothSelection[];
+  odontogramColor?: string;
 };
+
+const MODE_INSTRUCTIONS: Record<Exclude<OdontogramMode, 'session'>, string> = {
+  tooth: 'Selecciona las caras de cada pieza (el número selecciona las 5 caras).',
+  surface: 'Selecciona las caras afectadas de cada pieza (el número selecciona las 5 caras).',
+  extraction: 'Selecciona una o varias piezas a extraer.',
+  cuadrante: 'Haz clic en cualquier pieza del cuadrante para marcarlo completo.',
+  sextante: 'Haz clic en cualquier pieza del sextante para marcarlo completo.',
+  arcada: 'Haz clic en cualquier pieza de la arcada para marcarla completa.',
+};
+
+const CUSTOM_MODE_OPTIONS: { value: OdontogramMode; label: string }[] = [
+  { value: 'session', label: 'Sesión' },
+  { value: 'tooth', label: 'Pieza completa' },
+  { value: 'surface', label: 'Cara' },
+  { value: 'extraction', label: 'Extracción' },
+  { value: 'cuadrante', label: 'Cuadrante' },
+  { value: 'sextante', label: 'Sextante' },
+  { value: 'arcada', label: 'Arcada' },
+];
+
+function createMarksFromItem(item: ItemRow): OdontogramMark[] {
+  if (item.odontogramMode === 'session') return [];
+  const byTooth = new Map<string, ToothSelection['surface'][]>();
+  for (const sel of item.odontogramSelection) {
+    if (!byTooth.has(sel.tooth)) byTooth.set(sel.tooth, []);
+    byTooth.get(sel.tooth)!.push(sel.surface);
+  }
+  return Array.from(byTooth.entries()).map(([tooth, surfaces]) => ({
+    tooth,
+    mode: item.odontogramMode as Exclude<OdontogramMode, 'session'>,
+    surfaces,
+    color: item.odontogramColor,
+  }));
+}
+
+function detailLabel(item: ItemRow): string {
+  if (item.odontogramMode === 'session') return 'Aplicación: toda la boca';
+  return formatOdontogramSelection(item.odontogramMode, item.odontogramSelection);
+}
 
 type TreatmentPlanFormModalProps = {
   patientId: string;
@@ -58,12 +107,22 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
 
   const [prestaciones, setPrestaciones] = useState<Prestacion[]>([]);
   const [prestacionSearch, setPrestacionSearch] = useState('');
-  const [selectedTeeth, setSelectedTeeth] = useState<string[]>([]);
+
+  // Prestación (o item personalizado) que se está configurando ahora mismo en
+  // el odontograma — separado de `items`, que son las prestaciones ya agregadas.
+  const [activePrestacion, setActivePrestacion] = useState<Prestacion | null>(null);
+  const [isCustomActive, setIsCustomActive] = useState(false);
+  const [activeMode, setActiveMode] = useState<OdontogramMode | null>(null);
+  const [draftSelection, setDraftSelection] = useState<ToothSelection[]>([]);
+  const [activeColor, setActiveColor] = useState<string | undefined>(undefined);
+  const [draftError, setDraftError] = useState<string | null>(null);
+
   const [items, setItems] = useState<ItemRow[]>([]);
   const [lastAddedKeys, setLastAddedKeys] = useState<string[]>([]);
   const [showCustomItem, setShowCustomItem] = useState(false);
   const [customDescription, setCustomDescription] = useState('');
   const [customCost, setCustomCost] = useState('');
+  const [customMode, setCustomMode] = useState<OdontogramMode>('tooth');
 
   const [name, setName] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
@@ -87,41 +146,136 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
 
   const total = items.reduce((sum, i) => sum + i.cost, 0);
 
-  function addPrestacionRow(prestacion: Prestacion) {
-    const discount = selectedConvenio?.discountPercent ?? 0;
-    const price = convenioPrice(prestacion.basePrice, discount);
-    const teeth = selectedTeeth.length > 0 ? selectedTeeth : [null];
-    const newRows = teeth.map((tooth, i) => ({
-      key: `${prestacion.id}-${Date.now()}-${items.length}-${i}`,
-      prestacionId: prestacion.id,
-      description: prestacion.name,
-      toothNumber: tooth,
-      listPrice: prestacion.basePrice,
-      convenioDiscountPercent: discount,
-      cost: price,
-    }));
-    setItems((prev) => [...prev, ...newRows]);
-    setLastAddedKeys(newRows.map((r) => r.key));
-    setPrestacionSearch('');
+  // Las marcas persistentes del odontograma se derivan de las prestaciones ya
+  // agregadas: al eliminar una fila, sus marcas desaparecen automáticamente
+  // sin necesidad de un estado de marcas separado que mantener sincronizado.
+  const odontogramMarks = useMemo(() => items.flatMap(createMarksFromItem), [items]);
+
+  function resetActive() {
+    setActivePrestacion(null);
+    setIsCustomActive(false);
+    setActiveMode(null);
+    setDraftSelection([]);
+    setActiveColor(undefined);
+    setDraftError(null);
   }
 
-  function addCustomRow() {
-    if (!customDescription.trim()) return;
-    const cost = Number(customCost) || 0;
-    const teeth = selectedTeeth.length > 0 ? selectedTeeth : [null];
-    const newRows = teeth.map((tooth, i) => ({
-      key: `custom-${Date.now()}-${items.length}-${i}`,
-      description: customDescription.trim(),
-      toothNumber: tooth,
-      listPrice: cost,
-      convenioDiscountPercent: 0,
-      cost,
-    }));
-    setItems((prev) => [...prev, ...newRows]);
-    setLastAddedKeys(newRows.map((r) => r.key));
+  function handlePickPrestacion(prestacion: Prestacion) {
+    setPrestacionSearch('');
+    const config = getOdontogramConfig(prestacion);
+    const discount = selectedConvenio?.discountPercent ?? 0;
+    const price = convenioPrice(prestacion.basePrice, discount);
+
+    if (config.mode === 'session') {
+      const row: ItemRow = {
+        key: `${prestacion.id}-${Date.now()}`,
+        prestacionId: prestacion.id,
+        description: prestacion.name,
+        toothNumber: toothNumberForBackend('session', []),
+        listPrice: prestacion.basePrice,
+        convenioDiscountPercent: discount,
+        cost: price,
+        odontogramMode: 'session',
+        odontogramSelection: [],
+        odontogramColor: config.markColor,
+      };
+      setItems((prev) => [...prev, row]);
+      setLastAddedKeys([row.key]);
+      resetActive();
+      return;
+    }
+
+    setActivePrestacion(prestacion);
+    setIsCustomActive(false);
+    setActiveMode(config.mode);
+    setDraftSelection(selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces));
+    setActiveColor(config.markColor);
+    setDraftError(null);
+  }
+
+  function openCustomItem() {
+    setShowCustomItem(true);
+    setActivePrestacion(null);
+    setIsCustomActive(true);
+    setActiveMode(customMode);
+    setDraftSelection([]);
+    setActiveColor(undefined);
+    setDraftError(null);
+  }
+
+  function closeCustomItem() {
+    setShowCustomItem(false);
     setCustomDescription('');
     setCustomCost('');
-    setShowCustomItem(false);
+    resetActive();
+  }
+
+  function handleCustomModeChange(mode: OdontogramMode) {
+    setCustomMode(mode);
+    setActiveMode(mode);
+    setDraftSelection([]);
+    setDraftError(null);
+  }
+
+  function handleConfirmActive() {
+    if (!activeMode) return;
+    if (activeMode !== 'session' && draftSelection.length === 0) {
+      setDraftError(
+        activeMode === 'surface'
+          ? 'Selecciona al menos una cara antes de agregar la prestación.'
+          : 'Selecciona al menos una pieza antes de agregar la prestación.'
+      );
+      return;
+    }
+
+    const discount = selectedConvenio?.discountPercent ?? 0;
+
+    if (isCustomActive) {
+      if (!customDescription.trim()) {
+        setDraftError('Escribe una descripción para la prestación.');
+        return;
+      }
+      const cost = Number(customCost) || 0;
+      const row: ItemRow = {
+        key: `custom-${Date.now()}`,
+        description: customDescription.trim(),
+        toothNumber: toothNumberForBackend(activeMode, draftSelection),
+        listPrice: cost,
+        convenioDiscountPercent: 0,
+        cost,
+        odontogramMode: activeMode,
+        odontogramSelection: draftSelection,
+      };
+      setItems((prev) => [...prev, row]);
+      setLastAddedKeys([row.key]);
+      setCustomDescription('');
+      setCustomCost('');
+      setShowCustomItem(false);
+      resetActive();
+      return;
+    }
+
+    if (!activePrestacion) return;
+    const price = convenioPrice(activePrestacion.basePrice, discount);
+    const row: ItemRow = {
+      key: `${activePrestacion.id}-${Date.now()}`,
+      prestacionId: activePrestacion.id,
+      description: activePrestacion.name,
+      toothNumber: toothNumberForBackend(activeMode, draftSelection),
+      listPrice: activePrestacion.basePrice,
+      convenioDiscountPercent: discount,
+      cost: price,
+      odontogramMode: activeMode,
+      odontogramSelection: draftSelection,
+      odontogramColor: activeColor,
+    };
+    setItems((prev) => [...prev, row]);
+    setLastAddedKeys([row.key]);
+    resetActive();
+  }
+
+  function handleCancelActive() {
+    resetActive();
   }
 
   function updateItemCost(key: string, value: string) {
@@ -131,6 +285,7 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
 
   function removeItem(key: string) {
     setItems((prev) => prev.filter((i) => i.key !== key));
+    setLastAddedKeys((prev) => prev.filter((k) => k !== key));
   }
 
   function goToStep2() {
@@ -186,6 +341,8 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
       setIsSubmitting(false);
     }
   }
+
+  const showActiveBanner = !isCustomActive && activePrestacion !== null && activeMode !== null && activeMode !== 'session';
 
   return (
     <Modal title="Nuevo presupuesto" onClose={onClose} maxWidth="max-w-[1400px]">
@@ -330,7 +487,7 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
                       <button
                         key={p.id}
                         type="button"
-                        onClick={() => addPrestacionRow(p)}
+                        onClick={() => handlePickPrestacion(p)}
                         className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50"
                       >
                         <span className="text-slate-700">{p.name}</span>
@@ -341,44 +498,97 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
                 )}
               </div>
 
-              <Odontogram selected={selectedTeeth} onSelect={setSelectedTeeth} />
-
-              <div>
-                {showCustomItem ? (
-                  <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-2">
-                    <input
-                      value={customDescription}
-                      onChange={(e) => setCustomDescription(e.target.value)}
-                      placeholder="Descripción del procedimiento"
-                      className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      value={customCost}
-                      onChange={(e) => setCustomCost(e.target.value)}
-                      placeholder="Costo"
-                      className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                    />
+              {showActiveBanner && activePrestacion && activeMode && (
+                <div className="rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+                  <p className="font-semibold">Prestación seleccionada: {activePrestacion.name}</p>
+                  <p className="mt-0.5">{MODE_INSTRUCTIONS[activeMode]}</p>
+                  {draftSelection.length > 0 && (
+                    <p className="mt-1 font-medium">{formatOdontogramSelection(activeMode, draftSelection)}</p>
+                  )}
+                  {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
+                  <div className="mt-2 flex gap-2">
                     <button
                       type="button"
-                      onClick={addCustomRow}
-                      className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-                    >
-                      Agregar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowCustomItem(false)}
-                      className="text-sm text-slate-400 hover:text-slate-600"
+                      onClick={handleCancelActive}
+                      className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
                     >
                       Cancelar
                     </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmActive}
+                      className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700"
+                    >
+                      Agregar prestación
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <Odontogram
+                mode={activeMode ?? 'session'}
+                selection={draftSelection}
+                onSelectionChange={setDraftSelection}
+                marks={odontogramMarks}
+              />
+
+              <div>
+                {showCustomItem ? (
+                  <div className="flex flex-col gap-2 rounded-lg bg-slate-50 p-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={customDescription}
+                        onChange={(e) => setCustomDescription(e.target.value)}
+                        placeholder="Descripción del procedimiento"
+                        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        value={customCost}
+                        onChange={(e) => setCustomCost(e.target.value)}
+                        placeholder="Costo"
+                        className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      />
+                      <select
+                        value={customMode}
+                        onChange={(e) => handleCustomModeChange(e.target.value as OdontogramMode)}
+                        className="rounded-lg border border-slate-300 px-2 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      >
+                        {CUSTOM_MODE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {customMode !== 'session' && draftSelection.length > 0 && (
+                      <p className="text-xs font-medium text-slate-500">
+                        {formatOdontogramSelection(customMode, draftSelection)}
+                      </p>
+                    )}
+                    {draftError && <p className="text-xs font-medium text-red-600">{draftError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleConfirmActive}
+                        className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                      >
+                        Agregar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeCustomItem}
+                        className="text-sm text-slate-400 hover:text-slate-600"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <button
                     type="button"
-                    onClick={() => setShowCustomItem(true)}
+                    onClick={openCustomItem}
                     className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
                   >
                     <PlusIcon className="h-3.5 w-3.5" />
@@ -425,14 +635,17 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
                           lastAddedKeys.includes(item.key) ? 'bg-amber-100' : 'hover:bg-slate-50'
                         }`}
                       >
-                        <td className="px-3 py-2 text-slate-500">{item.toothNumber ?? 'Sesión'}</td>
-                        <td className="px-3 py-2 text-slate-700">
-                          {item.description}
-                          {item.convenioDiscountPercent > 0 && (
-                            <span className="ml-1 text-xs text-brand-600">-{item.convenioDiscountPercent}%</span>
-                          )}
+                        <td className="px-3 py-2 align-top text-slate-500">{areaLabel(item.odontogramMode)}</td>
+                        <td className="px-3 py-2 align-top text-slate-700">
+                          <div>
+                            {item.description}
+                            {item.convenioDiscountPercent > 0 && (
+                              <span className="ml-1 text-xs text-brand-600">-{item.convenioDiscountPercent}%</span>
+                            )}
+                          </div>
+                          <div className="mt-0.5 text-xs text-slate-400">{detailLabel(item)}</div>
                         </td>
-                        <td className="px-2 py-2">
+                        <td className="px-2 py-2 align-top">
                           <input
                             type="number"
                             min={0}
@@ -442,7 +655,7 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
                             className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
                           />
                         </td>
-                        <td className="px-3 py-2 text-right">
+                        <td className="px-3 py-2 text-right align-top">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -493,7 +706,10 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
                   {items.map((item) => (
                     <tr key={item.key}>
                       <td className="px-3 py-2 text-slate-700">{item.description}</td>
-                      <td className="px-3 py-2 text-slate-500">{item.toothNumber ?? 'Sesión'}</td>
+                      <td className="px-3 py-2 text-slate-500">
+                        {areaLabel(item.odontogramMode)}
+                        <div className="text-xs text-slate-400">{detailLabel(item)}</div>
+                      </td>
                       <td className="px-3 py-2 text-right text-slate-500">{formatCLP(item.listPrice)}</td>
                       <td className="px-3 py-2 text-right text-slate-500">
                         {item.convenioDiscountPercent > 0 ? `-${item.convenioDiscountPercent}%` : '—'}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { fetchPatient, type Patient } from '../../api/patients';
 import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
 import { getErrorMessage } from '../../api/client';
@@ -23,6 +24,7 @@ import {
   PhoneIcon,
   PlusIcon,
   ReceiptIcon,
+  ShieldIcon,
   UsersIcon,
   XrayIcon,
 } from '../../components/icons';
@@ -33,6 +35,7 @@ import { CartolaTab } from './CartolaTab';
 import { ObservacionesTab } from './ObservacionesTab';
 import { DocumentosClinicosTab } from './DocumentosClinicosTab';
 import { RxTab } from './RxTab';
+import { ConsentimientosTab } from './ConsentimientosTab';
 
 const TABS = [
   { key: 'datos', label: 'Datos paciente', icon: IdBadgeIcon },
@@ -43,9 +46,19 @@ const TABS = [
   { key: 'observaciones', label: 'Observaciones', icon: ChatIcon },
   { key: 'documentos', label: 'Documentos clínicos', icon: FolderIcon },
   { key: 'rx', label: 'Módulo Rx', icon: XrayIcon },
+  { key: 'consentimientos', label: 'Consentimientos', icon: ShieldIcon },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
+
+const TAB_MODULE_KEYS: Partial<Record<TabKey, 'tratamientos' | 'evoluciones' | 'cartola' | 'observaciones' | 'documentosClinicos' | 'consentimientos'>> = {
+  tratamiento: 'tratamientos',
+  evoluciones: 'evoluciones',
+  cartola: 'cartola',
+  observaciones: 'observaciones',
+  documentos: 'documentosClinicos',
+  consentimientos: 'consentimientos',
+};
 
 function calculateAge(birthDate: string | null): number | null {
   if (!birthDate) return null;
@@ -118,6 +131,13 @@ function GlanceCard({
 export default function FichaPaciente() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const visibleTabs = TABS.filter((tab) => {
+    if (tab.key === 'rx') return user?.rxEnabled !== false;
+    const moduleKey = TAB_MODULE_KEYS[tab.key];
+    if (!moduleKey) return true;
+    return user?.clinicaModules?.[moduleKey] !== false;
+  });
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -236,7 +256,7 @@ export default function FichaPaciente() {
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
           return (
@@ -387,6 +407,7 @@ export default function FichaPaciente() {
       {activeTab === 'observaciones' && <ObservacionesTab patientId={patient.id} />}
       {activeTab === 'documentos' && <DocumentosClinicosTab patientId={patient.id} />}
       {activeTab === 'rx' && <RxTab patient={patient} />}
+      {activeTab === 'consentimientos' && <ConsentimientosTab patient={patient} onUpdated={setPatient} />}
 
       {showEditForm && (
         <PatientFormModal

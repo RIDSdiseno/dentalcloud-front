@@ -9,12 +9,25 @@ export type Sucursal = {
 };
 export type Prevision = { id: string; name: string; active: boolean };
 export type Convenio = { id: string; name: string; discountPercent: number; active: boolean };
+// El backend todavía no expone configuración de odontograma por prestación;
+// estos campos quedan opcionales (camelCase y snake_case) para no romper
+// nada hoy y poder consumirlos el día que la API los entregue.
 export type Prestacion = {
   id: string;
   code: string | null;
   name: string;
   basePrice: number;
   active: boolean;
+  odontogramMode?: 'session' | 'tooth' | 'surface' | 'extraction';
+  odontogram_mode?: 'session' | 'tooth' | 'surface' | 'extraction';
+  markColor?: string;
+  mark_color?: string;
+  allowMultipleTeeth?: boolean;
+  allow_multiple_teeth?: boolean;
+  defaultTeeth?: string[];
+  default_teeth?: string[];
+  defaultSurfaces?: ('top' | 'right' | 'bottom' | 'left' | 'center')[];
+  default_surfaces?: ('top' | 'right' | 'bottom' | 'left' | 'center')[];
 };
 export type EvolutionTemplate = {
   id: string;

@@ -60,14 +60,14 @@ export default function Login() {
 
   const from = (location.state as { from?: string } | null)?.from ?? '/';
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function doLogin(loginEmail: string, loginPassword: string) {
     setError(null);
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      const loggedInUser = await login(loginEmail, loginPassword);
+      const destination = loggedInUser.role === 'super_admin' ? '/admin/clinicas' : from;
+      navigate(destination, { replace: true });
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.data?.error) {
         setError(err.response.data.error);
@@ -77,6 +77,17 @@ export default function Login() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    doLogin(email, password);
+  }
+
+  function handleQuickLogin(quickEmail: string, quickPassword: string) {
+    setEmail(quickEmail);
+    setPassword(quickPassword);
+    doLogin(quickEmail, quickPassword);
   }
 
   return (
@@ -161,6 +172,37 @@ export default function Login() {
             {isSubmitting ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
+
+        {/* TODO: quitar este acceso rápido antes de salir a producción */}
+        <div className="mt-4 rounded-2xl bg-white/95 p-4 text-xs shadow-xl shadow-slate-900/25 ring-1 ring-black/5 backdrop-blur-sm">
+          <p className="mb-2 font-semibold text-slate-500">Acceso rápido (dev)</p>
+          <div className="flex flex-col gap-1.5">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => handleQuickLogin('superadmin@rids.cl', 'SuperAdmin123!')}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Super Admin RIDS
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => handleQuickLogin('admin@dentalcloud.local', 'Admin123!')}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Administrador RIDS
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => handleQuickLogin('admin@clinicademo.local', 'Admin123!')}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Administrador Clínica Demo
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

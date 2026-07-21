@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchPatients, type Patient } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
@@ -11,13 +11,92 @@ function formatBirthDate(birthDate: string | null) {
   return new Date(birthDate).toLocaleDateString('es-CL');
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+type ConsentFilter = 'todos' | 'no_enviado' | Patient['privacyConsentStatus'];
+
+const CONSENT_STATUS_STYLES: Record<Patient['privacyConsentStatus'], { label: string; className: string }> = {
+  pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
+  firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
+  rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200' },
+  expirado: { label: 'Expirado', className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+};
+
+const CONSENT_FILTERS: { key: ConsentFilter; label: string }[] = [
+  { key: 'todos', label: 'Todos' },
+  { key: 'firmado', label: 'Firmados' },
+  { key: 'pendiente', label: 'Pendientes' },
+  { key: 'rechazado', label: 'Rechazados' },
+  { key: 'expirado', label: 'Expirados' },
+  { key: 'no_enviado', label: 'No enviados' },
+];
+
+// "No enviado" solo aplica cuando nunca se envió Y tampoco se respondió
+// (ej. firmado presencialmente sin haber pasado por el correo).
+function isNotSent(patient: Patient) {
+  return !patient.privacyConsentSentAt && !patient.privacyConsentAt;
+}
+
+function consentFilterOf(patient: Patient): ConsentFilter {
+  return isNotSent(patient) ? 'no_enviado' : patient.privacyConsentStatus;
+}
+
+function ConsentBadge({ patient }: { patient: Patient }) {
+  if (isNotSent(patient)) {
+    return (
+      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+        No enviado
+      </span>
+    );
+  }
+  const { label, className } = CONSENT_STATUS_STYLES[patient.privacyConsentStatus];
+  const methodLabel = patient.privacyConsentMethod === 'presencial' ? 'Presencial' : 'Email';
+  const detailDate =
+    patient.privacyConsentStatus === 'firmado' || patient.privacyConsentStatus === 'rechazado'
+      ? formatDateTime(patient.privacyConsentAt)
+      : formatDateTime(patient.privacyConsentSentAt);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${className}`}>{label}</span>
+      {detailDate && (
+        <span className="text-[11px] text-slate-400">
+          {detailDate} · {methodLabel}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function Pacientes() {
   const navigate = useNavigate();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState('');
+  const [consentFilter, setConsentFilter] = useState<ConsentFilter>('todos');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  const consentCounts = useMemo(() => {
+    const counts: Record<ConsentFilter, number> = {
+      todos: patients.length,
+      firmado: 0,
+      pendiente: 0,
+      rechazado: 0,
+      expirado: 0,
+      no_enviado: 0,
+    };
+    for (const patient of patients) counts[consentFilterOf(patient)]++;
+    return counts;
+  }, [patients]);
+
+  const visiblePatients = useMemo(
+    () => (consentFilter === 'todos' ? patients : patients.filter((p) => consentFilterOf(p) === consentFilter)),
+    [patients, consentFilter]
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -78,21 +157,42 @@ export default function Pacientes() {
         />
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {CONSENT_FILTERS.map((filter) => (
+          <button
+            key={filter.key}
+            type="button"
+            onClick={() => setConsentFilter(filter.key)}
+            className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition-colors ${
+              consentFilter === filter.key
+                ? 'bg-brand-600 text-white ring-brand-600'
+                : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            {filter.label} · {consentCounts[filter.key]}
+          </button>
+        ))}
+      </div>
+
       <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         {error && <p className="p-6 text-sm text-red-600">{error}</p>}
 
-        {!error && !isLoading && patients.length === 0 && (
+        {!error && !isLoading && visiblePatients.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
               <UsersIcon className="h-6 w-6" />
             </div>
             <p className="text-sm text-slate-500">
-              {search ? 'No se encontraron pacientes.' : 'Aún no hay pacientes registrados.'}
+              {search
+                ? 'No se encontraron pacientes.'
+                : patients.length === 0
+                  ? 'Aún no hay pacientes registrados.'
+                  : 'Ningún paciente coincide con este filtro.'}
             </p>
           </div>
         )}
 
-        {!error && patients.length > 0 && (
+        {!error && visiblePatients.length > 0 && (
           <table className="w-full text-left text-sm">
             <thead className="sticky top-0 bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
@@ -100,10 +200,11 @@ export default function Pacientes() {
                 <th className="px-4 py-3">RUT</th>
                 <th className="px-4 py-3">Contacto</th>
                 <th className="px-4 py-3">Nacimiento</th>
+                <th className="px-4 py-3">Consentimiento</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {patients.map((patient) => (
+              {visiblePatients.map((patient) => (
                 <tr
                   key={patient.id}
                   onClick={() => navigate(`/pacientes/${patient.id}`)}
@@ -129,6 +230,9 @@ export default function Pacientes() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-slate-500">{formatBirthDate(patient.birthDate)}</td>
+                  <td className="px-4 py-3">
+                    <ConsentBadge patient={patient} />
+                  </td>
                 </tr>
               ))}
             </tbody>

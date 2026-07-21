@@ -7,18 +7,22 @@ import {
   type ReactNode,
 } from 'react';
 import { api, setAccessToken } from '../api/client';
+import type { ClinicaModules } from '../api/clinicas';
 
-type User = {
+export type User = {
   id: string;
   email: string;
   name: string;
   role: string;
+  clinicaId: string | null;
+  clinicaModules: ClinicaModules | null;
+  rxEnabled: boolean | null;
 };
 
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
 };
 
@@ -50,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authenticatedRef.current = true;
     setAccessToken(data.accessToken);
     setUser(data.user);
+    return data.user as User;
   }
 
   async function logout() {
