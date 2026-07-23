@@ -23,7 +23,18 @@ export interface OdontogramConfig {
 // Palabras clave usadas mientras el backend no entrega el modo de odontograma
 // de cada prestación. Aislado aquí para poder reemplazarlo por datos reales
 // del backend sin tocar la lógica de UI que lo consume.
-const SESSION_KEYWORDS = ['blanqueamiento', 'fluor', 'consulta', 'control', 'destartraje', 'limpieza'];
+const SESSION_KEYWORDS = [
+  'blanqueamiento',
+  'fluor',
+  'consulta',
+  'control',
+  'destartraje',
+  'limpieza',
+  'examen',
+  'sesion',
+  'entrenamiento',
+  'programa terapeutico',
+];
 const TOOTH_KEYWORDS = ['endodoncia', 'corona', 'implante', 'incrustacion', 'perno', 'munon', 'provisional', 'retiro'];
 const SURFACE_KEYWORDS = ['restauracion', 'resina', 'obturacion', 'caries', 'carilla', 'sellante'];
 const EXTRACTION_KEYWORDS = ['exodoncia', 'extraccion', 'extraer'];

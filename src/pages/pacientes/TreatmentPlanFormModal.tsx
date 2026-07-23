@@ -31,7 +31,8 @@ type ItemRow = {
   odontogramColor?: string;
 };
 
-const MODE_INSTRUCTIONS: Record<Exclude<OdontogramMode, 'session'>, string> = {
+const MODE_INSTRUCTIONS: Record<OdontogramMode, string> = {
+  session: 'Esta prestación aplica a toda la boca. Presiona "Agregar prestación" para confirmarla.',
   tooth: 'Selecciona las caras de cada pieza (el número selecciona las 5 caras).',
   surface: 'Selecciona las caras afectadas de cada pieza (el número selecciona las 5 caras).',
   extraction: 'Selecciona una o varias piezas a extraer.',
@@ -163,27 +164,6 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
   function handlePickPrestacion(prestacion: Prestacion) {
     setPrestacionSearch('');
     const config = getOdontogramConfig(prestacion);
-    const discount = selectedConvenio?.discountPercent ?? 0;
-    const price = convenioPrice(prestacion.basePrice, discount);
-
-    if (config.mode === 'session') {
-      const row: ItemRow = {
-        key: `${prestacion.id}-${Date.now()}`,
-        prestacionId: prestacion.id,
-        description: prestacion.name,
-        toothNumber: toothNumberForBackend('session', []),
-        listPrice: prestacion.basePrice,
-        convenioDiscountPercent: discount,
-        cost: price,
-        odontogramMode: 'session',
-        odontogramSelection: [],
-        odontogramColor: config.markColor,
-      };
-      setItems((prev) => [...prev, row]);
-      setLastAddedKeys([row.key]);
-      resetActive();
-      return;
-    }
 
     setActivePrestacion(prestacion);
     setIsCustomActive(false);
@@ -342,7 +322,7 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
     }
   }
 
-  const showActiveBanner = !isCustomActive && activePrestacion !== null && activeMode !== null && activeMode !== 'session';
+  const showActiveBanner = !isCustomActive && activePrestacion !== null && activeMode !== null;
 
   return (
     <Modal title="Nuevo presupuesto" onClose={onClose} maxWidth="max-w-[1400px]">
@@ -450,8 +430,8 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
         )}
 
         {step === 2 && (
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div className="flex flex-col gap-4 lg:col-span-2">
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
+            <div className="flex flex-col gap-4 lg:col-span-3">
               <div className="relative">
                 <label className="text-sm font-medium text-slate-700">Buscar prestación</label>
                 <div className="mt-1 flex items-center gap-2">
@@ -530,6 +510,8 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
                 selection={draftSelection}
                 onSelectionChange={setDraftSelection}
                 marks={odontogramMarks}
+                onModeChange={isCustomActive ? handleCustomModeChange : undefined}
+                allowedModes={isCustomActive || !activeMode ? undefined : [activeMode]}
               />
 
               <div>
@@ -610,80 +592,65 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
               </div>
 
               <div className="overflow-hidden rounded-xl ring-1 ring-slate-200">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-[11px] uppercase text-slate-500">
-                    <tr>
-                      <th className="px-3 py-2 text-left">Área</th>
-                      <th className="px-3 py-2 text-left">Prestación</th>
-                      <th className="px-3 py-2 text-right">Total</th>
-                      <th className="px-3 py-2 text-right">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {items.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="px-3 py-6 text-center text-sm text-slate-400">
-                          Aún no hay prestaciones agregadas.
-                        </td>
-                      </tr>
-                    )}
-                    {items.map((item) => (
-                      <tr
-                        key={item.key}
-                        onClick={() => setLastAddedKeys([item.key])}
-                        className={`cursor-pointer transition-colors ${
-                          lastAddedKeys.includes(item.key) ? 'bg-amber-100' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <td className="px-3 py-2 align-top text-slate-500">{areaLabel(item.odontogramMode)}</td>
-                        <td className="px-3 py-2 align-top text-slate-700">
-                          <div>
+                <p className="bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                  Prestaciones agregadas
+                </p>
+
+                <div className="divide-y divide-slate-100">
+                  {items.length === 0 && (
+                    <p className="px-3 py-6 text-center text-sm text-slate-400">Aún no hay prestaciones agregadas.</p>
+                  )}
+                  {items.map((item) => (
+                    <div
+                      key={item.key}
+                      onClick={() => setLastAddedKeys([item.key])}
+                      className={`flex cursor-pointer flex-col gap-2 px-3 py-2.5 transition-colors ${
+                        lastAddedKeys.includes(item.key) ? 'bg-amber-100' : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            {areaLabel(item.odontogramMode)}
+                          </p>
+                          <p className="break-words text-sm font-medium text-slate-700">
                             {item.description}
                             {item.convenioDiscountPercent > 0 && (
                               <span className="ml-1 text-xs text-brand-600">-{item.convenioDiscountPercent}%</span>
                             )}
-                          </div>
-                          <div className="mt-0.5 text-xs text-slate-400">{detailLabel(item)}</div>
-                        </td>
-                        <td className="px-2 py-2 align-top">
-                          <input
-                            type="number"
-                            min={0}
-                            value={item.cost}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => updateItemCost(item.key, e.target.value)}
-                            className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                          />
-                        </td>
-                        <td className="px-3 py-2 text-right align-top">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeItem(item.key);
-                            }}
-                            aria-label="Quitar"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-                          >
-                            <TrashIcon className="h-3.5 w-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  {items.length > 0 && (
-                    <tfoot>
-                      <tr className="bg-slate-50">
-                        <td colSpan={2} className="px-3 py-2 text-sm font-semibold text-slate-600">
-                          Total
-                        </td>
-                        <td colSpan={2} className="px-3 py-2 text-right text-sm font-bold text-brand-600">
-                          {formatCLP(total)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
+                          </p>
+                          <p className="mt-0.5 break-words text-xs text-slate-400">{detailLabel(item)}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeItem(item.key);
+                          }}
+                          aria-label="Quitar"
+                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <input
+                        type="number"
+                        min={0}
+                        value={item.cost}
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => updateItemCost(item.key, e.target.value)}
+                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {items.length > 0 && (
+                  <div className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-2">
+                    <span className="text-sm font-semibold text-slate-600">Total</span>
+                    <span className="text-sm font-bold text-brand-600">{formatCLP(total)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
