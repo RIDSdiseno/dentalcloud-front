@@ -175,6 +175,31 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
       .finally(() => setIsLoading(false));
   }, [patient.id]);
 
+  // El paciente firma desde su celular en otro momento, así que el estado acá
+  // se refresca solo: al volver a esta pestaña del navegador, y cada 20s
+  // mientras queda abierta — sin necesitar F5 para verlo actualizado.
+  useEffect(() => {
+    function refreshSilently() {
+      fetchPatientConsents(patient.id)
+        .then(setConsents)
+        .catch(() => undefined);
+    }
+
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') refreshSilently();
+    }
+
+    const interval = window.setInterval(refreshSilently, 20_000);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', refreshSilently);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', refreshSilently);
+    };
+  }, [patient.id]);
+
   function handleUpdated(consentTypeId: string, updated: PatientConsent) {
     setConsents((prev) => {
       const exists = prev.some((c) => c.consentTypeId === consentTypeId);
