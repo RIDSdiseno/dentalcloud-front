@@ -94,7 +94,7 @@ export default function Login() {
     <div className="relative flex min-h-screen items-center justify-center p-6">
       <img
         src="/login.png"
-        alt="DentalCloud"
+        alt="fordentcloud"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-black/10" />
@@ -109,7 +109,7 @@ export default function Login() {
           </div>
 
           <h1 className="text-center text-2xl font-bold tracking-tight text-slate-900">
-            Dental<span className="text-brand-500">Cloud</span>
+            fordent<span className="text-brand-500">cloud</span>
           </h1>
           <p className="mb-5 text-center text-sm text-slate-500">
             Inicia sesión para continuar

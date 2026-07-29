@@ -103,7 +103,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
             </div>
             {!collapsed && (
               <span className="truncate text-lg font-bold tracking-tight">
-                Dental<span className="text-brand-400">Cloud</span>
+                fordent<span className="text-brand-400">cloud</span>
               </span>
             )}
           </Link>
