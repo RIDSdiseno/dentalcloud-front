@@ -1,18 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
-import { fetchConsentText, respondDataConsentInPerson } from '../../api/dataConsents';
+import {
+  fetchConsentText,
+  respondDataConsentInPerson,
+  type ConsentStatus,
+  type ConsentType,
+  type PatientConsent,
+} from '../../api/dataConsents';
 import type { Patient } from '../../api/patients';
 import { formatRutInput, isValidRut } from '../../utils/rut';
 
 export function ConsentimientoPreviewModal({
   patient,
+  consentType,
+  consent,
   onClose,
   onSigned,
 }: {
   patient: Patient;
+  consentType: ConsentType;
+  consent: PatientConsent | null;
   onClose: () => void;
-  onSigned: (result: { status: string; respondedAt: string; signerName: string; signerRut: string }) => void;
+  onSigned: (result: { status: ConsentStatus; respondedAt: string; signerName: string; signerRut: string }) => void;
 }) {
   const [text, setText] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -24,12 +34,12 @@ export function ConsentimientoPreviewModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchConsentText()
+    fetchConsentText(consentType.id)
       .then(setText)
       .catch((err) => setLoadError(getErrorMessage(err, 'No se pudo cargar el texto del consentimiento')));
-  }, []);
+  }, [consentType.id]);
 
-  const alreadyResponded = patient.privacyConsentStatus === 'firmado' || patient.privacyConsentStatus === 'rechazado';
+  const alreadyResponded = consent?.status === 'firmado' || consent?.status === 'rechazado';
   const canSubmit = !alreadyResponded && readConfirmed && signerName.trim().length > 0 && isValidRut(signerRut) && !isSubmitting;
 
   async function handleDecision(decision: 'firmado' | 'rechazado') {
@@ -40,7 +50,7 @@ export function ConsentimientoPreviewModal({
     setFormError(null);
     setIsSubmitting(true);
     try {
-      const result = await respondDataConsentInPerson(patient.id, {
+      const result = await respondDataConsentInPerson(patient.id, consentType.id, {
         decision,
         signerName: signerName.trim(),
         signerRut,
@@ -55,7 +65,7 @@ export function ConsentimientoPreviewModal({
   }
 
   return (
-    <Modal title="Consentimiento de tratamiento de datos personales" onClose={onClose} maxWidth="max-w-xl">
+    <Modal title={consentType.name} onClose={onClose} maxWidth="max-w-xl">
       <div className="flex flex-col gap-4">
         {loadError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{loadError}</p>}
 
@@ -67,8 +77,8 @@ export function ConsentimientoPreviewModal({
 
         {alreadyResponded ? (
           <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
-            Este consentimiento ya fue {patient.privacyConsentStatus === 'firmado' ? 'firmado' : 'rechazado'} por{' '}
-            {patient.privacyConsentSignerName ?? 'el paciente'}.
+            Este consentimiento ya fue {consent?.status === 'firmado' ? 'firmado' : 'rechazado'} por{' '}
+            {consent?.signerName ?? 'el paciente'}.
           </p>
         ) : (
           <p className="text-xs text-slate-500">

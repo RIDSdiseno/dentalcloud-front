@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { AllergyKey } from '../data/allergies';
 
 export type PrivacyConsentStatus = 'pendiente' | 'firmado' | 'rechazado' | 'expirado';
 
@@ -11,8 +12,19 @@ export type Patient = {
   email: string | null;
   birthDate: string | null;
   address: string | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  allergies: AllergyKey[];
+  allergyNotes: string | null;
+  medicalConditions: string | null;
+  currentMedications: string | null;
   createdAt: string;
   updatedAt: string;
+  // Snapshot del consentimiento de protección de datos, derivado de la nueva
+  // tabla `consents` (tipo 'proteccion_datos') para no romper vistas que solo
+  // necesitan ese estado puntual (lista de pacientes, stats de super-admin).
+  // El detalle completo con todos los tipos de consentimiento vive en
+  // ConsentimientosTab, vía api/dataConsents.ts.
   privacyConsentStatus: PrivacyConsentStatus;
   privacyConsentMethod: 'email' | 'presencial' | null;
   privacyConsentSentAt: string | null;
@@ -30,6 +42,12 @@ export type PatientInput = {
   email?: string;
   birthDate?: string;
   address?: string;
+  heightCm?: number | null;
+  weightKg?: number | null;
+  allergies?: AllergyKey[];
+  allergyNotes?: string;
+  medicalConditions?: string;
+  currentMedications?: string;
 };
 
 export async function fetchPatients(search?: string) {

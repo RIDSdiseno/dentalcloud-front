@@ -9,6 +9,7 @@ import {
   type TreatmentPlan,
   type TreatmentStatus,
 } from '../../api/treatmentPlans';
+import type { Patient } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
 import { TREATMENT_STATUS_LABELS, TREATMENT_STATUS_CLASSES, formatCLP } from '../../utils/treatmentStatus';
 import {
@@ -259,7 +260,8 @@ function PlanCard({
   );
 }
 
-export function TreatmentPlanTab({ patientId }: { patientId: string }) {
+export function TreatmentPlanTab({ patient }: { patient: Patient }) {
+  const patientId = patient.id;
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -355,7 +357,7 @@ export function TreatmentPlanTab({ patientId }: { patientId: string }) {
 
       {showForm && (
         <TreatmentPlanFormModal
-          patientId={patientId}
+          patient={patient}
           onClose={() => setShowForm(false)}
           onCreated={(plan) => {
             setPlans((prev) => [plan, ...prev]);

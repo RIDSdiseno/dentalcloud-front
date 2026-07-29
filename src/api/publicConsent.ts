@@ -7,6 +7,7 @@ const publicApi = axios.create({ baseURL });
 
 export type PublicConsent = {
   patientName: string;
+  consentTypeName: string;
   contentSnapshot: string;
   expiresAt: string;
 };

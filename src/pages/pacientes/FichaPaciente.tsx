@@ -7,8 +7,10 @@ import { getErrorMessage } from '../../api/client';
 import { formatRut } from '../../utils/rut';
 import { formatLongDate, formatTime } from '../agenda/dateUtils';
 import { NewAppointmentModal } from '../agenda/NewAppointmentModal';
+import { ALLERGY_LABEL } from '../../data/allergies';
 import {
   ActivityIcon,
+  AlertTriangleIcon,
   ArrowLeftIcon,
   CakeIcon,
   CalendarIcon,
@@ -233,6 +235,12 @@ export default function FichaPaciente() {
               {formatRut(patient.rut)}
               {age !== null && ` · ${age} años`}
             </p>
+            {patient.allergies.length > 0 && (
+              <span className="mt-2 flex w-fit items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+                <AlertTriangleIcon className="h-3.5 w-3.5" />
+                Alergias: {patient.allergies.map((a) => ALLERGY_LABEL[a]).join(', ')}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -311,6 +319,55 @@ export default function FichaPaciente() {
                 </dd>
               </div>
             </dl>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <AlertTriangleIcon className="h-4 w-4 text-brand-500" />
+              Antecedentes médicos
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex gap-6 text-sm">
+                <div>
+                  <p className="text-slate-500">Altura</p>
+                  <p className="font-medium text-slate-700">{patient.heightCm ? `${patient.heightCm} cm` : 'No registrada'}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Peso</p>
+                  <p className="font-medium text-slate-700">{patient.weightKg ? `${patient.weightKg} kg` : 'No registrado'}</p>
+                </div>
+              </div>
+              <div className="text-sm">
+                <p className="text-slate-500">Alergias</p>
+                {patient.allergies.length > 0 ? (
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {patient.allergies.map((a) => (
+                      <span
+                        key={a}
+                        className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200"
+                      >
+                        {ALLERGY_LABEL[a]}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="font-medium text-slate-400">Sin alergias registradas</p>
+                )}
+                {patient.allergyNotes && <p className="mt-1.5 text-xs text-slate-500">{patient.allergyNotes}</p>}
+              </div>
+              <div className="text-sm">
+                <p className="text-slate-500">Condiciones médicas relevantes</p>
+                <p className={`font-medium ${patient.medicalConditions ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.medicalConditions ?? 'No registradas'}
+                </p>
+              </div>
+              <div className="text-sm">
+                <p className="text-slate-500">Medicamentos actuales</p>
+                <p className={`font-medium ${patient.currentMedications ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.currentMedications ?? 'No registrados'}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -401,13 +458,13 @@ export default function FichaPaciente() {
         </div>
       )}
 
-      {activeTab === 'tratamiento' && <TreatmentPlanTab patientId={patient.id} />}
+      {activeTab === 'tratamiento' && <TreatmentPlanTab patient={patient} />}
       {activeTab === 'evoluciones' && <EvolucionesTab patient={patient} />}
       {activeTab === 'cartola' && <CartolaTab patientId={patient.id} />}
       {activeTab === 'observaciones' && <ObservacionesTab patientId={patient.id} />}
       {activeTab === 'documentos' && <DocumentosClinicosTab patientId={patient.id} />}
       {activeTab === 'rx' && <RxTab patient={patient} />}
-      {activeTab === 'consentimientos' && <ConsentimientosTab patient={patient} onUpdated={setPatient} />}
+      {activeTab === 'consentimientos' && <ConsentimientosTab patient={patient} />}
 
       {showEditForm && (
         <PatientFormModal

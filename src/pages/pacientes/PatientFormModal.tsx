@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from '../../components/Modal';
 import { CountrySelect } from '../../components/CountrySelect';
 import { COUNTRIES } from '../../data/countries';
+import { ALLERGY_OPTIONS, type AllergyKey } from '../../data/allergies';
 import { getErrorMessage } from '../../api/client';
 import { createPatient, updatePatient, type Patient } from '../../api/patients';
 import { formatRut, formatRutInput, isValidRut } from '../../utils/rut';
@@ -33,6 +34,12 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
   const [email, setEmail] = useState(patient?.email ?? '');
   const [birthDate, setBirthDate] = useState(patient?.birthDate?.slice(0, 10) ?? '');
   const [address, setAddress] = useState(patient?.address ?? '');
+  const [heightCm, setHeightCm] = useState(patient?.heightCm != null ? String(patient.heightCm) : '');
+  const [weightKg, setWeightKg] = useState(patient?.weightKg != null ? String(patient.weightKg) : '');
+  const [allergies, setAllergies] = useState<AllergyKey[]>(patient?.allergies ?? []);
+  const [allergyNotes, setAllergyNotes] = useState(patient?.allergyNotes ?? '');
+  const [medicalConditions, setMedicalConditions] = useState(patient?.medicalConditions ?? '');
+  const [currentMedications, setCurrentMedications] = useState(patient?.currentMedications ?? '');
   const [rutTouched, setRutTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,6 +66,12 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
         email: email || undefined,
         birthDate: birthDate || undefined,
         address: address || undefined,
+        heightCm: heightCm.trim() ? Number(heightCm) : null,
+        weightKg: weightKg.trim() ? Number(weightKg) : null,
+        allergies,
+        allergyNotes: allergyNotes || undefined,
+        medicalConditions: medicalConditions || undefined,
+        currentMedications: currentMedications || undefined,
       };
       const saved =
         isEditing && patient ? await updatePatient(patient.id, input) : await createPatient(input);
@@ -68,6 +81,10 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function toggleAllergy(key: AllergyKey) {
+    setAllergies((prev) => (prev.includes(key) ? prev.filter((a) => a !== key) : [...prev, key]));
   }
 
   return (
@@ -177,6 +194,95 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
             onChange={(e) => setAddress(e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
           />
+        </div>
+
+        <div className="border-t border-slate-100 pt-4">
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">Antecedentes médicos</h3>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="heightCm" className="text-sm font-medium text-slate-700">
+                Altura (cm)
+              </label>
+              <input
+                id="heightCm"
+                type="number"
+                min={0}
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value)}
+                placeholder="170"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+            </div>
+            <div>
+              <label htmlFor="weightKg" className="text-sm font-medium text-slate-700">
+                Peso (kg)
+              </label>
+              <input
+                id="weightKg"
+                type="number"
+                min={0}
+                step="0.1"
+                value={weightKg}
+                onChange={(e) => setWeightKg(e.target.value)}
+                placeholder="70"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-sm font-medium text-slate-700">Alergias</p>
+            <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+              {ALLERGY_OPTIONS.map((opt) => (
+                <label key={opt.key} className="flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={allergies.includes(opt.key)}
+                    onChange={() => toggleAllergy(opt.key)}
+                    className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            <textarea
+              value={allergyNotes}
+              onChange={(e) => setAllergyNotes(e.target.value)}
+              placeholder="Detalle de alergias (ej. reacción específica, otra alergia no listada...)"
+              rows={2}
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            />
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="medicalConditions" className="text-sm font-medium text-slate-700">
+                Condiciones médicas relevantes
+              </label>
+              <textarea
+                id="medicalConditions"
+                value={medicalConditions}
+                onChange={(e) => setMedicalConditions(e.target.value)}
+                placeholder="Ej. diabetes, hipertensión, embarazo..."
+                rows={2}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+            </div>
+            <div>
+              <label htmlFor="currentMedications" className="text-sm font-medium text-slate-700">
+                Medicamentos actuales
+              </label>
+              <textarea
+                id="currentMedications"
+                value={currentMedications}
+                onChange={(e) => setCurrentMedications(e.target.value)}
+                placeholder="Ej. anticoagulantes, antihipertensivos..."
+                rows={2}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+            </div>
+          </div>
         </div>
 
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}

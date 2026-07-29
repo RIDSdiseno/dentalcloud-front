@@ -127,7 +127,7 @@ export default function ConsentimientoPublico() {
 
   return (
     <Shell>
-      <h1 className="mb-1 text-lg font-bold text-slate-900">Consentimiento de tratamiento de datos personales</h1>
+      <h1 className="mb-1 text-lg font-bold text-slate-900">{consent?.consentTypeName}</h1>
       <p className="mb-4 text-sm text-slate-500">Hola {consent?.patientName}, por favor revisa el siguiente documento.</p>
 
       <div className="mb-5 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">

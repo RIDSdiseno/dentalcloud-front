@@ -9,6 +9,19 @@ export function InfoCircleIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function AlertTriangleIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path
+        d="M10.29 3.86 1.82 18a1.5 1.5 0 0 0 1.29 2.25h17.78A1.5 1.5 0 0 0 22.18 18L13.71 3.86a1.5 1.5 0 0 0-2.58 0Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M12 9v4.5M12 17v.01" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function CalendarIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>

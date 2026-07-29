@@ -1,12 +1,19 @@
-import { useState } from 'react';
-import { sendDataConsent } from '../../api/dataConsents';
+import { useEffect, useState } from 'react';
+import {
+  fetchConsentTypes,
+  fetchPatientConsents,
+  sendDataConsent,
+  type ConsentStatus,
+  type ConsentType,
+  type PatientConsent,
+} from '../../api/dataConsents';
 import { getErrorMessage } from '../../api/client';
 import type { Patient } from '../../api/patients';
 import { ShieldIcon } from '../../components/icons';
 import { formatRut } from '../../utils/rut';
 import { ConsentimientoPreviewModal } from './ConsentimientoPreviewModal';
 
-const STATUS_STYLES: Record<Patient['privacyConsentStatus'], { label: string; className: string }> = {
+const STATUS_STYLES: Record<ConsentStatus, { label: string; className: string }> = {
   pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
   firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
   rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200' },
@@ -18,23 +25,27 @@ function formatDateTime(value: string | null) {
   return new Date(value).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-export function ConsentimientosTab({
+function ConsentTypeCard({
   patient,
+  consentType,
+  consent,
   onUpdated,
 }: {
   patient: Patient;
-  onUpdated: (patient: Patient) => void;
+  consentType: ConsentType;
+  consent: PatientConsent | null;
+  onUpdated: (consent: PatientConsent) => void;
 }) {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  const hasBeenSent = patient.privacyConsentSentAt !== null;
+  const hasBeenSent = consent?.sentAt != null;
   // "No enviado" solo aplica cuando nunca se envió Y tampoco se respondió
   // (ej. firmado presencialmente sin haber pasado por el correo).
-  const hasAnyActivity = hasBeenSent || patient.privacyConsentAt !== null;
-  const status = hasAnyActivity
-    ? STATUS_STYLES[patient.privacyConsentStatus]
+  const hasAnyActivity = hasBeenSent || consent?.respondedAt != null;
+  const status = hasAnyActivity && consent
+    ? STATUS_STYLES[consent.status]
     : { label: 'No enviado', className: 'bg-slate-100 text-slate-500 ring-slate-200' };
 
   async function handleSend() {
@@ -42,15 +53,17 @@ export function ConsentimientosTab({
     setError(null);
     setIsSending(true);
     try {
-      const result = await sendDataConsent(patient.id);
+      const result = await sendDataConsent(patient.id, consentType.id);
       onUpdated({
-        ...patient,
-        privacyConsentStatus: result.status as Patient['privacyConsentStatus'],
-        privacyConsentSentAt: result.sentAt,
-        privacyConsentExpiresAt: result.expiresAt,
-        privacyConsentAt: null,
-        privacyConsentSignerName: null,
-        privacyConsentSignerRut: null,
+        id: consent?.id ?? '',
+        consentTypeId: consentType.id,
+        status: result.status,
+        method: 'email',
+        sentAt: result.sentAt,
+        expiresAt: result.expiresAt,
+        respondedAt: null,
+        signerName: null,
+        signerRut: null,
       });
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo enviar el consentimiento'));
@@ -64,7 +77,7 @@ export function ConsentimientosTab({
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
           <ShieldIcon className="h-5 w-5 text-brand-500" />
-          Consentimiento de tratamiento de datos personales
+          {consentType.name}
         </h2>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${status.className}`}>
           {status.label}
@@ -82,22 +95,20 @@ export function ConsentimientosTab({
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <div>
           <dt className="text-slate-500">Último envío</dt>
-          <dd className="font-medium text-slate-800">{formatDateTime(patient.privacyConsentSentAt)}</dd>
+          <dd className="font-medium text-slate-800">{formatDateTime(consent?.sentAt ?? null)}</dd>
         </div>
         <div>
           <dt className="text-slate-500">Vence</dt>
-          <dd className="font-medium text-slate-800">{formatDateTime(patient.privacyConsentExpiresAt)}</dd>
+          <dd className="font-medium text-slate-800">{formatDateTime(consent?.expiresAt ?? null)}</dd>
         </div>
         <div>
           <dt className="text-slate-500">Respondido</dt>
-          <dd className="font-medium text-slate-800">{formatDateTime(patient.privacyConsentAt)}</dd>
+          <dd className="font-medium text-slate-800">{formatDateTime(consent?.respondedAt ?? null)}</dd>
         </div>
         <div>
           <dt className="text-slate-500">Firmante</dt>
           <dd className="font-medium text-slate-800">
-            {patient.privacyConsentSignerName
-              ? `${patient.privacyConsentSignerName} (${formatRut(patient.privacyConsentSignerRut ?? '')})`
-              : '—'}
+            {consent?.signerName ? `${consent.signerName} (${formatRut(consent.signerRut ?? '')})` : '—'}
           </dd>
         </div>
       </dl>
@@ -123,19 +134,73 @@ export function ConsentimientosTab({
       {showPreview && (
         <ConsentimientoPreviewModal
           patient={patient}
+          consentType={consentType}
+          consent={consent}
           onClose={() => setShowPreview(false)}
           onSigned={(result) => {
             onUpdated({
-              ...patient,
-              privacyConsentStatus: result.status as Patient['privacyConsentStatus'],
-              privacyConsentAt: result.respondedAt,
-              privacyConsentSignerName: result.signerName,
-              privacyConsentSignerRut: result.signerRut,
+              id: consent?.id ?? '',
+              consentTypeId: consentType.id,
+              status: result.status,
+              method: consent?.method ?? 'presencial',
+              sentAt: consent?.sentAt ?? null,
+              expiresAt: consent?.expiresAt ?? null,
+              respondedAt: result.respondedAt,
+              signerName: result.signerName,
+              signerRut: result.signerRut,
             });
             setShowPreview(false);
           }}
         />
       )}
+    </div>
+  );
+}
+
+export function ConsentimientosTab({ patient }: { patient: Patient }) {
+  const [consentTypes, setConsentTypes] = useState<ConsentType[]>([]);
+  const [consents, setConsents] = useState<PatientConsent[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    Promise.all([fetchConsentTypes(), fetchPatientConsents(patient.id)])
+      .then(([types, patientConsents]) => {
+        setConsentTypes(types);
+        setConsents(patientConsents);
+        setError(null);
+      })
+      .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar los consentimientos')))
+      .finally(() => setIsLoading(false));
+  }, [patient.id]);
+
+  function handleUpdated(consentTypeId: string, updated: PatientConsent) {
+    setConsents((prev) => {
+      const exists = prev.some((c) => c.consentTypeId === consentTypeId);
+      return exists
+        ? prev.map((c) => (c.consentTypeId === consentTypeId ? updated : c))
+        : [...prev, updated];
+    });
+  }
+
+  if (isLoading) return null;
+
+  if (error) {
+    return <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      {consentTypes.map((consentType) => (
+        <ConsentTypeCard
+          key={consentType.id}
+          patient={patient}
+          consentType={consentType}
+          consent={consents.find((c) => c.consentTypeId === consentType.id) ?? null}
+          onUpdated={(updated) => handleUpdated(consentType.id, updated)}
+        />
+      ))}
     </div>
   );
 }

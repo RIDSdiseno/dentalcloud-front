@@ -5,10 +5,12 @@ import { createTreatmentPlan, type TreatmentPlan, type TreatmentItemInput } from
 import { fetchUsers, type StaffUser } from '../../api/users';
 import { fetchSucursales, fetchPrevisiones, fetchConvenios, fetchPrestaciones } from '../../api/catalogs';
 import type { Sucursal, Prevision, Convenio, Prestacion } from '../../api/catalogs';
+import type { Patient } from '../../api/patients';
+import { ALLERGY_LABEL, type AllergyKey } from '../../data/allergies';
 import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatCLP } from '../../utils/treatmentStatus';
-import { CheckIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
+import { AlertTriangleIcon, CheckIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
 import { Odontogram, type OdontogramMark, type OdontogramMode, type ToothSelection } from './Odontogram';
 import {
   areaLabel,
@@ -17,6 +19,7 @@ import {
   selectionFromDefaults,
   toothNumberForBackend,
 } from './odontogramConfig';
+import { detectAllergensInPrestacion } from './allergenDetection';
 
 type ItemRow = {
   key: string;
@@ -72,7 +75,7 @@ function detailLabel(item: ItemRow): string {
 }
 
 type TreatmentPlanFormModalProps = {
-  patientId: string;
+  patient: Patient;
   onClose: () => void;
   onCreated: (plan: TreatmentPlan) => void;
 };
@@ -89,7 +92,8 @@ function convenioPrice(listPrice: number, discountPercent: number) {
   return Math.round(listPrice * (1 - discountPercent / 100));
 }
 
-export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: TreatmentPlanFormModalProps) {
+export function TreatmentPlanFormModal({ patient, onClose, onCreated }: TreatmentPlanFormModalProps) {
+  const patientId = patient.id;
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
@@ -117,6 +121,7 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
   const [draftSelection, setDraftSelection] = useState<ToothSelection[]>([]);
   const [activeColor, setActiveColor] = useState<string | undefined>(undefined);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const [conflictingAllergies, setConflictingAllergies] = useState<AllergyKey[]>([]);
 
   const [items, setItems] = useState<ItemRow[]>([]);
   const [lastAddedKeys, setLastAddedKeys] = useState<string[]>([]);
@@ -159,6 +164,7 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
     setDraftSelection([]);
     setActiveColor(undefined);
     setDraftError(null);
+    setConflictingAllergies([]);
   }
 
   function handlePickPrestacion(prestacion: Prestacion) {
@@ -171,6 +177,8 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
     setDraftSelection(selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces));
     setActiveColor(config.markColor);
     setDraftError(null);
+    const detected = detectAllergensInPrestacion(prestacion.name);
+    setConflictingAllergies(detected.filter((a) => patient.allergies.includes(a)));
   }
 
   function openCustomItem() {
@@ -181,6 +189,7 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
     setDraftSelection([]);
     setActiveColor(undefined);
     setDraftError(null);
+    setConflictingAllergies([]);
   }
 
   function closeCustomItem() {
@@ -477,6 +486,16 @@ export function TreatmentPlanFormModal({ patientId, onClose, onCreated }: Treatm
                   </div>
                 )}
               </div>
+
+              {conflictingAllergies.length > 0 && (
+                <div className="rounded-lg bg-red-50 px-3 py-2.5 text-xs text-red-700 ring-1 ring-red-200">
+                  <p className="flex items-center gap-1.5 font-semibold">
+                    <AlertTriangleIcon className="h-4 w-4 shrink-0" />
+                    Este paciente es alérgico a: {conflictingAllergies.map((a) => ALLERGY_LABEL[a]).join(', ')}. Verifica antes de continuar.
+                  </p>
+                  {patient.allergyNotes && <p className="mt-1">{patient.allergyNotes}</p>}
+                </div>
+              )}
 
               {showActiveBanner && activePrestacion && activeMode && (
                 <div className="rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
