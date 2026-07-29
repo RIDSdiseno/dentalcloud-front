@@ -13,6 +13,7 @@ import {
   IdBadgeIcon,
   ReceiptIcon,
   ShieldIcon,
+  StarIcon,
   ToothCloudIcon,
   UsersIcon,
   XrayIcon,
@@ -69,6 +70,7 @@ type SidebarProps = {
 export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: SidebarProps) {
   const location = useLocation();
   const { user } = useAuth();
+  const isEstetica = user?.clinicaTipo === 'estetica';
   const isSuperAdmin = user?.role === 'super_admin';
   const navItems = isSuperAdmin
     ? SUPER_ADMIN_NAV_ITEMS
@@ -92,18 +94,26 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col bg-gradient-to-b from-[#0b3050] to-[#061524] text-white transition-transform duration-200 lg:static lg:translate-x-0 lg:transition-[width] ${
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
-        } ${collapsed ? 'lg:w-[76px]' : 'lg:w-64'}`}
+        className={`fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col bg-gradient-to-b text-white transition-transform duration-200 lg:static lg:translate-x-0 lg:transition-[width] ${
+          isEstetica ? 'from-[#5c1338] to-[#2b0817]' : 'from-[#0b3050] to-[#061524]'
+        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'lg:w-[76px]' : 'lg:w-64'}`}
       >
         <div className="flex h-16 items-center gap-2 px-4">
           <Link to="/" onClick={onCloseMobile} className="flex flex-1 items-center gap-2 overflow-hidden">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/20 text-brand-400">
-              <ToothCloudIcon className="h-5 w-5" />
+              {isEstetica ? <StarIcon className="h-5 w-5" /> : <ToothCloudIcon className="h-5 w-5" />}
             </div>
             {!collapsed && (
               <span className="truncate text-lg font-bold tracking-tight">
-                Dental<span className="text-brand-400">Cloud</span>
+                {isEstetica ? (
+                  <>
+                    Estética<span className="text-brand-400">Cloud</span>
+                  </>
+                ) : (
+                  <>
+                    Dental<span className="text-brand-400">Cloud</span>
+                  </>
+                )}
               </span>
             )}
           </Link>

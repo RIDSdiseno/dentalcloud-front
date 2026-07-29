@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { useAuth } from '../../context/AuthContext';
+import { applyTenantTheme, resetTenantTheme } from '../../theme';
 
 export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    applyTenantTheme(user?.clinicaTipo);
+    return () => {
+      resetTenantTheme();
+    };
+  }, [user?.clinicaTipo]);
 
   return (
     <div className="flex h-screen bg-slate-100">

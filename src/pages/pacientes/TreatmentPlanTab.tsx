@@ -21,6 +21,7 @@ import {
   UsersIcon,
 } from '../../components/icons';
 import { TreatmentPlanFormModal } from './TreatmentPlanFormModal';
+import { useAuth } from '../../context/AuthContext';
 
 const STATUS_OPTIONS: TreatmentStatus[] = ['sin_iniciar', 'en_tratamiento', 'terminado', 'alta'];
 
@@ -62,6 +63,8 @@ function PlanCard({
   onDeleted: (id: string) => void;
   onError: (message: string) => void;
 }) {
+  const { user } = useAuth();
+  const isEstetica = user?.clinicaTipo === 'estetica';
   const [expanded, setExpanded] = useState(false);
   const [newDescription, setNewDescription] = useState('');
   const [newCost, setNewCost] = useState('');
@@ -212,7 +215,11 @@ function PlanCard({
                   className={`flex-1 text-sm ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}
                 >
                   {item.description}
-                  {item.toothNumber && <span className="ml-1.5 text-xs text-slate-400">(Pieza {item.toothNumber})</span>}
+                  {item.toothNumber && (
+                    <span className="ml-1.5 text-xs text-slate-400">
+                      ({isEstetica ? 'Zona' : 'Pieza'}: {item.toothNumber})
+                    </span>
+                  )}
                 </span>
                 <span className="text-sm text-slate-500">{formatCLP(item.cost)}</span>
                 <button

@@ -16,6 +16,7 @@ export type User = {
   role: string;
   clinicaId: string | null;
   clinicaModules: ClinicaModules | null;
+  clinicaTipo: string | null;
   rxEnabled: boolean | null;
 };
 

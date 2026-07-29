@@ -18,6 +18,7 @@ export type Clinica = {
   id: string;
   name: string;
   active: boolean;
+  tipo: string;
   rxEnabled: boolean;
   modules: ClinicaModules;
   createdAt: string;
@@ -153,7 +154,7 @@ export async function fetchAllObservations() {
 
 export async function updateClinica(
   id: string,
-  patch: { name?: string; active?: boolean; rxEnabled?: boolean; modules?: Partial<ClinicaModules> }
+  patch: { name?: string; active?: boolean; tipo?: string; rxEnabled?: boolean; modules?: Partial<ClinicaModules> }
 ) {
   const { data } = await api.patch<{ clinica: Clinica }>(`/clinicas/${id}`, patch);
   return data.clinica;

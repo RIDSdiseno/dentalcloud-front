@@ -42,7 +42,7 @@ import { ConsentimientosTab } from './ConsentimientosTab';
 const TABS = [
   { key: 'datos', label: 'Datos paciente', icon: IdBadgeIcon },
   { key: 'horas', label: 'Horas', icon: ClockIcon },
-  { key: 'tratamiento', label: 'Plan de tratamiento', icon: ClipboardIcon },
+  { key: 'tratamiento', label: 'Tratamientos', icon: ClipboardIcon },
   { key: 'evoluciones', label: 'Evoluciones', icon: ActivityIcon },
   { key: 'cartola', label: 'Cartola', icon: ReceiptIcon },
   { key: 'observaciones', label: 'Observaciones', icon: ChatIcon },

@@ -11,7 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatCLP } from '../../utils/treatmentStatus';
 import { AlertTriangleIcon, CheckIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
-import { Odontogram, type OdontogramMark, type OdontogramMode, type ToothSelection } from './Odontogram';
+import { Odontogram, type OdontogramMark, type OdontogramMode, type ToothSelection, type ToothSurface } from './Odontogram';
 import {
   areaLabel,
   formatOdontogramSelection,
@@ -19,7 +19,52 @@ import {
   selectionFromDefaults,
   toothNumberForBackend,
 } from './odontogramConfig';
+import { FacialMap } from './FacialMap';
+import { formatFacialSelection, getFacialConfig, zoneAreaLabel, zoneNumberForBackend } from './facialZoneConfig';
 import { detectAllergensInPrestacion } from './allergenDetection';
+
+// A partir de aquí, "tooth"/"pieza" siempre puede ser una zona facial cuando la
+// clínica es de tipo "estetica" — ver TreatmentPlanFormModal({ isEstetica }).
+function pickConfig(isEstetica: boolean, prestacion: Prestacion) {
+  if (isEstetica) {
+    const config = getFacialConfig(prestacion);
+    return {
+      mode: config.mode,
+      markColor: undefined as string | undefined,
+      defaultTeeth: undefined as string[] | undefined,
+      defaultSurfaces: undefined as ToothSurface[] | undefined,
+    };
+  }
+  const config = getOdontogramConfig(prestacion);
+  return {
+    mode: config.mode,
+    markColor: config.markColor,
+    defaultTeeth: config.defaultTeeth,
+    defaultSurfaces: config.defaultSurfaces,
+  };
+}
+
+function selectionLabel(isEstetica: boolean, mode: OdontogramMode, selection: ToothSelection[]): string {
+  return isEstetica ? formatFacialSelection(mode, selection) : formatOdontogramSelection(mode, selection);
+}
+
+function areaLabelFor(isEstetica: boolean, mode: OdontogramMode): string {
+  return isEstetica ? zoneAreaLabel(mode) : areaLabel(mode);
+}
+
+function locationForBackend(isEstetica: boolean, mode: OdontogramMode, selection: ToothSelection[]): string | null {
+  return isEstetica ? zoneNumberForBackend(mode, selection) : toothNumberForBackend(mode, selection);
+}
+
+const MODE_INSTRUCTIONS_ESTETICA: Partial<Record<OdontogramMode, string>> = {
+  session: 'Esta prestación aplica a todo el rostro. Presiona "Agregar prestación" para confirmarla.',
+  tooth: 'Selecciona una o más zonas del rostro donde se aplicará el procedimiento.',
+};
+
+const CUSTOM_MODE_OPTIONS_ESTETICA: { value: OdontogramMode; label: string }[] = [
+  { value: 'session', label: 'Todo el rostro' },
+  { value: 'tooth', label: 'Zona(s)' },
+];
 
 type ItemRow = {
   key: string;
@@ -69,9 +114,9 @@ function createMarksFromItem(item: ItemRow): OdontogramMark[] {
   }));
 }
 
-function detailLabel(item: ItemRow): string {
-  if (item.odontogramMode === 'session') return 'Aplicación: toda la boca';
-  return formatOdontogramSelection(item.odontogramMode, item.odontogramSelection);
+function detailLabel(item: ItemRow, isEstetica: boolean): string {
+  if (item.odontogramMode === 'session') return isEstetica ? 'Aplicación: todo el rostro' : 'Aplicación: toda la boca';
+  return selectionLabel(isEstetica, item.odontogramMode, item.odontogramSelection);
 }
 
 type TreatmentPlanFormModalProps = {
@@ -96,6 +141,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
   const patientId = patient.id;
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const isEstetica = user?.clinicaTipo === 'estetica';
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [error, setError] = useState<string | null>(null);
@@ -169,7 +215,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
 
   function handlePickPrestacion(prestacion: Prestacion) {
     setPrestacionSearch('');
-    const config = getOdontogramConfig(prestacion);
+    const config = pickConfig(isEstetica, prestacion);
 
     setActivePrestacion(prestacion);
     setIsCustomActive(false);
@@ -212,7 +258,9 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
       setDraftError(
         activeMode === 'surface'
           ? 'Selecciona al menos una cara antes de agregar la prestación.'
-          : 'Selecciona al menos una pieza antes de agregar la prestación.'
+          : isEstetica
+            ? 'Selecciona al menos una zona antes de agregar la prestación.'
+            : 'Selecciona al menos una pieza antes de agregar la prestación.'
       );
       return;
     }
@@ -228,7 +276,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
       const row: ItemRow = {
         key: `custom-${Date.now()}`,
         description: customDescription.trim(),
-        toothNumber: toothNumberForBackend(activeMode, draftSelection),
+        toothNumber: locationForBackend(isEstetica, activeMode, draftSelection),
         listPrice: cost,
         convenioDiscountPercent: 0,
         cost,
@@ -250,7 +298,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
       key: `${activePrestacion.id}-${Date.now()}`,
       prestacionId: activePrestacion.id,
       description: activePrestacion.name,
-      toothNumber: toothNumberForBackend(activeMode, draftSelection),
+      toothNumber: locationForBackend(isEstetica, activeMode, draftSelection),
       listPrice: activePrestacion.basePrice,
       convenioDiscountPercent: discount,
       cost: price,
@@ -449,7 +497,9 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                     <input
                       value={prestacionSearch}
                       onChange={(e) => setPrestacionSearch(e.target.value)}
-                      placeholder="Ej: destartraje, resina, corona..."
+                      placeholder={
+                        isEstetica ? 'Ej: botox, ácido hialurónico, rinomodelación...' : 'Ej: destartraje, resina, corona...'
+                      }
                       className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
                     />
                   </div>
@@ -500,9 +550,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
               {showActiveBanner && activePrestacion && activeMode && (
                 <div className="rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
                   <p className="font-semibold">Prestación seleccionada: {activePrestacion.name}</p>
-                  <p className="mt-0.5">{MODE_INSTRUCTIONS[activeMode]}</p>
+                  <p className="mt-0.5">
+                    {isEstetica ? MODE_INSTRUCTIONS_ESTETICA[activeMode] : MODE_INSTRUCTIONS[activeMode]}
+                  </p>
                   {draftSelection.length > 0 && (
-                    <p className="mt-1 font-medium">{formatOdontogramSelection(activeMode, draftSelection)}</p>
+                    <p className="mt-1 font-medium">{selectionLabel(isEstetica, activeMode, draftSelection)}</p>
                   )}
                   {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
                   <div className="mt-2 flex gap-2">
@@ -524,14 +576,25 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                 </div>
               )}
 
-              <Odontogram
-                mode={activeMode ?? 'session'}
-                selection={draftSelection}
-                onSelectionChange={setDraftSelection}
-                marks={odontogramMarks}
-                onModeChange={isCustomActive ? handleCustomModeChange : undefined}
-                allowedModes={isCustomActive || !activeMode ? undefined : [activeMode]}
-              />
+              {isEstetica ? (
+                <FacialMap
+                  mode={activeMode ?? 'session'}
+                  selection={draftSelection}
+                  onSelectionChange={setDraftSelection}
+                  marks={odontogramMarks}
+                  onModeChange={isCustomActive ? handleCustomModeChange : undefined}
+                  allowedModes={isCustomActive || !activeMode ? undefined : [activeMode]}
+                />
+              ) : (
+                <Odontogram
+                  mode={activeMode ?? 'session'}
+                  selection={draftSelection}
+                  onSelectionChange={setDraftSelection}
+                  marks={odontogramMarks}
+                  onModeChange={isCustomActive ? handleCustomModeChange : undefined}
+                  allowedModes={isCustomActive || !activeMode ? undefined : [activeMode]}
+                />
+              )}
 
               <div>
                 {showCustomItem ? (
@@ -556,7 +619,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                         onChange={(e) => handleCustomModeChange(e.target.value as OdontogramMode)}
                         className="rounded-lg border border-slate-300 px-2 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
                       >
-                        {CUSTOM_MODE_OPTIONS.map((opt) => (
+                        {(isEstetica ? CUSTOM_MODE_OPTIONS_ESTETICA : CUSTOM_MODE_OPTIONS).map((opt) => (
                           <option key={opt.value} value={opt.value}>
                             {opt.label}
                           </option>
@@ -565,7 +628,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                     </div>
                     {customMode !== 'session' && draftSelection.length > 0 && (
                       <p className="text-xs font-medium text-slate-500">
-                        {formatOdontogramSelection(customMode, draftSelection)}
+                        {selectionLabel(isEstetica, customMode, draftSelection)}
                       </p>
                     )}
                     {draftError && <p className="text-xs font-medium text-red-600">{draftError}</p>}
@@ -630,7 +693,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            {areaLabel(item.odontogramMode)}
+                            {areaLabelFor(isEstetica, item.odontogramMode)}
                           </p>
                           <p className="break-words text-sm font-medium text-slate-700">
                             {item.description}
@@ -638,7 +701,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                               <span className="ml-1 text-xs text-brand-600">-{item.convenioDiscountPercent}%</span>
                             )}
                           </p>
-                          <p className="mt-0.5 break-words text-xs text-slate-400">{detailLabel(item)}</p>
+                          <p className="mt-0.5 break-words text-xs text-slate-400">{detailLabel(item, isEstetica)}</p>
                         </div>
                         <button
                           type="button"
@@ -693,8 +756,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                     <tr key={item.key}>
                       <td className="px-3 py-2 text-slate-700">{item.description}</td>
                       <td className="px-3 py-2 text-slate-500">
-                        {areaLabel(item.odontogramMode)}
-                        <div className="text-xs text-slate-400">{detailLabel(item)}</div>
+                        {areaLabelFor(isEstetica, item.odontogramMode)}
+                        <div className="text-xs text-slate-400">{detailLabel(item, isEstetica)}</div>
                       </td>
                       <td className="px-3 py-2 text-right text-slate-500">{formatCLP(item.listPrice)}</td>
                       <td className="px-3 py-2 text-right text-slate-500">

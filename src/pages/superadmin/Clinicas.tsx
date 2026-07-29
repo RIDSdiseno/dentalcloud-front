@@ -10,10 +10,13 @@ import {
   FolderIcon,
   ReceiptIcon,
   ShieldIcon,
+  StarIcon,
   ToothCloudIcon,
   UsersIcon,
   XrayIcon,
 } from '../../components/icons';
+
+const TIPO_LABELS: Record<string, string> = { dental: 'Dental', estetica: 'Estética facial' };
 
 const MODULE_LABELS: Record<ClinicaModuleKey, string> = {
   pacientes: 'Pacientes',
@@ -116,6 +119,18 @@ function ClinicaCard({
     }
   }
 
+  async function handleTipoChange(value: string) {
+    setBusyField('tipo');
+    setError(null);
+    try {
+      onChange(await updateClinica(clinica.id, { tipo: value }));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo actualizar la clínica'));
+    } finally {
+      setBusyField(null);
+    }
+  }
+
   async function handleRxToggle(value: boolean) {
     setBusyField('rx');
     setError(null);
@@ -145,7 +160,7 @@ function ClinicaCard({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600">
-            <ToothCloudIcon className="h-5 w-5" />
+            {clinica.tipo === 'estetica' ? <StarIcon className="h-5 w-5" /> : <ToothCloudIcon className="h-5 w-5" />}
           </span>
           <div>
             <h2 className="text-base font-bold text-slate-900">{clinica.name}</h2>
@@ -155,6 +170,18 @@ function ClinicaCard({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <select
+            value={clinica.tipo}
+            onChange={(e) => handleTipoChange(e.target.value)}
+            disabled={busyField === 'tipo'}
+            className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 outline-none focus:border-brand-500 disabled:opacity-60"
+          >
+            {Object.entries(TIPO_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
               clinica.active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200'
