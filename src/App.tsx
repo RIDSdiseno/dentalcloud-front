@@ -8,6 +8,7 @@ import AgendaDiaria from './pages/agenda/AgendaDiaria';
 import Pacientes from './pages/pacientes/Pacientes';
 import FichaPaciente from './pages/pacientes/FichaPaciente';
 import Profesionales from './pages/profesionales/Profesionales';
+import Catalogo from './pages/catalogo/Catalogo';
 import ConsentimientoPublico from './pages/consentimiento/ConsentimientoPublico';
 import Clinicas from './pages/superadmin/Clinicas';
 import ClinicaDetail from './pages/superadmin/ClinicaDetail';
@@ -33,6 +34,7 @@ function App() {
           <Route path="/terminos" element={<ComingSoon title="Términos y políticas" />} />
           <Route element={<AdminRoute />}>
             <Route path="/profesionales" element={<Profesionales />} />
+            <Route path="/catalogo" element={<Catalogo />} />
           </Route>
           <Route element={<SuperAdminRoute />}>
             <Route path="/admin/clinicas" element={<Clinicas />} />

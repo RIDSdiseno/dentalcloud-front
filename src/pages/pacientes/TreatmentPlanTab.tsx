@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   fetchTreatmentPlans,
   deleteTreatmentPlan,
@@ -6,6 +6,7 @@ import {
   updateTreatmentItem,
   deleteTreatmentItem,
   updateTreatmentPlan,
+  type TreatmentItem,
   type TreatmentPlan,
   type TreatmentStatus,
 } from '../../api/treatmentPlans';
@@ -21,9 +22,51 @@ import {
   UsersIcon,
 } from '../../components/icons';
 import { TreatmentPlanFormModal } from './TreatmentPlanFormModal';
+import { FacialMap } from './FacialMap';
+import { parseTreatedZones } from './facialZoneConfig';
 import { useAuth } from '../../context/AuthContext';
 
 const STATUS_OPTIONS: TreatmentStatus[] = ['sin_iniciar', 'en_tratamiento', 'terminado', 'alta'];
+
+function ItemNotes({
+  item,
+  onUpdated,
+  onError,
+}: {
+  item: TreatmentItem;
+  onUpdated: (plan: TreatmentPlan) => void;
+  onError: (message: string) => void;
+}) {
+  const [value, setValue] = useState(item.notes ?? '');
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleBlur() {
+    const trimmed = value.trim();
+    if (trimmed === (item.notes ?? '')) return;
+    setIsSaving(true);
+    try {
+      const plan = await updateTreatmentItem(item.id, { notes: trimmed || null });
+      onUpdated(plan);
+    } catch (err) {
+      onError(getErrorMessage(err, 'No se pudo guardar la nota'));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <textarea
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onClick={(e) => e.stopPropagation()}
+      onBlur={handleBlur}
+      disabled={isSaving}
+      rows={1}
+      placeholder="Notas clínicas (ej. producto usado, reacción del paciente)..."
+      className="w-full resize-none rounded-lg border border-transparent bg-white/70 px-2 py-1 text-xs text-slate-500 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60"
+    />
+  );
+}
 
 function Donut({ percent }: { percent: number }) {
   const radius = 40;
@@ -204,32 +247,35 @@ function PlanCard({
         <div className="border-t border-slate-100 p-4">
           <div className="flex flex-col gap-2">
             {plan.items.map((item) => (
-              <div key={item.id} className="flex items-center gap-3 rounded-lg bg-slate-50 px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={item.completed}
-                  onChange={(e) => handleToggleItem(item.id, e.target.checked)}
-                  className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
-                />
-                <span
-                  className={`flex-1 text-sm ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}
-                >
-                  {item.description}
-                  {item.toothNumber && (
-                    <span className="ml-1.5 text-xs text-slate-400">
-                      ({isEstetica ? 'Zona' : 'Pieza'}: {item.toothNumber})
-                    </span>
-                  )}
-                </span>
-                <span className="text-sm text-slate-500">{formatCLP(item.cost)}</span>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteItem(item.id)}
-                  aria-label="Eliminar procedimiento"
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-                >
-                  <TrashIcon className="h-3.5 w-3.5" />
-                </button>
+              <div key={item.id} className="flex flex-col gap-1.5 rounded-lg bg-slate-50 px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={item.completed}
+                    onChange={(e) => handleToggleItem(item.id, e.target.checked)}
+                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  />
+                  <span
+                    className={`flex-1 text-sm ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+                  >
+                    {item.description}
+                    {item.toothNumber && (
+                      <span className="ml-1.5 text-xs text-slate-400">
+                        ({isEstetica ? 'Zona' : 'Pieza'}: {item.toothNumber})
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-sm text-slate-500">{formatCLP(item.cost)}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteItem(item.id)}
+                    aria-label="Eliminar procedimiento"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <ItemNotes item={item} onUpdated={onUpdated} onError={onError} />
               </div>
             ))}
           </div>
@@ -269,6 +315,8 @@ function PlanCard({
 
 export function TreatmentPlanTab({ patient }: { patient: Patient }) {
   const patientId = patient.id;
+  const { user } = useAuth();
+  const isEstetica = user?.clinicaTipo === 'estetica';
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -292,6 +340,16 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
   const allItems = plans.flatMap((p) => p.items);
   const completedCount = allItems.filter((i) => i.completed).length;
   const percentTreated = allItems.length ? (completedCount / allItems.length) * 100 : 0;
+
+  const treatedZoneMarks = useMemo(
+    () =>
+      Array.from(new Set(allItems.flatMap((i) => parseTreatedZones(i.toothNumber)))).map((tooth) => ({
+        tooth,
+        mode: 'tooth' as const,
+        surfaces: ['center' as const],
+      })),
+    [allItems]
+  );
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -323,6 +381,17 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
             Aún no hay abonos. Cuando registres pagos vas a ver acá el porcentaje abonado.
           </p>
         </div>
+
+        {isEstetica && (
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <h3 className="mb-3 text-sm font-semibold text-slate-800">Historial de zonas tratadas</h3>
+            {treatedZoneMarks.length === 0 ? (
+              <p className="text-sm text-slate-400">Aún no hay zonas registradas para este paciente.</p>
+            ) : (
+              <FacialMap mode="tooth" selection={[]} onSelectionChange={() => undefined} marks={treatedZoneMarks} readOnly />
+            )}
+          </div>
+        )}
       </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">

@@ -77,6 +77,7 @@ type ItemRow = {
   odontogramMode: OdontogramMode;
   odontogramSelection: ToothSelection[];
   odontogramColor?: string;
+  notes?: string;
 };
 
 const MODE_INSTRUCTIONS: Record<OdontogramMode, string> = {
@@ -166,6 +167,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
   const [activeMode, setActiveMode] = useState<OdontogramMode | null>(null);
   const [draftSelection, setDraftSelection] = useState<ToothSelection[]>([]);
   const [activeColor, setActiveColor] = useState<string | undefined>(undefined);
+  const [draftNotes, setDraftNotes] = useState('');
   const [draftError, setDraftError] = useState<string | null>(null);
   const [conflictingAllergies, setConflictingAllergies] = useState<AllergyKey[]>([]);
 
@@ -209,6 +211,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setActiveMode(null);
     setDraftSelection([]);
     setActiveColor(undefined);
+    setDraftNotes('');
     setDraftError(null);
     setConflictingAllergies([]);
   }
@@ -222,6 +225,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setActiveMode(config.mode);
     setDraftSelection(selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces));
     setActiveColor(config.markColor);
+    setDraftNotes('');
     setDraftError(null);
     const detected = detectAllergensInPrestacion(prestacion.name);
     setConflictingAllergies(detected.filter((a) => patient.allergies.includes(a)));
@@ -282,6 +286,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         cost,
         odontogramMode: activeMode,
         odontogramSelection: draftSelection,
+        notes: draftNotes.trim() || undefined,
       };
       setItems((prev) => [...prev, row]);
       setLastAddedKeys([row.key]);
@@ -305,6 +310,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
       odontogramMode: activeMode,
       odontogramSelection: draftSelection,
       odontogramColor: activeColor,
+      notes: draftNotes.trim() || undefined,
     };
     setItems((prev) => [...prev, row]);
     setLastAddedKeys([row.key]);
@@ -358,6 +364,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         toothNumber: i.toothNumber ?? undefined,
         listPrice: i.listPrice,
         convenioDiscountPercent: i.convenioDiscountPercent,
+        notes: i.notes,
       }));
 
       const plan = await createTreatmentPlan({
@@ -557,6 +564,13 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                     <p className="mt-1 font-medium">{selectionLabel(isEstetica, activeMode, draftSelection)}</p>
                   )}
                   {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
+                  <textarea
+                    value={draftNotes}
+                    onChange={(e) => setDraftNotes(e.target.value)}
+                    placeholder="Notas clínicas (ej. producto usado, reacción del paciente)..."
+                    rows={2}
+                    className="mt-2 w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  />
                   <div className="mt-2 flex gap-2">
                     <button
                       type="button"
@@ -584,6 +598,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                   marks={odontogramMarks}
                   onModeChange={isCustomActive ? handleCustomModeChange : undefined}
                   allowedModes={isCustomActive || !activeMode ? undefined : [activeMode]}
+                  allowedZones={!isCustomActive ? activePrestacion?.allowedZones : undefined}
                 />
               ) : (
                 <Odontogram

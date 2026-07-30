@@ -234,18 +234,20 @@ export default function ClinicaDetail() {
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 className="mb-4 text-sm font-semibold text-slate-800">Módulos habilitados</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
-            <span className="flex items-center gap-2 text-sm text-slate-700">
-              <XrayIcon className="h-4 w-4 text-slate-400" />
-              Módulo Rx
-            </span>
-            <Toggle
-              checked={clinica.rxEnabled}
-              onChange={(value) => applyUpdate({ rxEnabled: value }, 'rx')}
-              label={`Módulo Rx para ${clinica.name}`}
-              disabled={busyField === 'rx'}
-            />
-          </div>
+          {clinica.tipo !== 'estetica' && (
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
+              <span className="flex items-center gap-2 text-sm text-slate-700">
+                <XrayIcon className="h-4 w-4 text-slate-400" />
+                Módulo Rx
+              </span>
+              <Toggle
+                checked={clinica.rxEnabled}
+                onChange={(value) => applyUpdate({ rxEnabled: value }, 'rx')}
+                label={`Módulo Rx para ${clinica.name}`}
+                disabled={busyField === 'rx'}
+              />
+            </div>
+          )}
           {MODULE_ORDER.map((key) => {
             const Icon = MODULE_ICONS[key];
             return (

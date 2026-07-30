@@ -8,6 +8,7 @@ import { CrearClinicaModal } from './CrearClinicaModal';
 import { TIPO_LABELS } from './clinicaShared';
 import { PlusIcon, StarIcon, ToothCloudIcon, UsersIcon } from '../../components/icons';
 
+
 export default function Clinicas() {
   const navigate = useNavigate();
   const [clinicas, setClinicas] = useState<Clinica[]>([]);

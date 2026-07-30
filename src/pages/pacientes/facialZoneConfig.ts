@@ -79,3 +79,19 @@ export function zoneNumberForBackend(mode: OdontogramMode, selection: ToothSelec
   if (zones.length === 0) return null;
   return zones.map(zoneLabel).join(', ');
 }
+
+const LABEL_TO_ZONE: Record<string, FacialZoneKey> = Object.fromEntries(
+  FACIAL_ZONES.map((zone) => [FACIAL_ZONE_LABELS[zone], zone])
+);
+
+// `toothNumber` en TreatmentItem guarda las etiquetas ya formateadas (ej.
+// "Frente, Mentón" o "Todo el rostro"), no las keys crudas — este helper las
+// vuelve a mapear a keys de FACIAL_ZONES para poder resaltarlas en el mapa
+// facial (ver historial de zonas tratadas en TreatmentPlanTab).
+export function parseTreatedZones(toothNumber: string | null): FacialZoneKey[] {
+  if (!toothNumber) return [];
+  return toothNumber
+    .split(',')
+    .map((label) => LABEL_TO_ZONE[label.trim()])
+    .filter((zone): zone is FacialZoneKey => zone !== undefined);
+}
