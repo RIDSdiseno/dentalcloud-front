@@ -105,15 +105,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
             </div>
             {!collapsed && (
               <span className="truncate text-lg font-bold tracking-tight">
-                {isEstetica ? (
-                  <>
-                    Estética<span className="text-brand-400">Cloud</span>
-                  </>
-                ) : (
-                  <>
-                    Dental<span className="text-brand-400">Cloud</span>
-                  </>
-                )}
+                Dental<span className="text-brand-400">Cloud</span>
               </span>
             )}
           </Link>

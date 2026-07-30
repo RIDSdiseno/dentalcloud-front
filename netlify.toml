@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# El frontend usa React Router (client-side routing). Sin esta regla, Netlify
+# busca un archivo físico en rutas como /pacientes/:id y devuelve 404 en vez
+# de dejar que la app cargue y resuelva la ruta en el navegador.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

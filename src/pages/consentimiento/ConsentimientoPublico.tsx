@@ -26,7 +26,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
         <div className="mb-6 flex items-center gap-2 text-brand-600">
           <ShieldIcon className="h-6 w-6" />
-          <span className="text-lg font-bold text-slate-900">DentalCloud</span>
+          <span className="text-lg font-bold text-slate-900">fordentcloud</span>
         </div>
         {children}
       </div>
