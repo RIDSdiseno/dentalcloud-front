@@ -17,6 +17,8 @@ export type User = {
   clinicaId: string | null;
   clinicaModules: ClinicaModules | null;
   clinicaTipo: string | null;
+  clinicaName: string | null;
+  clinicaLogoUrl: string | null;
   rxEnabled: boolean | null;
 };
 
