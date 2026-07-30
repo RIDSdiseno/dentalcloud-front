@@ -14,6 +14,9 @@ export type TreatmentItem = {
   convenioDiscountPercent: number;
   cost: number;
   completed: boolean;
+  // Observación clínica del procedimiento (ej. producto usado, reacción del
+  // paciente) — distinta de las notas generales del presupuesto.
+  notes: string | null;
   createdAt: string;
 };
 
@@ -46,6 +49,7 @@ export type TreatmentItemInput = {
   toothNumber?: string;
   listPrice?: number;
   convenioDiscountPercent?: number;
+  notes?: string;
 };
 
 export type TreatmentPlanInput = {
@@ -97,7 +101,7 @@ export async function addTreatmentItem(planId: string, item: TreatmentItemInput)
 
 export async function updateTreatmentItem(
   id: string,
-  patch: { description?: string; cost?: number; completed?: boolean; toothNumber?: string | null }
+  patch: { description?: string; cost?: number; completed?: boolean; toothNumber?: string | null; notes?: string | null }
 ) {
   const { data } = await api.patch<{ plan: TreatmentPlan }>(`/treatment-items/${id}`, patch);
   return data.plan;

@@ -139,6 +139,12 @@ interface FacialMapProps {
   marks?: OdontogramMark[];
   onModeChange?: (mode: OdontogramMode) => void;
   allowedModes?: OdontogramMode[];
+  // Zonas a las que está restringida la prestación activa (ver Prestacion.
+  // allowedZones en el catálogo). Array vacío o undefined = sin restricción.
+  allowedZones?: string[];
+  // Vista de solo consulta (ej. historial de zonas tratadas): sin selección,
+  // sin instrucciones de uso, los puntos no son clickeables.
+  readOnly?: boolean;
 }
 
 function ZoneDot({
@@ -151,6 +157,7 @@ function ZoneDot({
   isSelected,
   isMarked,
   disabled,
+  readOnly = false,
   onToggle,
 }: {
   x: number;
@@ -162,6 +169,7 @@ function ZoneDot({
   isSelected: boolean;
   isMarked: boolean;
   disabled: boolean;
+  readOnly?: boolean;
   onToggle: () => void;
 }) {
   const dotColor = isSelected
@@ -174,15 +182,21 @@ function ZoneDot({
 
   return (
     <g
-      role="button"
+      role={readOnly ? undefined : 'button'}
       aria-label={label}
-      aria-pressed={isSelected}
-      tabIndex={disabled ? -1 : 0}
-      onClick={onToggle}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onToggle();
-      }}
-      className={`group outline-none transition-colors ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer focus-visible:opacity-80'}`}
+      aria-pressed={readOnly ? undefined : isSelected}
+      tabIndex={readOnly || disabled ? -1 : 0}
+      onClick={readOnly ? undefined : onToggle}
+      onKeyDown={
+        readOnly
+          ? undefined
+          : (e) => {
+              if (e.key === 'Enter' || e.key === ' ') onToggle();
+            }
+      }
+      className={`group outline-none transition-colors ${
+        readOnly ? 'cursor-default' : disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer focus-visible:opacity-80'
+      }`}
     >
       <line x1={x} y1={y} x2={labelX} y2={labelY} strokeWidth={1} className={`transition-colors ${lineColor}`} />
       <circle cx={x} cy={y} r={7} strokeWidth={2} className={`transition-colors ${dotColor}`} />
@@ -198,12 +212,16 @@ function ProfilePanel({
   selectedZones,
   markedZones,
   disabled,
+  restrictedZones,
+  readOnly = false,
   onToggle,
 }: {
   flip: boolean;
   selectedZones: Set<string>;
   markedZones: Set<string>;
   disabled: boolean;
+  restrictedZones: Set<string> | null;
+  readOnly?: boolean;
   onToggle: (zone: string) => void;
 }) {
   const labelX = flip ? flipProfileX(PROFILE_LABEL_X) : PROFILE_LABEL_X;
@@ -231,6 +249,7 @@ function ProfilePanel({
 
       {PROFILE_ZONES.map((zone) => {
         const x = flip ? flipProfileX(zone.x) : zone.x;
+        const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone.key));
         return (
           <ZoneDot
             key={zone.key}
@@ -242,7 +261,8 @@ function ProfilePanel({
             label={FACIAL_ZONE_LABELS[zone.key]}
             isSelected={selectedZones.has(zone.key)}
             isMarked={markedZones.has(zone.key)}
-            disabled={disabled}
+            disabled={zoneDisabled}
+            readOnly={readOnly}
             onToggle={() => onToggle(zone.key)}
           />
         );
@@ -251,14 +271,16 @@ function ProfilePanel({
   );
 }
 
-export function FacialMap({ mode, selection, onSelectionChange, marks = [] }: FacialMapProps) {
+export function FacialMap({ mode, selection, onSelectionChange, marks = [], allowedZones, readOnly = false }: FacialMapProps) {
   const [view, setView] = useState<'frontal' | 'perfil'>('frontal');
   const selectedZones = new Set(selection.map((s) => s.tooth));
   const markedZones = new Set(marks.map((m) => m.tooth));
-  const disabled = mode === 'session';
+  const disabled = !readOnly && mode === 'session';
+  const restrictedZones = !readOnly && allowedZones && allowedZones.length > 0 ? new Set(allowedZones) : null;
 
   function toggleZone(zone: string) {
-    if (disabled) return;
+    if (readOnly || disabled) return;
+    if (restrictedZones !== null && !restrictedZones.has(zone)) return;
     if (selectedZones.has(zone)) {
       onSelectionChange(selection.filter((s) => s.tooth !== zone));
     } else {
@@ -270,9 +292,13 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [] }: Fa
     <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs text-slate-500">
-          {disabled
-            ? 'Esta prestación aplica a todo el rostro, no requiere seleccionar zonas.'
-            : 'Haz clic en un punto o en su nombre para marcar la zona a tratar.'}
+          {readOnly
+            ? 'Zonas con procedimientos registrados en el historial del paciente.'
+            : disabled
+              ? 'Esta prestación aplica a todo el rostro, no requiere seleccionar zonas.'
+              : restrictedZones
+                ? `Esta prestación solo puede aplicarse en: ${Array.from(restrictedZones).map((z) => FACIAL_ZONE_LABELS[z as FacialZoneKey] ?? z).join(', ')}.`
+                : 'Haz clic en un punto o en su nombre para marcar la zona a tratar.'}
         </p>
         <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
           {(['frontal', 'perfil'] as const).map((v) => (
@@ -337,6 +363,7 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [] }: Fa
           {FRONT_ZONE_ORDER.map((zone) => {
             const layout = FRONT_ZONE_LAYOUT[zone];
             const labelX = layout.side === 'left' ? FRONT_LEFT_LABEL_X : FRONT_RIGHT_LABEL_X;
+            const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
             return (
               <ZoneDot
                 key={zone}
@@ -348,7 +375,8 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [] }: Fa
                 label={FACIAL_ZONE_LABELS[zone]}
                 isSelected={selectedZones.has(zone)}
                 isMarked={markedZones.has(zone)}
-                disabled={disabled}
+                disabled={zoneDisabled}
+                readOnly={readOnly}
                 onToggle={() => toggleZone(zone)}
               />
             );
@@ -357,11 +385,27 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [] }: Fa
       ) : (
         <div className="flex flex-wrap items-start justify-center gap-6">
           <div className="flex flex-col items-center gap-1">
-            <ProfilePanel flip={false} selectedZones={selectedZones} markedZones={markedZones} disabled={disabled} onToggle={toggleZone} />
+            <ProfilePanel
+              flip={false}
+              selectedZones={selectedZones}
+              markedZones={markedZones}
+              disabled={disabled}
+              restrictedZones={restrictedZones}
+              readOnly={readOnly}
+              onToggle={toggleZone}
+            />
             <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
           </div>
           <div className="flex flex-col items-center gap-1">
-            <ProfilePanel flip selectedZones={selectedZones} markedZones={markedZones} disabled={disabled} onToggle={toggleZone} />
+            <ProfilePanel
+              flip
+              selectedZones={selectedZones}
+              markedZones={markedZones}
+              disabled={disabled}
+              restrictedZones={restrictedZones}
+              readOnly={readOnly}
+              onToggle={toggleZone}
+            />
             <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
           </div>
         </div>
