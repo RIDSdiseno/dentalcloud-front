@@ -10,6 +10,7 @@ import FichaPaciente from './pages/pacientes/FichaPaciente';
 import Profesionales from './pages/profesionales/Profesionales';
 import ConsentimientoPublico from './pages/consentimiento/ConsentimientoPublico';
 import Clinicas from './pages/superadmin/Clinicas';
+import ClinicaDetail from './pages/superadmin/ClinicaDetail';
 import ModuloConsumo from './pages/superadmin/ModuloConsumo';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminRoute } from './components/AdminRoute';
@@ -35,6 +36,7 @@ function App() {
           </Route>
           <Route element={<SuperAdminRoute />}>
             <Route path="/admin/clinicas" element={<Clinicas />} />
+            <Route path="/admin/clinicas/:id" element={<ClinicaDetail />} />
             <Route path="/admin/modulos/:moduleKey" element={<ModuloConsumo />} />
           </Route>
         </Route>

@@ -72,6 +72,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
   const { user } = useAuth();
   const isEstetica = user?.clinicaTipo === 'estetica';
   const isSuperAdmin = user?.role === 'super_admin';
+  const clinicaLogoUrl = !isSuperAdmin ? user?.clinicaLogoUrl : null;
   const navItems = isSuperAdmin
     ? SUPER_ADMIN_NAV_ITEMS
     : NAV_ITEMS.filter(
@@ -100,12 +101,28 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
       >
         <div className="flex h-16 items-center gap-2 px-4">
           <Link to="/" onClick={onCloseMobile} className="flex flex-1 items-center gap-2 overflow-hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/20 text-brand-400">
-              {isEstetica ? <StarIcon className="h-5 w-5" /> : <ToothCloudIcon className="h-5 w-5" />}
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-500/20 text-brand-400">
+              {clinicaLogoUrl ? (
+                <img
+                  src={clinicaLogoUrl}
+                  alt={user?.clinicaName ?? 'Logo de la clínica'}
+                  className="h-full w-full object-cover"
+                />
+              ) : isEstetica ? (
+                <StarIcon className="h-5 w-5" />
+              ) : (
+                <ToothCloudIcon className="h-5 w-5" />
+              )}
             </div>
             {!collapsed && (
               <span className="truncate text-lg font-bold tracking-tight">
-                Dental<span className="text-brand-400">Cloud</span>
+                {clinicaLogoUrl && user?.clinicaName ? (
+                  user.clinicaName
+                ) : (
+                  <>
+                    Dental<span className="text-brand-400">Cloud</span>
+                  </>
+                )}
               </span>
             )}
           </Link>

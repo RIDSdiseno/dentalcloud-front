@@ -17,8 +17,10 @@ export type ConsentStats = { pendiente: number; firmado: number; rechazado: numb
 export type Clinica = {
   id: string;
   name: string;
+  rut: string | null;
   active: boolean;
   tipo: string;
+  logoUrl: string | null;
   rxEnabled: boolean;
   modules: ClinicaModules;
   createdAt: string;
@@ -154,8 +156,39 @@ export async function fetchAllObservations() {
 
 export async function updateClinica(
   id: string,
-  patch: { name?: string; active?: boolean; tipo?: string; rxEnabled?: boolean; modules?: Partial<ClinicaModules> }
+  patch: {
+    name?: string;
+    rut?: string;
+    active?: boolean;
+    tipo?: string;
+    rxEnabled?: boolean;
+    modules?: Partial<ClinicaModules>;
+  }
 ) {
   const { data } = await api.patch<{ clinica: Clinica }>(`/clinicas/${id}`, patch);
+  return data.clinica;
+}
+
+export async function createClinica(input: {
+  name: string;
+  rut?: string;
+  tipo: string;
+  adminName: string;
+  adminEmail: string;
+  adminPassword: string;
+  logo?: File | null;
+}) {
+  const formData = new FormData();
+  formData.append('name', input.name);
+  if (input.rut) formData.append('rut', input.rut);
+  formData.append('tipo', input.tipo);
+  formData.append('adminName', input.adminName);
+  formData.append('adminEmail', input.adminEmail);
+  formData.append('adminPassword', input.adminPassword);
+  if (input.logo) formData.append('logo', input.logo);
+
+  const { data } = await api.post<{ clinica: Clinica }>('/clinicas', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data.clinica;
 }
