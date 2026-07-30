@@ -6,6 +6,9 @@ import { roleLabel } from '../../utils/roles';
 import { formatRutInput } from '../../utils/rut';
 import { ProfessionalFormModal } from './ProfessionalFormModal';
 import { ScheduleModal } from './ScheduleModal';
+import { PermisosPerfilPanel } from './PermisosPerfilPanel';
+
+const SCHEDULABLE_ROLES = ['odontologo', 'radiologo', 'operador'];
 
 function RutCell({ user, onUpdated }: { user: StaffUser; onUpdated: (user: StaffUser) => void }) {
   const [value, setValue] = useState(user.rut ? formatRutInput(user.rut) : '');
@@ -122,7 +125,7 @@ export default function Profesionales() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {user.role === 'odontologo' && (
+                    {SCHEDULABLE_ROLES.includes(user.role) && (
                       <button
                         type="button"
                         onClick={() => setScheduleFor(user)}
@@ -139,6 +142,8 @@ export default function Profesionales() {
           </table>
         )}
       </div>
+
+      <PermisosPerfilPanel />
 
       {showForm && (
         <ProfessionalFormModal

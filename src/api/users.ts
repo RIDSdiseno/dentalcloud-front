@@ -13,7 +13,7 @@ export type CreateUserInput = {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'odontologo';
+  role: 'admin' | 'odontologo' | 'radiologo' | 'operador';
 };
 
 export async function fetchUsers() {

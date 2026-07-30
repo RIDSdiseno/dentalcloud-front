@@ -20,6 +20,7 @@ export type User = {
   clinicaName: string | null;
   clinicaLogoUrl: string | null;
   rxEnabled: boolean | null;
+  permissions: Record<string, boolean> | null;
 };
 
 type AuthContextValue = {

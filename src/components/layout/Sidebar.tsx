@@ -78,7 +78,8 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
     : NAV_ITEMS.filter(
         (item) =>
           (!item.adminOnly || user?.role === 'admin') &&
-          (!item.moduleKey || user?.clinicaModules?.[item.moduleKey] !== false)
+          (!item.moduleKey || user?.clinicaModules?.[item.moduleKey] !== false) &&
+          (!item.moduleKey || user?.permissions?.[item.moduleKey] !== false)
       );
   const [openGroup, setOpenGroup] = useState<string | null>(
     navItems.find((item) => item.basePath && location.pathname.startsWith(item.basePath))?.label ?? null

@@ -135,10 +135,10 @@ export default function FichaPaciente() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const visibleTabs = TABS.filter((tab) => {
-    if (tab.key === 'rx') return user?.rxEnabled !== false;
+    if (tab.key === 'rx') return user?.rxEnabled !== false && user?.permissions?.rx !== false;
     const moduleKey = TAB_MODULE_KEYS[tab.key];
     if (!moduleKey) return true;
-    return user?.clinicaModules?.[moduleKey] !== false;
+    return user?.clinicaModules?.[moduleKey] !== false && user?.permissions?.[moduleKey] !== false;
   });
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
