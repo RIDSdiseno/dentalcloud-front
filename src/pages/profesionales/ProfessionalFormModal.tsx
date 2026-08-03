@@ -12,7 +12,7 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'odontologo' | 'admin'>('odontologo');
+  const [role, setRole] = useState<'odontologo' | 'admin' | 'radiologo' | 'operador'>('odontologo');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -83,10 +83,12 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
           <select
             id="prof-role"
             value={role}
-            onChange={(e) => setRole(e.target.value as 'odontologo' | 'admin')}
+            onChange={(e) => setRole(e.target.value as 'odontologo' | 'admin' | 'radiologo' | 'operador')}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
           >
             <option value="odontologo">Odontólogo</option>
+            <option value="radiologo">Radiólogo</option>
+            <option value="operador">Operador</option>
             <option value="admin">Administrador</option>
           </select>
         </div>
