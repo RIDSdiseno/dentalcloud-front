@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
-import { createTreatmentPlan, type TreatmentPlan, type TreatmentItemInput } from '../../api/treatmentPlans';
+import { createTreatmentPlan, uploadTreatmentPlanPhoto, type TreatmentPlan, type TreatmentItemInput } from '../../api/treatmentPlans';
 import { fetchUsers, type StaffUser } from '../../api/users';
 import { fetchSucursales, fetchPrevisiones, fetchConvenios, fetchPrestaciones } from '../../api/catalogs';
 import type { Sucursal, Prevision, Convenio, Prestacion } from '../../api/catalogs';
@@ -19,8 +19,19 @@ import {
   selectionFromDefaults,
   toothNumberForBackend,
 } from './odontogramConfig';
-import { FacialMap } from './FacialMap';
-import { formatFacialSelection, getFacialConfig, zoneAreaLabel, zoneNumberForBackend } from './facialZoneConfig';
+import { FacialMap, type FacialGender } from './FacialMap';
+import { PhotoEditorModal } from './PhotoEditorModal';
+import {
+  EMPTY_FACIAL_ANNOTATIONS,
+  FACIAL_ZONES,
+  FACIAL_ZONE_LABELS,
+  formatFacialSelection,
+  getFacialConfig,
+  zoneAreaLabel,
+  zoneNumberForBackend,
+  type FacialAnnotations,
+  type FacialZoneKey,
+} from './facialZoneConfig';
 import { detectAllergensInPrestacion } from './allergenDetection';
 
 // A partir de aquí, "tooth"/"pieza" siempre puede ser una zona facial cuando la
@@ -78,6 +89,10 @@ type ItemRow = {
   odontogramSelection: ToothSelection[];
   odontogramColor?: string;
   notes?: string;
+  productName?: string;
+  productLot?: string;
+  productExpiresAt?: string;
+  productQuantity?: string;
 };
 
 const MODE_INSTRUCTIONS: Record<OdontogramMode, string> = {
@@ -168,8 +183,28 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
   const [draftSelection, setDraftSelection] = useState<ToothSelection[]>([]);
   const [activeColor, setActiveColor] = useState<string | undefined>(undefined);
   const [draftNotes, setDraftNotes] = useState('');
+  const [draftProductName, setDraftProductName] = useState('');
+  const [draftProductLot, setDraftProductLot] = useState('');
+  const [draftProductExpiresAt, setDraftProductExpiresAt] = useState('');
+  const [draftProductQuantity, setDraftProductQuantity] = useState('');
   const [draftError, setDraftError] = useState<string | null>(null);
   const [conflictingAllergies, setConflictingAllergies] = useState<AllergyKey[]>([]);
+  const [facialAnnotations, setFacialAnnotations] = useState<FacialAnnotations>(EMPTY_FACIAL_ANNOTATIONS);
+  const [facialGender, setFacialGender] = useState<FacialGender>('mujer');
+
+  const [prestacionesTab, setPrestacionesTab] = useState<'prestaciones' | 'plantilla'>('prestaciones');
+  const [pendingPhotos, setPendingPhotos] = useState<{ key: string; blob: Blob; previewUrl: string; label: string }[]>([]);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
+  const [pendingPhotoZone, setPendingPhotoZone] = useState<FacialZoneKey>(FACIAL_ZONES[0]);
+  const [pendingPhotoMoment, setPendingPhotoMoment] = useState<'Antes' | 'Después'>('Antes');
+  const pendingPhotosRef = useRef(pendingPhotos);
+  pendingPhotosRef.current = pendingPhotos;
+
+  useEffect(() => {
+    return () => {
+      pendingPhotosRef.current.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+  }, []);
 
   const [items, setItems] = useState<ItemRow[]>([]);
   const [lastAddedKeys, setLastAddedKeys] = useState<string[]>([]);
@@ -212,6 +247,10 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setDraftSelection([]);
     setActiveColor(undefined);
     setDraftNotes('');
+    setDraftProductName('');
+    setDraftProductLot('');
+    setDraftProductExpiresAt('');
+    setDraftProductQuantity('');
     setDraftError(null);
     setConflictingAllergies([]);
   }
@@ -226,6 +265,10 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setDraftSelection(selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces));
     setActiveColor(config.markColor);
     setDraftNotes('');
+    setDraftProductName('');
+    setDraftProductLot('');
+    setDraftProductExpiresAt('');
+    setDraftProductQuantity('');
     setDraftError(null);
     const detected = detectAllergensInPrestacion(prestacion.name);
     setConflictingAllergies(detected.filter((a) => patient.allergies.includes(a)));
@@ -287,6 +330,10 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         odontogramMode: activeMode,
         odontogramSelection: draftSelection,
         notes: draftNotes.trim() || undefined,
+        productName: draftProductName.trim() || undefined,
+        productLot: draftProductLot.trim() || undefined,
+        productExpiresAt: draftProductExpiresAt || undefined,
+        productQuantity: draftProductQuantity.trim() || undefined,
       };
       setItems((prev) => [...prev, row]);
       setLastAddedKeys([row.key]);
@@ -311,6 +358,10 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
       odontogramSelection: draftSelection,
       odontogramColor: activeColor,
       notes: draftNotes.trim() || undefined,
+      productName: draftProductName.trim() || undefined,
+      productLot: draftProductLot.trim() || undefined,
+      productExpiresAt: draftProductExpiresAt || undefined,
+      productQuantity: draftProductQuantity.trim() || undefined,
     };
     setItems((prev) => [...prev, row]);
     setLastAddedKeys([row.key]);
@@ -365,9 +416,13 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         listPrice: i.listPrice,
         convenioDiscountPercent: i.convenioDiscountPercent,
         notes: i.notes,
+        productName: i.productName,
+        productLot: i.productLot,
+        productExpiresAt: i.productExpiresAt,
+        productQuantity: i.productQuantity,
       }));
 
-      const plan = await createTreatmentPlan({
+      let plan = await createTreatmentPlan({
         patientId,
         professionalId: isAdmin && professionalId ? professionalId : undefined,
         sucursalId,
@@ -377,7 +432,16 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         paymentMethod,
         notes: notes || undefined,
         items: itemInputs,
+        facialAnnotations: isEstetica ? facialAnnotations : undefined,
+        facialGender: isEstetica ? facialGender : undefined,
       });
+
+      // Las fotos de la plantilla se editan localmente (sin id de plan aún)
+      // y se suben recién ahora que el presupuesto ya existe.
+      for (const photo of pendingPhotos) {
+        plan = await uploadTreatmentPlanPhoto(plan.id, photo.blob, photo.label);
+      }
+
       onCreated(plan);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo crear el presupuesto'));
@@ -496,6 +560,123 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         {step === 2 && (
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
             <div className="flex flex-col gap-4 lg:col-span-3">
+              {isEstetica && (
+                <div className="flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setPrestacionesTab('prestaciones')}
+                    className={`rounded-md px-3 py-1.5 transition-colors ${
+                      prestacionesTab === 'prestaciones' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Tratamiento
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPrestacionesTab('plantilla')}
+                    className={`rounded-md px-3 py-1.5 transition-colors ${
+                      prestacionesTab === 'plantilla' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Plantilla fotográfica
+                  </button>
+                </div>
+              )}
+
+              {isEstetica && prestacionesTab === 'plantilla' ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-slate-500">
+                      Estas fotos se subirán junto con el presupuesto al presionar "Crear presupuesto".
+                    </p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={pendingPhotoZone}
+                        onChange={(e) => setPendingPhotoZone(e.target.value as FacialZoneKey)}
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500"
+                      >
+                        {FACIAL_ZONES.map((zone) => (
+                          <option key={zone} value={zone}>
+                            {FACIAL_ZONE_LABELS[zone]}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+                        {(['Antes', 'Después'] as const).map((l) => (
+                          <button
+                            key={l}
+                            type="button"
+                            onClick={() => setPendingPhotoMoment(l)}
+                            className={`rounded-md px-2 py-0.5 transition-colors ${
+                              pendingPhotoMoment === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                            }`}
+                          >
+                            {l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
+                    {pendingPhotos.map((photo) => (
+                      <div key={photo.key} className="group relative aspect-square overflow-hidden rounded-lg ring-1 ring-slate-200">
+                        <img src={photo.previewUrl} alt={photo.label} className="h-full w-full object-cover" />
+                        <span className="absolute bottom-1 left-1 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                          {photo.label}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPendingPhotos((prev) => {
+                              const removed = prev.find((p) => p.key === photo.key);
+                              if (removed) URL.revokeObjectURL(removed.previewUrl);
+                              return prev.filter((p) => p.key !== photo.key);
+                            })
+                          }
+                          aria-label="Eliminar foto"
+                          className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <input
+                      id="plantilla-photo-input"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setPendingPhotoFile(file);
+                        e.target.value = '';
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('plantilla-photo-input')?.click()}
+                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                      <span className="text-[11px] font-medium">Agregar ({FACIAL_ZONE_LABELS[pendingPhotoZone]})</span>
+                    </button>
+                  </div>
+                  {pendingPhotoFile && (
+                    <PhotoEditorModal
+                      file={pendingPhotoFile}
+                      onClose={() => setPendingPhotoFile(null)}
+                      onConfirm={(blob) => {
+                        const label = `${FACIAL_ZONE_LABELS[pendingPhotoZone]} — ${pendingPhotoMoment}`;
+                        setPendingPhotos((prev) => [
+                          ...prev,
+                          { key: `photo-${Date.now()}`, blob, previewUrl: URL.createObjectURL(blob), label },
+                        ]);
+                        setPendingPhotoFile(null);
+                      }}
+                    />
+                  )}
+                </div>
+              ) : (
+                <>
               <div className="relative">
                 <label className="text-sm font-medium text-slate-700">Buscar prestación</label>
                 <div className="mt-1 flex items-center gap-2">
@@ -564,10 +745,37 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                     <p className="mt-1 font-medium">{selectionLabel(isEstetica, activeMode, draftSelection)}</p>
                   )}
                   {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                    <input
+                      value={draftProductName}
+                      onChange={(e) => setDraftProductName(e.target.value)}
+                      placeholder="Producto (ej. Ácido Hialurónico)"
+                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    />
+                    <input
+                      value={draftProductLot}
+                      onChange={(e) => setDraftProductLot(e.target.value)}
+                      placeholder="N° de lote"
+                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    />
+                    <input
+                      type="date"
+                      value={draftProductExpiresAt}
+                      onChange={(e) => setDraftProductExpiresAt(e.target.value)}
+                      title="Fecha de vencimiento"
+                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    />
+                    <input
+                      value={draftProductQuantity}
+                      onChange={(e) => setDraftProductQuantity(e.target.value)}
+                      placeholder="Cantidad (ej. 1 jeringa 1ml)"
+                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    />
+                  </div>
                   <textarea
                     value={draftNotes}
                     onChange={(e) => setDraftNotes(e.target.value)}
-                    placeholder="Notas clínicas (ej. producto usado, reacción del paciente)..."
+                    placeholder="Notas clínicas (ej. reacción del paciente)..."
                     rows={2}
                     className="mt-2 w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
                   />
@@ -599,6 +807,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                   onModeChange={isCustomActive ? handleCustomModeChange : undefined}
                   allowedModes={isCustomActive || !activeMode ? undefined : [activeMode]}
                   allowedZones={!isCustomActive ? activePrestacion?.allowedZones : undefined}
+                  showZones={activeMode !== null}
+                  annotations={facialAnnotations}
+                  onAnnotationsChange={setFacialAnnotations}
+                  gender={facialGender}
+                  onGenderChange={setFacialGender}
                 />
               ) : (
                 <Odontogram
@@ -675,6 +888,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                   </button>
                 )}
               </div>
+                </>
+              )}
             </div>
 
             <div className="flex flex-col gap-3 lg:col-span-1">

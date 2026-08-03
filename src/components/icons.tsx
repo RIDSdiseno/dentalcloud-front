@@ -490,3 +490,68 @@ export function DownloadIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function PointerIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path d="M6 3l5 16 2.5-6L19 10.5 6 3Z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function PenIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path
+        d="M4 20l3.5-.9a2 2 0 0 0 1-.55L18.4 8.6a1.6 1.6 0 0 0 0-2.26l-1.24-1.24a1.6 1.6 0 0 0-2.26 0L4.95 15.05a2 2 0 0 0-.55 1L4 20Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function LineToolIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path d="M5 19 19 5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function CircleToolIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <circle cx={12} cy={12} r={7.5} />
+    </svg>
+  );
+}
+
+export function EraserIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path
+        d="M17.5 3.5 21 7l-9 9H8l-4-4L13.5 3l4 4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M3 20h9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function UndoIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path d="M4 10h9a5 5 0 1 1 0 10h-2M4 10l4-4M4 10l4 4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function RedoIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path d="M20 10h-9a5 5 0 1 0 0 10h2M20 10l-4-4M20 10l-4 4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

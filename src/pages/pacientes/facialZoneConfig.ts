@@ -17,6 +17,7 @@ export const FACIAL_ZONES = [
   'labios',
   'menton',
   'mandibula',
+  'cuello',
 ] as const;
 
 export type FacialZoneKey = (typeof FACIAL_ZONES)[number];
@@ -35,12 +36,34 @@ export const FACIAL_ZONE_LABELS: Record<FacialZoneKey, string> = {
   labios: 'Labios',
   menton: 'Mentón',
   mandibula: 'Mandíbula',
+  cuello: 'Cuello',
 };
 
 export interface FacialConfig {
   mode: OdontogramMode;
   allowMultipleZones: boolean;
 }
+
+// Trazos dibujados a mano sobre el mapa facial (ver FacialMap.tsx) — se
+// definen aquí (no en FacialMap.tsx) para que la capa de API (treatmentPlans.ts)
+// pueda tiparlos sin depender de un componente de página.
+export type FacialPoint = { x: number; y: number };
+export type FacialStroke =
+  | { id: string; tool: 'lapiz'; points: FacialPoint[] }
+  | { id: string; tool: 'linea'; from: FacialPoint; to: FacialPoint }
+  | { id: string; tool: 'circulo'; center: FacialPoint; radius: number };
+
+export type FacialAnnotations = {
+  frontal: FacialStroke[];
+  perfilDerecho: FacialStroke[];
+  perfilIzquierdo: FacialStroke[];
+};
+
+export const EMPTY_FACIAL_ANNOTATIONS: FacialAnnotations = {
+  frontal: [],
+  perfilDerecho: [],
+  perfilIzquierdo: [],
+};
 
 // A diferencia del odontograma, una prestación de estética facial siempre se
 // resuelve eligiendo una o más zonas del rostro — no requiere heurística de
