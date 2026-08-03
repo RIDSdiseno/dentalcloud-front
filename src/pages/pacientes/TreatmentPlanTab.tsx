@@ -33,6 +33,13 @@ import { FacialZonesHighlight } from './FacialMap';
 import { FACIAL_ZONES, FACIAL_ZONE_LABELS, parseTreatedZones, type FacialZoneKey } from './facialZoneConfig';
 import { useAuth } from '../../context/AuthContext';
 
+// Etiquetas de foto por procedimiento: "Antes"/"Después" para registro clínico,
+// "Sticker ficha"/"Sticker paciente" para trazabilidad de producto (ej. las dos
+// etiquetas físicas con lote que trae el Ácido Hialurónico — una se pega en la
+// ficha, la otra se entrega al paciente).
+const PHOTO_LABELS = ['Antes', 'Después', 'Sticker ficha', 'Sticker paciente'] as const;
+type PhotoLabel = (typeof PHOTO_LABELS)[number];
+
 function PlantillaFotografica({
   plan,
   onUpdated,
@@ -169,7 +176,7 @@ function ItemDetailsPanel({
   const [productQuantity, setProductQuantity] = useState(item.productQuantity ?? '');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [pendingLabel, setPendingLabel] = useState<'Antes' | 'Después'>('Antes');
+  const [pendingLabel, setPendingLabel] = useState<PhotoLabel>('Antes');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dirty =
@@ -178,6 +185,15 @@ function ItemDetailsPanel({
     productLot !== (item.productLot ?? '') ||
     productExpiresAt !== (item.productExpiresAt?.slice(0, 10) ?? '') ||
     productQuantity !== (item.productQuantity ?? '');
+
+  // Si el procedimiento registra un producto (ej. Ácido Hialurónico), se
+  // esperan las 2 fotos de sticker del lote (ficha + paciente) — se avisa
+  // contra `item.photos` (ya guardado), no contra el estado local sin guardar.
+  const missingStickers: string[] = [];
+  if (item.productName?.trim()) {
+    if (!item.photos.some((p) => p.label === 'Sticker ficha')) missingStickers.push('la ficha');
+    if (!item.photos.some((p) => p.label === 'Sticker paciente')) missingStickers.push('el paciente');
+  }
 
   async function handleSave() {
     setIsSaving(true);
@@ -271,10 +287,16 @@ function ItemDetailsPanel({
         )}
       </div>
 
-      <div className="flex items-center justify-between gap-2">
+      {missingStickers.length > 0 && (
+        <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700">
+          Falta subir el sticker del producto para {missingStickers.join(' y ')}.
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-[11px] font-medium text-slate-400">Fotos del procedimiento</span>
-        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-100 p-0.5 text-[11px] font-medium">
-          {(['Antes', 'Después'] as const).map((l) => (
+        <div className="flex flex-wrap shrink-0 gap-1 rounded-lg bg-slate-100 p-0.5 text-[11px] font-medium">
+          {PHOTO_LABELS.map((l) => (
             <button
               key={l}
               type="button"
