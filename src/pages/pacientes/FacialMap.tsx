@@ -1,36 +1,411 @@
-import { useState } from 'react';
+import { useRef, useState, type ComponentType, type RefObject, type SVGProps } from 'react';
 import type { OdontogramMark, OdontogramMode, ToothSelection } from './Odontogram';
-import { FACIAL_ZONE_LABELS, type FacialZoneKey } from './facialZoneConfig';
+import {
+  FACIAL_ZONES,
+  FACIAL_ZONE_LABELS,
+  EMPTY_FACIAL_ANNOTATIONS,
+  type FacialZoneKey,
+  type FacialAnnotations,
+  type FacialPoint,
+  type FacialStroke,
+} from './facialZoneConfig';
+import { CircleToolIcon, EraserIcon, LineToolIcon, PenIcon, PointerIcon, RedoIcon, UndoIcon } from '../../components/icons';
 
 // ---------------------------------------------------------------------------
-// Vista frontal: silueta ovalada con un punto por zona conectado a su
-// etiqueta mediante una línea guía. El lado derecho se genera reflejando las
-// coordenadas del izquierdo con mirrorX() (no se tipean los mismos números
-// dos veces), así la simetría queda garantizada por construcción.
+// Vista frontal: un par de fotos (piel/músculos) por género, mismo ángulo y
+// encuadre dentro de cada par — provistas directamente para este componente,
+// ya recortadas a una plantilla cuadrada y centrada. Al compartir encuadre
+// dentro de un mismo género, piel y músculos usan la MISMA tabla de zonas;
+// entre géneros la tabla cambia porque el recorte/proporciones no son iguales.
 // ---------------------------------------------------------------------------
-const CX = 230;
-const mirrorX = (x: number) => 2 * CX - x;
+export type FacialGender = 'hombre' | 'mujer';
 
-const FRONT_ZONE_LAYOUT: Record<FacialZoneKey, { x: number; y: number; side: 'left' | 'right'; labelY: number }> = {
-  sienes: { x: 184, y: 135, side: 'left', labelY: 89 },
-  patas_gallo: { x: 180, y: 193, side: 'left', labelY: 154 },
-  ojeras: { x: 192, y: 228, side: 'left', labelY: 219 },
-  codigo_barras: { x: 224, y: 274, side: 'left', labelY: 283 },
-  nasogenianos: { x: 192, y: 280, side: 'left', labelY: 348 },
-  labios: { x: 230, y: 322, side: 'left', labelY: 412 },
-  frente: { x: 272, y: 130, side: 'right', labelY: 89 },
-  entrecejo: { x: 236, y: 182, side: 'right', labelY: 144 },
-  parpados: { x: 272, y: 187, side: 'right', labelY: 197 },
-  nariz: { x: 236, y: 234, side: 'right', labelY: 251 },
-  pomulos: { x: 284, y: 239, side: 'right', labelY: 305 },
-  mandibula: { x: 284, y: 291, side: 'right', labelY: 358 },
-  menton: { x: 230, y: 360, side: 'right', labelY: 412 },
+const FRONT_PHOTOS: Record<
+  FacialGender,
+  { muscleSrc: string; skinSrc: string; zones: Record<FacialZoneKey, { x: number; y: number }> }
+> = {
+  hombre: {
+    muscleSrc: '/facial-map/man-muscle-layer-source.jpg',
+    skinSrc: '/facial-map/man-skin-layer-source.jpg',
+    zones: {
+      frente: { x: 50.0, y: 19.2 },
+      sienes: { x: 22.5, y: 27.5 },
+      entrecejo: { x: 50.0, y: 33.5 },
+      parpados: { x: 62.5, y: 38.3 },
+      patas_gallo: { x: 77.0, y: 37.5 },
+      ojeras: { x: 35.8, y: 41.7 },
+      pomulos: { x: 70.8, y: 47.5 },
+      nariz: { x: 50.0, y: 50.5 },
+      nasogenianos: { x: 35.8, y: 60.8 },
+      codigo_barras: { x: 50.0, y: 59.3 },
+      labios: { x: 50.0, y: 67.2 },
+      menton: { x: 50.0, y: 77.5 },
+      mandibula: { x: 65.0, y: 71.0 },
+      cuello: { x: 50.0, y: 91.0 },
+    },
+  },
+  mujer: {
+    muscleSrc: '/facial-map/woman-muscle-layer-source.jpg',
+    skinSrc: '/facial-map/woman-skin-layer-source.jpg',
+    zones: {
+      frente: { x: 50.0, y: 11.7 },
+      sienes: { x: 24.2, y: 21.7 },
+      entrecejo: { x: 50.0, y: 28.5 },
+      parpados: { x: 65.0, y: 32.5 },
+      patas_gallo: { x: 75.5, y: 32.5 },
+      ojeras: { x: 36.7, y: 35.8 },
+      pomulos: { x: 72.5, y: 40.8 },
+      nariz: { x: 50.0, y: 45.5 },
+      nasogenianos: { x: 35.8, y: 56.7 },
+      codigo_barras: { x: 50.0, y: 54.3 },
+      labios: { x: 50.0, y: 62.2 },
+      menton: { x: 50.0, y: 73.3 },
+      mandibula: { x: 65.5, y: 66.5 },
+      cuello: { x: 50.0, y: 89.5 },
+    },
+  },
 };
 
-const FRONT_ZONE_ORDER = Object.keys(FRONT_ZONE_LAYOUT) as FacialZoneKey[];
+// Tamaño aproximado (ancho/alto, en % del contenedor) de cada zona — se marca
+// el área completa con una elipse punteada en vez de un punto, para que se
+// entienda mejor qué región cubre cada zona (igual que las guías punteadas
+// que usan los médicos para marcar antes de un procedimiento).
+const ZONE_SHAPE: Record<FacialZoneKey, { w: number; h: number }> = {
+  frente: { w: 36, h: 12 },
+  sienes: { w: 10, h: 12 },
+  entrecejo: { w: 8, h: 8 },
+  parpados: { w: 9, h: 6 },
+  patas_gallo: { w: 7, h: 7 },
+  ojeras: { w: 11, h: 7 },
+  pomulos: { w: 13, h: 9 },
+  nariz: { w: 8, h: 12 },
+  nasogenianos: { w: 7, h: 9 },
+  codigo_barras: { w: 10, h: 6 },
+  labios: { w: 14, h: 7 },
+  menton: { w: 15, h: 11 },
+  mandibula: { w: 15, h: 11 },
+  cuello: { w: 26, h: 10 },
+};
 
-const FRONT_LEFT_LABEL_X = 108;
-const FRONT_RIGHT_LABEL_X = 370;
+// ---------------------------------------------------------------------------
+// Vista de perfil con foto real (solo "hombre" por ahora — dos fotos, una
+// por lado, cada una con su propio par piel/músculo ya alineado entre sí).
+// Para géneros sin fotos todavía (ver PROFILE_PHOTOS) se usa el cráneo
+// esquemático (ProfilePanel, más abajo) como respaldo.
+// ---------------------------------------------------------------------------
+type ProfileSide = 'derecho' | 'izquierdo';
+const PROFILE_ZONE_KEYS = [
+  'frente',
+  'sienes',
+  'patas_gallo',
+  'nariz',
+  'pomulos',
+  'nasogenianos',
+  'codigo_barras',
+  'labios',
+  'menton',
+  'mandibula',
+  'cuello',
+] as const satisfies readonly FacialZoneKey[];
+type ProfileZoneKey = (typeof PROFILE_ZONE_KEYS)[number];
+
+const PROFILE_ZONE_SHAPE: Record<ProfileZoneKey, { w: number; h: number }> = {
+  frente: { w: 9, h: 7.5 },
+  sienes: { w: 9, h: 7.5 },
+  patas_gallo: { w: 8, h: 7 },
+  nariz: { w: 8, h: 7 },
+  pomulos: { w: 9, h: 7.5 },
+  nasogenianos: { w: 8, h: 7 },
+  codigo_barras: { w: 8, h: 7 },
+  labios: { w: 9, h: 7.5 },
+  menton: { w: 9, h: 7.5 },
+  mandibula: { w: 9, h: 7.5 },
+  cuello: { w: 16, h: 12 },
+};
+
+const PROFILE_PHOTOS: Partial<
+  Record<
+    FacialGender,
+    Record<ProfileSide, { muscleSrc: string; skinSrc: string; zones: Record<ProfileZoneKey, { x: number; y: number }> }>
+  >
+> = {
+  hombre: {
+    derecho: {
+      muscleSrc: '/facial-map/man-profile-derecho-muscle.jpg',
+      skinSrc: '/facial-map/man-profile-derecho-skin.jpg',
+      zones: {
+        frente: { x: 73, y: 19 },
+        sienes: { x: 65, y: 32 },
+        patas_gallo: { x: 85, y: 41 },
+        nariz: { x: 88, y: 53 },
+        pomulos: { x: 76, y: 56 },
+        nasogenianos: { x: 78, y: 61 },
+        codigo_barras: { x: 87, y: 65 },
+        labios: { x: 84, y: 70 },
+        menton: { x: 77, y: 77 },
+        mandibula: { x: 66, y: 70 },
+        cuello: { x: 60, y: 86 },
+      },
+    },
+    izquierdo: {
+      muscleSrc: '/facial-map/man-profile-izquierdo-muscle.jpg',
+      skinSrc: '/facial-map/man-profile-izquierdo-skin.jpg',
+      zones: {
+        frente: { x: 31, y: 20 },
+        sienes: { x: 39, y: 33 },
+        patas_gallo: { x: 15, y: 41 },
+        nariz: { x: 12, y: 53 },
+        pomulos: { x: 24, y: 56 },
+        nasogenianos: { x: 22, y: 61 },
+        codigo_barras: { x: 13, y: 65 },
+        labios: { x: 16, y: 70 },
+        menton: { x: 23, y: 77 },
+        mandibula: { x: 34, y: 70 },
+        cuello: { x: 40, y: 87 },
+      },
+    },
+  },
+  mujer: {
+    derecho: {
+      muscleSrc: '/facial-map/woman-profile-derecho-muscle.jpg',
+      skinSrc: '/facial-map/woman-profile-derecho-skin.jpg',
+      zones: {
+        frente: { x: 68, y: 19 },
+        sienes: { x: 60, y: 32 },
+        patas_gallo: { x: 79, y: 42 },
+        nariz: { x: 84, y: 53 },
+        pomulos: { x: 72, y: 55 },
+        nasogenianos: { x: 74, y: 61 },
+        codigo_barras: { x: 82, y: 65 },
+        labios: { x: 79, y: 70 },
+        menton: { x: 73, y: 75 },
+        mandibula: { x: 65, y: 67 },
+        cuello: { x: 64, y: 84 },
+      },
+    },
+    izquierdo: {
+      muscleSrc: '/facial-map/woman-profile-izquierdo-muscle.jpg',
+      skinSrc: '/facial-map/woman-profile-izquierdo-skin.jpg',
+      zones: {
+        frente: { x: 23, y: 25 },
+        sienes: { x: 29, y: 33 },
+        patas_gallo: { x: 18, y: 42 },
+        nariz: { x: 12, y: 54 },
+        pomulos: { x: 24, y: 54 },
+        nasogenianos: { x: 22, y: 60 },
+        codigo_barras: { x: 16, y: 64 },
+        labios: { x: 19, y: 68 },
+        menton: { x: 24, y: 75 },
+        mandibula: { x: 30, y: 66 },
+        cuello: { x: 32, y: 85 },
+      },
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Dibujo libre sobre el mapa facial (frontal Y perfil): marcado tipo "lápiz
+// de médico" (líneas guía punteadas). Cada superficie (frontal, perfil
+// derecho, perfil izquierdo) mantiene SU PROPIO arreglo de trazos —
+// FacialMap es quien los guarda (ver `annotations`) y se los pasa a cada
+// vista, así dibujar en una no afecta a las otras y el resultado se puede
+// incluir al guardar el presupuesto. Cada superficie usa su propio espacio
+// de coordenadas (0-100 en la vista frontal, 0-PROFILE_W/H en perfil), por
+// lo que el umbral del borrador se calcula proporcional al viewBox, no fijo.
+// ---------------------------------------------------------------------------
+type DrawTool = 'puntero' | 'lapiz' | 'linea' | 'circulo' | 'borrador';
+
+function distance(a: FacialPoint, b: FacialPoint): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function distanceToSegment(p: FacialPoint, a: FacialPoint, b: FacialPoint): number {
+  const lenSq = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+  if (lenSq === 0) return distance(p, a);
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * (b.x - a.x) + (p.y - a.y) * (b.y - a.y)) / lenSq));
+  return distance(p, { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) });
+}
+
+function strokeHit(stroke: FacialStroke, p: FacialPoint, threshold: number): boolean {
+  if (stroke.tool === 'lapiz') return stroke.points.some((pt) => distance(pt, p) < threshold);
+  if (stroke.tool === 'linea') return distanceToSegment(p, stroke.from, stroke.to) < threshold;
+  return Math.abs(distance(p, stroke.center) - stroke.radius) < threshold;
+}
+
+function StrokeShape({ stroke }: { stroke: FacialStroke }) {
+  const common = {
+    stroke: '#db2777',
+    strokeWidth: 0.6,
+    fill: 'none' as const,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    strokeDasharray: '1.6 1.1',
+  };
+  if (stroke.tool === 'lapiz') {
+    const d = stroke.points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+    return <path {...common} d={d} />;
+  }
+  if (stroke.tool === 'linea') {
+    return <line {...common} x1={stroke.from.x} y1={stroke.from.y} x2={stroke.to.x} y2={stroke.to.y} />;
+  }
+  return <circle {...common} cx={stroke.center.x} cy={stroke.center.y} r={stroke.radius} />;
+}
+
+const DRAW_TOOLS: { key: DrawTool; icon: ComponentType<SVGProps<SVGSVGElement>>; label: string }[] = [
+  { key: 'puntero', icon: PointerIcon, label: 'Puntero (marcar zonas)' },
+  { key: 'lapiz', icon: PenIcon, label: 'Lápiz (trazo libre)' },
+  { key: 'linea', icon: LineToolIcon, label: 'Línea recta' },
+  { key: 'circulo', icon: CircleToolIcon, label: 'Círculo' },
+  { key: 'borrador', icon: EraserIcon, label: 'Borrador' },
+];
+
+function DrawToolbar({
+  tool,
+  onToolChange,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+}: {
+  tool: DrawTool;
+  onToolChange: (tool: DrawTool) => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+}) {
+  return (
+    <div className="flex w-full max-w-[420px] items-center justify-between gap-2">
+      <div className="flex shrink-0 gap-0.5 rounded-lg bg-slate-200/70 p-0.5">
+        {DRAW_TOOLS.map(({ key: t, icon: Icon, label }) => (
+          <button
+            key={t}
+            type="button"
+            title={label}
+            aria-label={label}
+            aria-pressed={tool === t}
+            onClick={() => onToolChange(t)}
+            className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+              tool === t ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+          </button>
+        ))}
+      </div>
+      <div className="flex shrink-0 gap-0.5 rounded-lg bg-slate-200/70 p-0.5">
+        <button
+          type="button"
+          title="Deshacer"
+          aria-label="Deshacer"
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <UndoIcon className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          title="Rehacer"
+          aria-label="Rehacer"
+          onClick={onRedo}
+          disabled={!canRedo}
+          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <RedoIcon className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Maneja el estado de dibujo (herramienta activa, trazo en curso, deshacer/
+// rehacer) para UNA superficie dada. `strokes`/`onStrokesChange` viven en el
+// llamador (FacialMap) — este hook no los posee, solo los edita, que es lo
+// que permite que cada superficie tenga su propio arreglo independiente.
+function useDrawing(
+  containerRef: RefObject<Element | null>,
+  viewBoxW: number,
+  viewBoxH: number,
+  strokes: FacialStroke[],
+  onStrokesChange: (strokes: FacialStroke[]) => void
+) {
+  const [tool, setTool] = useState<DrawTool>('puntero');
+  const [draft, setDraft] = useState<FacialStroke | null>(null);
+  const [redoStack, setRedoStack] = useState<FacialStroke[]>([]);
+  const eraserThreshold = Math.max(viewBoxW, viewBoxH) * 0.025;
+
+  function toPoint(e: React.PointerEvent): FacialPoint {
+    const rect = containerRef.current!.getBoundingClientRect();
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * viewBoxW,
+      y: ((e.clientY - rect.top) / rect.height) * viewBoxH,
+    };
+  }
+
+  function handlePointerDown(e: React.PointerEvent<SVGSVGElement>) {
+    if (tool === 'puntero') return;
+    const p = toPoint(e);
+    if (tool === 'borrador') {
+      for (let i = strokes.length - 1; i >= 0; i--) {
+        if (strokeHit(strokes[i], p, eraserThreshold)) {
+          onStrokesChange(strokes.slice(0, i).concat(strokes.slice(i + 1)));
+          setRedoStack([]);
+          return;
+        }
+      }
+      return;
+    }
+    const id = `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    if (tool === 'lapiz') setDraft({ id, tool: 'lapiz', points: [p] });
+    else if (tool === 'linea') setDraft({ id, tool: 'linea', from: p, to: p });
+    else setDraft({ id, tool: 'circulo', center: p, radius: 0 });
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
+    if (!draft) return;
+    const p = toPoint(e);
+    setDraft((prev) => {
+      if (!prev) return prev;
+      if (prev.tool === 'lapiz') return { ...prev, points: [...prev.points, p] };
+      if (prev.tool === 'linea') return { ...prev, to: p };
+      return { ...prev, radius: distance(prev.center, p) };
+    });
+  }
+
+  function handlePointerUp() {
+    if (!draft) return;
+    onStrokesChange([...strokes, draft]);
+    setRedoStack([]);
+    setDraft(null);
+  }
+
+  function handleUndo() {
+    if (strokes.length === 0) return;
+    setRedoStack((r) => [...r, strokes[strokes.length - 1]]);
+    onStrokesChange(strokes.slice(0, -1));
+  }
+
+  function handleRedo() {
+    if (redoStack.length === 0) return;
+    onStrokesChange([...strokes, redoStack[redoStack.length - 1]]);
+    setRedoStack((r) => r.slice(0, -1));
+  }
+
+  return {
+    tool,
+    setTool,
+    draft,
+    canUndo: strokes.length > 0,
+    canRedo: redoStack.length > 0,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleUndo,
+    handleRedo,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Vistas de perfil: se define UNA silueta (perfil derecho, nariz apuntando
@@ -145,6 +520,28 @@ interface FacialMapProps {
   // Vista de solo consulta (ej. historial de zonas tratadas): sin selección,
   // sin instrucciones de uso, los puntos no son clickeables.
   readOnly?: boolean;
+  // Oculta los puntos/chips de zona de la vista Frontal hasta que haya una
+  // prestación activa que configurar — evita el ruido visual de puntos
+  // deshabilitados antes de seleccionar nada. Por defecto siempre visibles.
+  showZones?: boolean;
+  // Trazos dibujados a mano (uno por superficie: frontal/perfil derecho/
+  // perfil izquierdo). Controlado por el padre para que sobreviva al cambio
+  // de pestaña Frontal/Perfil y se pueda incluir al guardar el presupuesto;
+  // si no se pasa, FacialMap mantiene su propio estado interno (ej. vistas
+  // de solo lectura, que de todas formas no muestran las herramientas).
+  annotations?: FacialAnnotations;
+  onAnnotationsChange?: (annotations: FacialAnnotations) => void;
+  // Género mostrado en la vista Frontal. Controlado por el padre para que un
+  // presupuesto ya guardado pueda mostrar siempre el género con el que se
+  // creó — a diferencia de piel/músculos (una capa visual del mismo par de
+  // fotos), el género cambia la foto completa, así que una vez guardado el
+  // presupuesto queda fijo (ver `lockGender`).
+  gender?: FacialGender;
+  onGenderChange?: (gender: FacialGender) => void;
+  // Impide cambiar el género (los botones Mujer/Hombre quedan deshabilitados)
+  // sin afectar el toggle Piel/Músculos, que sigue libre. Pensado para mostrar
+  // un presupuesto ya guardado con el género con el que se creó.
+  lockGender?: boolean;
 }
 
 function ZoneDot({
@@ -215,6 +612,8 @@ function ProfilePanel({
   restrictedZones,
   readOnly = false,
   onToggle,
+  strokes,
+  onStrokesChange,
 }: {
   flip: boolean;
   selectedZones: Set<string>;
@@ -223,56 +622,613 @@ function ProfilePanel({
   restrictedZones: Set<string> | null;
   readOnly?: boolean;
   onToggle: (zone: string) => void;
+  strokes: FacialStroke[];
+  onStrokesChange: (strokes: FacialStroke[]) => void;
 }) {
   const labelX = flip ? flipProfileX(PROFILE_LABEL_X) : PROFILE_LABEL_X;
   const textAnchor: 'start' | 'end' = flip ? 'end' : 'start';
+  const svgRef = useRef<SVGSVGElement>(null);
+  const drawing = useDrawing(svgRef, PROFILE_W, PROFILE_H, strokes, onStrokesChange);
 
   return (
-    <svg
-      viewBox={`0 0 ${PROFILE_W} ${PROFILE_H}`}
-      className="block h-auto w-full max-w-[260px]"
-      role="img"
-      aria-label={flip ? 'Perfil izquierdo del rostro' : 'Perfil derecho del rostro'}
-    >
-      <path d={buildNeckPath(flip)} fill="none" stroke="currentColor" strokeWidth={2} className="text-slate-300" />
-      <ellipse
-        cx={flip ? flipProfileX(EAR.cx) : EAR.cx}
-        cy={EAR.cy}
-        rx={EAR.rx}
-        ry={EAR.ry}
-        fill="#fffaf7"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        className="text-slate-300"
-      />
-      <path d={buildHeadPath(flip)} fill="#fffaf7" stroke="currentColor" strokeWidth={2.5} className="text-slate-400" />
+    <div className="flex flex-col items-center gap-2">
+      {!readOnly && (
+        <DrawToolbar
+          tool={drawing.tool}
+          onToolChange={drawing.setTool}
+          canUndo={drawing.canUndo}
+          canRedo={drawing.canRedo}
+          onUndo={drawing.handleUndo}
+          onRedo={drawing.handleRedo}
+        />
+      )}
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${PROFILE_W} ${PROFILE_H}`}
+        className="block h-auto w-full max-w-[260px]"
+        role="img"
+        aria-label={flip ? 'Perfil izquierdo del rostro' : 'Perfil derecho del rostro'}
+        style={!readOnly ? { touchAction: 'none' } : undefined}
+        onPointerDown={readOnly ? undefined : drawing.handlePointerDown}
+        onPointerMove={readOnly ? undefined : drawing.handlePointerMove}
+        onPointerUp={readOnly ? undefined : drawing.handlePointerUp}
+      >
+        <path d={buildNeckPath(flip)} fill="none" stroke="currentColor" strokeWidth={2} className="text-slate-300" />
+        <ellipse
+          cx={flip ? flipProfileX(EAR.cx) : EAR.cx}
+          cy={EAR.cy}
+          rx={EAR.rx}
+          ry={EAR.ry}
+          fill="#fffaf7"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          className="text-slate-300"
+        />
+        <path d={buildHeadPath(flip)} fill="#fffaf7" stroke="currentColor" strokeWidth={2.5} className="text-slate-400" />
 
-      {PROFILE_ZONES.map((zone) => {
-        const x = flip ? flipProfileX(zone.x) : zone.x;
-        const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone.key));
-        return (
-          <ZoneDot
-            key={zone.key}
-            x={x}
-            y={zone.y}
-            labelX={labelX}
-            labelY={zone.labelY}
-            textAnchor={textAnchor}
-            label={FACIAL_ZONE_LABELS[zone.key]}
-            isSelected={selectedZones.has(zone.key)}
-            isMarked={markedZones.has(zone.key)}
-            disabled={zoneDisabled}
-            readOnly={readOnly}
-            onToggle={() => onToggle(zone.key)}
-          />
-        );
-      })}
-    </svg>
+        {PROFILE_ZONES.map((zone) => {
+          const x = flip ? flipProfileX(zone.x) : zone.x;
+          const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone.key));
+          return (
+            <ZoneDot
+              key={zone.key}
+              x={x}
+              y={zone.y}
+              labelX={labelX}
+              labelY={zone.labelY}
+              textAnchor={textAnchor}
+              label={FACIAL_ZONE_LABELS[zone.key]}
+              isSelected={selectedZones.has(zone.key)}
+              isMarked={markedZones.has(zone.key)}
+              disabled={zoneDisabled}
+              readOnly={readOnly}
+              onToggle={() => onToggle(zone.key)}
+            />
+          );
+        })}
+
+        {strokes.map((s) => (
+          <StrokeShape key={s.id} stroke={s} />
+        ))}
+        {drawing.draft && <StrokeShape stroke={drawing.draft} />}
+      </svg>
+    </div>
   );
 }
 
-export function FacialMap({ mode, selection, onSelectionChange, marks = [], allowedZones, readOnly = false }: FacialMapProps) {
+function ProfilePhotoPanel({
+  gender,
+  side,
+  selectedZones,
+  markedZones,
+  disabled,
+  restrictedZones,
+  readOnly,
+  onToggle,
+  strokes,
+  onStrokesChange,
+}: {
+  gender: FacialGender;
+  side: ProfileSide;
+  selectedZones: Set<string>;
+  markedZones: Set<string>;
+  disabled: boolean;
+  restrictedZones: Set<string> | null;
+  readOnly: boolean;
+  onToggle: (zone: string) => void;
+  strokes: FacialStroke[];
+  onStrokesChange: (strokes: FacialStroke[]) => void;
+}) {
+  const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const photos = PROFILE_PHOTOS[gender]![side];
+  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange);
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+        {(
+          [
+            { key: 'piel', label: 'Piel' },
+            { key: 'musculos', label: 'Músculos' },
+          ] as const
+        ).map(({ key: l, label }) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setLayer(l)}
+            className={`rounded-md px-2.5 py-1 transition-colors ${
+              layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {!readOnly && (
+        <DrawToolbar
+          tool={drawing.tool}
+          onToolChange={drawing.setTool}
+          canUndo={drawing.canUndo}
+          canRedo={drawing.canRedo}
+          onUndo={drawing.handleUndo}
+          onRedo={drawing.handleRedo}
+        />
+      )}
+
+      <div
+        ref={containerRef}
+        className="relative mx-auto aspect-square w-full max-w-[260px] overflow-hidden rounded-xl bg-white ring-1 ring-slate-200"
+      >
+        <img
+          src={photos.muscleSrc}
+          alt={`Musculatura facial, perfil ${side}`}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'musculos' ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <img
+          src={photos.skinSrc}
+          alt={`Piel del rostro, perfil ${side}`}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'piel' ? 'opacity-100' : 'opacity-0'}`}
+        />
+
+        {PROFILE_ZONE_KEYS.map((zone) => {
+          const pos = photos.zones[zone];
+          const shape = PROFILE_ZONE_SHAPE[zone];
+          const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
+          const isSelected = selectedZones.has(zone);
+          const isMarked = markedZones.has(zone);
+          const zoneColor = isSelected
+            ? 'border-brand-600 bg-brand-500/25'
+            : isMarked
+              ? 'border-brand-400 bg-brand-300/20'
+              : 'border-white/80 bg-white/5 hover:border-brand-300 hover:bg-brand-200/15';
+          return (
+            <button
+              key={zone}
+              type="button"
+              title={FACIAL_ZONE_LABELS[zone]}
+              aria-label={FACIAL_ZONE_LABELS[zone]}
+              aria-pressed={readOnly ? undefined : isSelected}
+              disabled={readOnly || zoneDisabled}
+              onClick={() => onToggle(zone)}
+              style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${shape.w}%`, height: `${shape.h}%` }}
+              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-dashed shadow-sm transition-colors ${zoneColor} ${
+                readOnly ? 'cursor-default' : zoneDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
+              }`}
+            />
+          );
+        })}
+
+        {!readOnly && (
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full"
+            style={{ pointerEvents: drawing.tool === 'puntero' ? 'none' : 'auto', touchAction: 'none' }}
+            onPointerDown={drawing.handlePointerDown}
+            onPointerMove={drawing.handlePointerMove}
+            onPointerUp={drawing.handlePointerUp}
+          >
+            {strokes.map((s) => (
+              <StrokeShape key={s.id} stroke={s} />
+            ))}
+            {drawing.draft && <StrokeShape stroke={drawing.draft} />}
+          </svg>
+        )}
+      </div>
+
+      <div className="flex max-w-[260px] flex-wrap justify-center gap-1.5">
+        {PROFILE_ZONE_KEYS.map((zone) => {
+          const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
+          const isSelected = selectedZones.has(zone);
+          const isMarked = markedZones.has(zone);
+          return (
+            <button
+              key={zone}
+              type="button"
+              disabled={readOnly || zoneDisabled}
+              onClick={() => onToggle(zone)}
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                isSelected
+                  ? 'bg-brand-600 text-white ring-brand-600'
+                  : isMarked
+                    ? 'bg-brand-50 text-brand-700 ring-brand-200'
+                    : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50'
+              }`}
+            >
+              {FACIAL_ZONE_LABELS[zone]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FacialPhotoView({
+  gender,
+  onGenderChange,
+  lockGender,
+  selectedZones,
+  markedZones,
+  disabled,
+  restrictedZones,
+  readOnly,
+  showZones,
+  onToggle,
+  strokes,
+  onStrokesChange,
+}: {
+  gender: FacialGender;
+  onGenderChange: (gender: FacialGender) => void;
+  lockGender: boolean;
+  selectedZones: Set<string>;
+  markedZones: Set<string>;
+  disabled: boolean;
+  restrictedZones: Set<string> | null;
+  readOnly: boolean;
+  showZones: boolean;
+  onToggle: (zone: string) => void;
+  strokes: FacialStroke[];
+  onStrokesChange: (strokes: FacialStroke[]) => void;
+}) {
+  const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const photos = FRONT_PHOTOS[gender];
+  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange);
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="flex w-full max-w-[420px] items-center justify-between gap-2">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+          {(
+            [
+              { key: 'piel', label: 'Piel' },
+              { key: 'musculos', label: 'Músculos' },
+            ] as const
+          ).map(({ key: l, label }) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLayer(l)}
+              className={`rounded-md px-2.5 py-1 transition-colors ${
+                layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+          {(
+            [
+              { key: 'mujer', label: 'Mujer' },
+              { key: 'hombre', label: 'Hombre' },
+            ] as const
+          ).map(({ key: g, label }) => (
+            <button
+              key={g}
+              type="button"
+              title={lockGender ? 'El género queda fijo una vez guardado el presupuesto' : undefined}
+              disabled={lockGender}
+              onClick={() => onGenderChange(g)}
+              className={`rounded-md px-2.5 py-1 transition-colors ${
+                gender === g ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              } ${lockGender ? 'cursor-not-allowed opacity-60' : ''}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {!readOnly && (
+        <DrawToolbar
+          tool={drawing.tool}
+          onToolChange={drawing.setTool}
+          canUndo={drawing.canUndo}
+          canRedo={drawing.canRedo}
+          onUndo={drawing.handleUndo}
+          onRedo={drawing.handleRedo}
+        />
+      )}
+
+      <div
+        ref={containerRef}
+        className="relative mx-auto aspect-square w-full max-w-[420px] overflow-hidden rounded-xl bg-white ring-1 ring-slate-200"
+      >
+        <img
+          src={photos.muscleSrc}
+          alt="Musculatura facial"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'musculos' ? 'opacity-100' : 'opacity-0'}`}
+        />
+        <img
+          src={photos.skinSrc}
+          alt="Piel del rostro"
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'piel' ? 'opacity-100' : 'opacity-0'}`}
+        />
+
+        {showZones &&
+          FACIAL_ZONES.map((zone) => {
+            const pos = photos.zones[zone];
+            const shape = ZONE_SHAPE[zone];
+            const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
+            const isSelected = selectedZones.has(zone);
+            const isMarked = markedZones.has(zone);
+            const zoneColor = isSelected
+              ? 'border-brand-600 bg-brand-500/25'
+              : isMarked
+                ? 'border-brand-400 bg-brand-300/20'
+                : 'border-white/80 bg-white/5 hover:border-brand-300 hover:bg-brand-200/15';
+            return (
+              <button
+                key={zone}
+                type="button"
+                title={FACIAL_ZONE_LABELS[zone]}
+                aria-label={FACIAL_ZONE_LABELS[zone]}
+                aria-pressed={readOnly ? undefined : isSelected}
+                disabled={readOnly || zoneDisabled}
+                onClick={() => onToggle(zone)}
+                style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${shape.w}%`, height: `${shape.h}%` }}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-dashed shadow-sm transition-colors ${zoneColor} ${
+                  readOnly ? 'cursor-default' : zoneDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
+                }`}
+              />
+            );
+          })}
+
+        {!readOnly && (
+          <svg
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            className="absolute inset-0 h-full w-full"
+            style={{ pointerEvents: drawing.tool === 'puntero' ? 'none' : 'auto', touchAction: 'none' }}
+            onPointerDown={drawing.handlePointerDown}
+            onPointerMove={drawing.handlePointerMove}
+            onPointerUp={drawing.handlePointerUp}
+          >
+            {strokes.map((s) => (
+              <StrokeShape key={s.id} stroke={s} />
+            ))}
+            {drawing.draft && <StrokeShape stroke={drawing.draft} />}
+          </svg>
+        )}
+      </div>
+
+      {showZones ? (
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {FACIAL_ZONES.map((zone) => {
+            const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
+            const isSelected = selectedZones.has(zone);
+            const isMarked = markedZones.has(zone);
+            return (
+              <button
+                key={zone}
+                type="button"
+                disabled={readOnly || zoneDisabled}
+                onClick={() => onToggle(zone)}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ring-1 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isSelected
+                    ? 'bg-brand-600 text-white ring-brand-600'
+                    : isMarked
+                      ? 'bg-brand-50 text-brand-700 ring-brand-200'
+                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50'
+                }`}
+              >
+                {FACIAL_ZONE_LABELS[zone]}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400">Selecciona una prestación para marcar las zonas a tratar.</p>
+      )}
+
+    </div>
+  );
+}
+
+// Una sola foto (frontal, o un lado del perfil) con las zonas tratadas
+// resaltadas — pieza reutilizable de FacialZonesHighlight, de ahí el prop
+// `photos`/`zoneKeys` genéricos en vez de resolverlos aquí mismo.
+function HighlightPhoto({
+  muscleSrc,
+  skinSrc,
+  layer,
+  zonePositions,
+  zoneShapes,
+  visibleZones,
+  strokes,
+  className,
+}: {
+  muscleSrc: string;
+  skinSrc: string;
+  layer: 'piel' | 'musculos';
+  zonePositions: Record<string, { x: number; y: number }>;
+  zoneShapes: Record<string, { w: number; h: number }>;
+  visibleZones: FacialZoneKey[];
+  strokes: FacialStroke[];
+  className: string;
+}) {
+  return (
+    <div className={`relative mx-auto aspect-square overflow-hidden rounded-xl bg-white ring-1 ring-slate-200 ${className}`}>
+      <img
+        src={muscleSrc}
+        alt="Musculatura"
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'musculos' ? 'opacity-100' : 'opacity-0'}`}
+      />
+      <img
+        src={skinSrc}
+        alt="Piel"
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'piel' ? 'opacity-100' : 'opacity-0'}`}
+      />
+      {visibleZones.map((zone) => {
+        const pos = zonePositions[zone];
+        const shape = zoneShapes[zone];
+        if (!pos || !shape) return null;
+        return (
+          <div
+            key={zone}
+            title={FACIAL_ZONE_LABELS[zone]}
+            style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${shape.w}%`, height: `${shape.h}%` }}
+            className="absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-brand-600 bg-brand-500/30 shadow-sm"
+          />
+        );
+      })}
+      {strokes.length > 0 && (
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+          {strokes.map((s) => (
+            <StrokeShape key={s.id} stroke={s} />
+          ))}
+        </svg>
+      )}
+    </div>
+  );
+}
+
+// Vista de solo lectura para historiales/detalle de un presupuesto: muestra
+// el rostro del género con que se creó y resalta ÚNICAMENTE las zonas que
+// tuvieron un procedimiento — sin puntero, sin chips de las demás zonas, sin
+// dibujo. Es intencionalmente más simple que <FacialMap readOnly /> (que
+// sigue mostrando las 13 zonas disponibles, solo que no clicables). Incluye
+// Frontal/Perfil y Piel/Músculos porque son la misma foto con otra capa —
+// no cambia qué zonas están tratadas, solo cómo se ven.
+export function FacialZonesHighlight({
+  gender,
+  zones,
+  annotations,
+  className = 'max-w-[280px]',
+}: {
+  gender: FacialGender;
+  zones: FacialZoneKey[];
+  annotations?: FacialAnnotations | null;
+  className?: string;
+}) {
   const [view, setView] = useState<'frontal' | 'perfil'>('frontal');
+  const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
+  const treated = new Set(zones);
+  const frontZones = FACIAL_ZONES.filter((zone) => treated.has(zone));
+  const profileZones = PROFILE_ZONE_KEYS.filter((zone) => treated.has(zone));
+  const frontStrokes = annotations?.frontal ?? [];
+  const derechoStrokes = annotations?.perfilDerecho ?? [];
+  const izquierdoStrokes = annotations?.perfilIzquierdo ?? [];
+
+  if (frontZones.length === 0 && frontStrokes.length === 0 && derechoStrokes.length === 0 && izquierdoStrokes.length === 0) {
+    return null;
+  }
+
+  const front = FRONT_PHOTOS[gender];
+  const profile = PROFILE_PHOTOS[gender];
+  const showPerfilTab = profile !== undefined && (profileZones.length > 0 || derechoStrokes.length > 0 || izquierdoStrokes.length > 0);
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex w-full items-center justify-between gap-2">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+          {(
+            [
+              { key: 'piel', label: 'Piel' },
+              { key: 'musculos', label: 'Músculos' },
+            ] as const
+          ).map(({ key: l, label }) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLayer(l)}
+              className={`rounded-md px-2 py-0.5 transition-colors ${
+                layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {showPerfilTab && (
+          <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+            {(['frontal', 'perfil'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={`rounded-md px-2 py-0.5 capitalize transition-colors ${
+                  view === v ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {view === 'frontal' || !showPerfilTab ? (
+        <HighlightPhoto
+          muscleSrc={front.muscleSrc}
+          skinSrc={front.skinSrc}
+          layer={layer}
+          zonePositions={front.zones}
+          zoneShapes={ZONE_SHAPE}
+          visibleZones={frontZones}
+          strokes={frontStrokes}
+          className={`w-full ${className}`}
+        />
+      ) : (
+        <div className="flex w-full flex-wrap items-start justify-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <HighlightPhoto
+              muscleSrc={profile!.derecho.muscleSrc}
+              skinSrc={profile!.derecho.skinSrc}
+              layer={layer}
+              zonePositions={profile!.derecho.zones}
+              zoneShapes={PROFILE_ZONE_SHAPE}
+              visibleZones={profileZones}
+              strokes={derechoStrokes}
+              className="w-44 sm:w-56"
+            />
+            <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <HighlightPhoto
+              muscleSrc={profile!.izquierdo.muscleSrc}
+              skinSrc={profile!.izquierdo.skinSrc}
+              layer={layer}
+              zonePositions={profile!.izquierdo.zones}
+              zoneShapes={PROFILE_ZONE_SHAPE}
+              visibleZones={profileZones}
+              strokes={izquierdoStrokes}
+              className="w-44 sm:w-56"
+            />
+            <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function FacialMap({
+  mode,
+  selection,
+  onSelectionChange,
+  marks = [],
+  allowedZones,
+  readOnly = false,
+  showZones = true,
+  annotations,
+  onAnnotationsChange,
+  gender,
+  onGenderChange,
+  lockGender = false,
+}: FacialMapProps) {
+  const [view, setView] = useState<'frontal' | 'perfil'>('frontal');
+  const [localGender, setLocalGender] = useState<FacialGender>('mujer');
+  const currentGender = gender ?? localGender;
+  const setGender = onGenderChange ?? setLocalGender;
+  const [localAnnotations, setLocalAnnotations] = useState<FacialAnnotations>(EMPTY_FACIAL_ANNOTATIONS);
+  const currentAnnotations = annotations ?? localAnnotations;
+  const setAnnotations = onAnnotationsChange ?? setLocalAnnotations;
   const selectedZones = new Set(selection.map((s) => s.tooth));
   const markedZones = new Set(marks.map((m) => m.tooth));
   const disabled = !readOnly && mode === 'session';
@@ -286,6 +1242,15 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [], allo
     } else {
       onSelectionChange([...selection, { tooth: zone, surface: 'center' }]);
     }
+  }
+
+  // Un trazo dibujado a mano tiene sentido solo sobre el rostro en el que se
+  // hizo — al cambiar de género la foto frontal completa cambia, así que se
+  // limpian solo los trazos frontales (perfil no depende del género).
+  function handleGenderChange(next: FacialGender) {
+    if (lockGender) return;
+    setGender(next);
+    setAnnotations({ ...currentAnnotations, frontal: [] });
   }
 
   return (
@@ -317,71 +1282,53 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [], allo
       </div>
 
       {view === 'frontal' ? (
-        <svg viewBox="0 0 500 520" className="mx-auto block w-full max-w-[480px]" role="img" aria-label="Mapa de zonas faciales, vista frontal">
-          {/* cuello */}
-          <path d="M195,390 C188,420 182,450 178,480" fill="none" stroke="currentColor" strokeWidth={2} className="text-slate-300" />
-          <path d={`M${mirrorX(195)},390 C${mirrorX(188)},420 ${mirrorX(182)},450 ${mirrorX(178)},480`} fill="none" stroke="currentColor" strokeWidth={2} className="text-slate-300" />
-
-          {/* orejas */}
-          <path d="M105,205 C95,200 90,220 95,240 C98,253 108,257 115,247" fill="#fffaf7" stroke="currentColor" strokeWidth={1.8} className="text-slate-300" />
-          <path
-            d={`M${mirrorX(105)},205 C${mirrorX(95)},200 ${mirrorX(90)},220 ${mirrorX(95)},240 C${mirrorX(98)},253 ${mirrorX(108)},257 ${mirrorX(115)},247`}
-            fill="#fffaf7"
-            stroke="currentColor"
-            strokeWidth={1.8}
-            className="text-slate-300"
-          />
-
-          {/* óvalo del rostro */}
-          <ellipse cx={CX} cy="245" rx="115" ry="150" fill="#fffaf7" stroke="currentColor" strokeWidth={2.5} className="text-slate-400" />
-
-          {/* nacimiento del pelo (decorativo) */}
-          <path d="M230,100 Q228,130 230,155" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="text-slate-200" />
-          <path d="M200,105 Q195,135 185,160" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="text-slate-200" />
-          <path d={`M${mirrorX(200)},105 Q${mirrorX(195)},135 ${mirrorX(185)},160`} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="text-slate-200" />
-          <path d="M170,120 Q160,145 152,168" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="text-slate-200" />
-          <path d={`M${mirrorX(170)},120 Q${mirrorX(160)},145 ${mirrorX(152)},168`} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="text-slate-200" />
-
-          {/* cejas */}
-          <path d="M185,205 Q202,193 220,203" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300" />
-          <path d={`M${mirrorX(185)},205 Q${mirrorX(202)},193 ${mirrorX(220)},203`} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="text-slate-300" />
-
-          {/* ojos */}
-          <path d="M180,224 Q202,212 224,222 Q202,234 180,224 Z" fill="white" stroke="currentColor" strokeWidth={1.5} className="text-slate-400" />
-          <circle cx="205" cy="223" r="7" fill="none" stroke="currentColor" strokeWidth={1.2} className="text-slate-400" />
-          <circle cx="205" cy="223" r="3" className="fill-slate-400" />
-          <path d={`M${mirrorX(180)},224 Q${mirrorX(202)},212 ${mirrorX(224)},222 Q${mirrorX(202)},234 ${mirrorX(180)},224 Z`} fill="white" stroke="currentColor" strokeWidth={1.5} className="text-slate-400" />
-          <circle cx={mirrorX(205)} cy="223" r="7" fill="none" stroke="currentColor" strokeWidth={1.2} className="text-slate-400" />
-          <circle cx={mirrorX(205)} cy="223" r="3" className="fill-slate-400" />
-
-          {/* nariz */}
-          <path d="M230,235 L224,275 Q230,282 236,275" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" className="text-slate-300" />
-
-          {/* labios */}
-          <path d="M192,310 Q211,304 230,308 Q249,304 268,310 Q230,332 192,310 Z" fill="none" stroke="currentColor" strokeWidth={1.8} className="text-slate-400" />
-
-          {FRONT_ZONE_ORDER.map((zone) => {
-            const layout = FRONT_ZONE_LAYOUT[zone];
-            const labelX = layout.side === 'left' ? FRONT_LEFT_LABEL_X : FRONT_RIGHT_LABEL_X;
-            const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
-            return (
-              <ZoneDot
-                key={zone}
-                x={layout.x}
-                y={layout.y}
-                labelX={labelX}
-                labelY={layout.labelY}
-                textAnchor={layout.side === 'left' ? 'end' : 'start'}
-                label={FACIAL_ZONE_LABELS[zone]}
-                isSelected={selectedZones.has(zone)}
-                isMarked={markedZones.has(zone)}
-                disabled={zoneDisabled}
-                readOnly={readOnly}
-                onToggle={() => toggleZone(zone)}
-              />
-            );
-          })}
-        </svg>
+        <FacialPhotoView
+          gender={currentGender}
+          onGenderChange={handleGenderChange}
+          lockGender={lockGender}
+          selectedZones={selectedZones}
+          markedZones={markedZones}
+          disabled={disabled}
+          restrictedZones={restrictedZones}
+          readOnly={readOnly}
+          showZones={showZones}
+          onToggle={toggleZone}
+          strokes={currentAnnotations.frontal}
+          onStrokesChange={(frontal) => setAnnotations({ ...currentAnnotations, frontal })}
+        />
+      ) : PROFILE_PHOTOS[currentGender] ? (
+        <div className="flex flex-wrap items-start justify-center gap-6">
+          <div className="flex flex-col items-center gap-1">
+            <ProfilePhotoPanel
+              gender={currentGender}
+              side="derecho"
+              selectedZones={selectedZones}
+              markedZones={markedZones}
+              disabled={disabled}
+              restrictedZones={restrictedZones}
+              readOnly={readOnly}
+              onToggle={toggleZone}
+              strokes={currentAnnotations.perfilDerecho}
+              onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
+            />
+            <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <ProfilePhotoPanel
+              gender={currentGender}
+              side="izquierdo"
+              selectedZones={selectedZones}
+              markedZones={markedZones}
+              disabled={disabled}
+              restrictedZones={restrictedZones}
+              readOnly={readOnly}
+              onToggle={toggleZone}
+              strokes={currentAnnotations.perfilIzquierdo}
+              onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
+            />
+            <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+          </div>
+        </div>
       ) : (
         <div className="flex flex-wrap items-start justify-center gap-6">
           <div className="flex flex-col items-center gap-1">
@@ -393,6 +1340,8 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [], allo
               restrictedZones={restrictedZones}
               readOnly={readOnly}
               onToggle={toggleZone}
+              strokes={currentAnnotations.perfilDerecho}
+              onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
             />
             <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
           </div>
@@ -405,6 +1354,8 @@ export function FacialMap({ mode, selection, onSelectionChange, marks = [], allo
               restrictedZones={restrictedZones}
               readOnly={readOnly}
               onToggle={toggleZone}
+              strokes={currentAnnotations.perfilIzquierdo}
+              onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
             />
             <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
           </div>

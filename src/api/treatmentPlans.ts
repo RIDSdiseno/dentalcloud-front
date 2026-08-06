@@ -1,7 +1,16 @@
 import { api } from './client';
 import type { Sucursal, Prevision, Convenio, Prestacion } from './catalogs';
+import type { FacialAnnotations } from '../pages/pacientes/facialZoneConfig';
 
 export type TreatmentStatus = 'sin_iniciar' | 'en_tratamiento' | 'terminado' | 'alta';
+
+export type TreatmentItemPhoto = {
+  id: string;
+  treatmentItemId: string;
+  url: string;
+  label: string | null;
+  createdAt: string;
+};
 
 export type TreatmentItem = {
   id: string;
@@ -22,6 +31,21 @@ export type TreatmentItem = {
   // Observación clínica del procedimiento (ej. producto usado, reacción del
   // paciente) — distinta de las notas generales del presupuesto.
   notes: string | null;
+  // Trazabilidad del producto usado (ej. estética facial: ácido hialurónico).
+  productName: string | null;
+  productLot: string | null;
+  productExpiresAt: string | null;
+  productQuantity: string | null;
+  photos: TreatmentItemPhoto[];
+  createdAt: string;
+};
+
+export type TreatmentPlanPhoto = {
+  id: string;
+  treatmentPlanId: string;
+  url: string;
+  label: string | null;
+  position: number;
   createdAt: string;
 };
 
@@ -52,6 +76,9 @@ export type TreatmentPlan = {
   prevision: Prevision | null;
   convenio: Convenio | null;
   items: TreatmentItem[];
+  photos: TreatmentPlanPhoto[];
+  facialAnnotations: FacialAnnotations | null;
+  facialGender: 'hombre' | 'mujer' | null;
 };
 
 export type TreatmentItemInput = {
@@ -62,6 +89,10 @@ export type TreatmentItemInput = {
   listPrice?: number;
   convenioDiscountPercent?: number;
   notes?: string;
+  productName?: string;
+  productLot?: string;
+  productExpiresAt?: string;
+  productQuantity?: string;
 };
 
 export type TreatmentPlanInput = {
@@ -75,6 +106,8 @@ export type TreatmentPlanInput = {
   notes?: string;
   diagramType?: 'dental' | 'estetica';
   items?: TreatmentItemInput[];
+  facialAnnotations?: FacialAnnotations;
+  facialGender?: 'hombre' | 'mujer';
 };
 
 export async function fetchTreatmentPlans(patientId: string) {
@@ -114,7 +147,17 @@ export async function addTreatmentItem(planId: string, item: TreatmentItemInput)
 
 export async function updateTreatmentItem(
   id: string,
-  patch: { description?: string; cost?: number; completed?: boolean; toothNumber?: string | null; notes?: string | null }
+  patch: {
+    description?: string;
+    cost?: number;
+    completed?: boolean;
+    toothNumber?: string | null;
+    notes?: string | null;
+    productName?: string | null;
+    productLot?: string | null;
+    productExpiresAt?: string | null;
+    productQuantity?: string | null;
+  }
 ) {
   const { data } = await api.patch<{ plan: TreatmentPlan }>(`/treatment-items/${id}`, patch);
   return data.plan;
@@ -122,5 +165,31 @@ export async function updateTreatmentItem(
 
 export async function deleteTreatmentItem(id: string) {
   const { data } = await api.delete<{ plan: TreatmentPlan }>(`/treatment-items/${id}`);
+  return data.plan;
+}
+
+export async function uploadTreatmentItemPhoto(itemId: string, file: File, label?: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (label) formData.append('label', label);
+  const { data } = await api.post<{ plan: TreatmentPlan }>(`/treatment-items/${itemId}/photos`, formData);
+  return data.plan;
+}
+
+export async function deleteTreatmentItemPhoto(photoId: string) {
+  const { data } = await api.delete<{ plan: TreatmentPlan }>(`/treatment-items/photos/${photoId}`);
+  return data.plan;
+}
+
+export async function uploadTreatmentPlanPhoto(planId: string, file: Blob, label?: string) {
+  const formData = new FormData();
+  formData.append('file', file, 'plantilla.png');
+  if (label) formData.append('label', label);
+  const { data } = await api.post<{ plan: TreatmentPlan }>(`/treatment-plans/${planId}/photos`, formData);
+  return data.plan;
+}
+
+export async function deleteTreatmentPlanPhoto(photoId: string) {
+  const { data } = await api.delete<{ plan: TreatmentPlan }>(`/treatment-plans/photos/${photoId}`);
   return data.plan;
 }
