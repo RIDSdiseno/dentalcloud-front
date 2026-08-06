@@ -3,11 +3,13 @@ import { getErrorMessage } from '../../api/client';
 import {
   fetchLedgerSummary,
   deleteLedgerMovement,
+  downloadLedgerPdf,
+  sendCartolaEmail,
   type LedgerSummary,
   type LedgerMovementType,
 } from '../../api/ledger';
 import { formatCLP } from '../../utils/treatmentStatus';
-import { ChevronDownIcon, PlusIcon, TrashIcon } from '../../components/icons';
+import { ChevronDownIcon, DownloadIcon, MailIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { LedgerMovementFormModal } from './LedgerMovementFormModal';
 import { useAuth } from '../../context/AuthContext';
 
@@ -57,6 +59,38 @@ export function CartolaTab({ patientId }: { patientId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalType, setModalType] = useState<LedgerMovementType | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+
+  async function handleDownloadPdf() {
+    setError(null);
+    setIsDownloading(true);
+    try {
+      const blob = await downloadLedgerPdf(patientId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo descargar el PDF'));
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
+  async function handleSendEmail() {
+    setError(null);
+    setIsSendingEmail(true);
+    try {
+      await sendCartolaEmail(patientId);
+      setEmailSent(true);
+      window.setTimeout(() => setEmailSent(false), 4000);
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo enviar el correo'));
+    } finally {
+      setIsSendingEmail(false);
+    }
+  }
 
   function load() {
     setIsLoading(true);
@@ -90,6 +124,27 @@ export function CartolaTab({ patientId }: { patientId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleSendEmail}
+          disabled={isSendingEmail}
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <MailIcon className="h-4 w-4" />
+          {isSendingEmail ? 'Enviando...' : emailSent ? 'Enviado' : 'Enviar por correo'}
+        </button>
+        <button
+          type="button"
+          onClick={handleDownloadPdf}
+          disabled={isDownloading}
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <DownloadIcon className="h-4 w-4" />
+          {isDownloading ? 'Generando...' : 'Descargar PDF'}
+        </button>
+      </div>
+
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
       <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
@@ -100,6 +155,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
               <tr>
                 <th className="px-4 py-2 text-left">N°</th>
                 <th className="px-4 py-2 text-left">Fecha</th>
+                <th className="px-4 py-2 text-left">Profesional</th>
                 <th className="px-4 py-2 text-right">Subtotal</th>
                 <th className="px-4 py-2 text-right">Interés</th>
                 <th className="px-4 py-2 text-right">Ajustes</th>
@@ -111,7 +167,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
             <tbody className="divide-y divide-slate-100">
               {summary.plans.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
                     Este paciente no tiene presupuestos registrados.
                   </td>
                 </tr>
@@ -120,6 +176,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                 <tr key={plan.id}>
                   <td className="px-4 py-2 font-medium text-slate-700">{plan.number}</td>
                   <td className="px-4 py-2 text-slate-500">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</td>
+                  <td className="px-4 py-2 text-slate-500">{plan.professional ?? '—'}</td>
                   <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.subtotal)}</td>
                   <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.interes)}</td>
                   <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.ajustes)}</td>
@@ -138,7 +195,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
             {summary.plans.length > 0 && (
               <tfoot>
                 <tr className="bg-slate-50 font-semibold text-slate-700">
-                  <td className="px-4 py-2" colSpan={2}>
+                  <td className="px-4 py-2" colSpan={3}>
                     Totales
                   </td>
                   <td className="px-4 py-2 text-right">{formatCLP(summary.totals.subtotal)}</td>

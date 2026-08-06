@@ -1,14 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  downloadConsentPdf,
   fetchConsentTypes,
   fetchPatientConsents,
+  removeConsentTypePdf,
   sendDataConsent,
+  uploadConsentTypePdf,
   type ConsentStatus,
   type ConsentType,
   type PatientConsent,
 } from '../../api/dataConsents';
 import { getErrorMessage } from '../../api/client';
 import type { Patient } from '../../api/patients';
+import { useAuth } from '../../context/AuthContext';
 import { ShieldIcon } from '../../components/icons';
 import { formatRut } from '../../utils/rut';
 import { ConsentimientoPreviewModal } from './ConsentimientoPreviewModal';
@@ -30,15 +34,55 @@ function ConsentTypeCard({
   consentType,
   consent,
   onUpdated,
+  onTypeUpdated,
 }: {
   patient: Patient;
   consentType: ConsentType;
   consent: PatientConsent | null;
   onUpdated: (consent: PatientConsent) => void;
+  onTypeUpdated: (consentType: ConsentType) => void;
 }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [isSending, setIsSending] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+
+  async function handlePdfFileSelected(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setIsUploadingPdf(true);
+    try {
+      const updated = await uploadConsentTypePdf(consentType.id, file);
+      onTypeUpdated(updated);
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo subir el PDF'));
+    } finally {
+      setIsUploadingPdf(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
+  async function handleRemovePdf() {
+    const confirmed = window.confirm(
+      `¿Quitar el PDF de "${consentType.name}"? Volverá a usarse el texto legal por defecto para los próximos envíos.`
+    );
+    if (!confirmed) return;
+    setError(null);
+    setIsUploadingPdf(true);
+    try {
+      const updated = await removeConsentTypePdf(consentType.id);
+      onTypeUpdated(updated);
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo quitar el PDF'));
+    } finally {
+      setIsUploadingPdf(false);
+    }
+  }
 
   const hasBeenSent = consent?.sentAt != null;
   // "No enviado" solo aplica cuando nunca se envió Y tampoco se respondió
@@ -72,6 +116,22 @@ function ConsentTypeCard({
     }
   }
 
+  async function handleDownloadPdf() {
+    if (!consent?.id) return;
+    setError(null);
+    setIsDownloading(true);
+    try {
+      const blob = await downloadConsentPdf(consent.id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo descargar el PDF'));
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -88,6 +148,44 @@ function ConsentTypeCard({
         <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
           Este paciente no tiene correo registrado. Agrega uno en "Editar" para poder enviar el consentimiento.
         </p>
+      )}
+
+      {isAdmin && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
+          <span className="font-medium text-slate-500">
+            {consentType.pdfUrl ? 'PDF propio de la clínica en uso' : 'Usando texto legal por defecto'}
+          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => handlePdfFileSelected(e.target.files?.[0])}
+          />
+          {consentType.pdfUrl && (
+            <a href={consentType.pdfUrl} target="_blank" rel="noreferrer" className="font-semibold text-brand-600 hover:underline">
+              Ver PDF actual
+            </a>
+          )}
+          <button
+            type="button"
+            disabled={isUploadingPdf}
+            onClick={() => fileInputRef.current?.click()}
+            className="font-semibold text-brand-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isUploadingPdf ? 'Subiendo...' : consentType.pdfUrl ? 'Reemplazar PDF' : 'Subir PDF'}
+          </button>
+          {consentType.pdfUrl && (
+            <button
+              type="button"
+              disabled={isUploadingPdf}
+              onClick={handleRemovePdf}
+              className="font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Quitar
+            </button>
+          )}
+        </div>
       )}
 
       {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
@@ -114,6 +212,16 @@ function ConsentTypeCard({
       </dl>
 
       <div className="mt-5 flex justify-end gap-2">
+        {consent?.id && (
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={isDownloading}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isDownloading ? 'Generando...' : 'Descargar PDF'}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowPreview(true)}
@@ -209,6 +317,10 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
     });
   }
 
+  function handleTypeUpdated(updated: ConsentType) {
+    setConsentTypes((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  }
+
   if (isLoading) return null;
 
   if (error) {
@@ -224,6 +336,7 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
           consentType={consentType}
           consent={consents.find((c) => c.consentTypeId === consentType.id) ?? null}
           onUpdated={(updated) => handleUpdated(consentType.id, updated)}
+          onTypeUpdated={handleTypeUpdated}
         />
       ))}
     </div>

@@ -12,7 +12,6 @@ import {
 
 const START_HOUR = 8;
 const END_HOUR = 20;
-const STEP_MINUTES = 15;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 56;
 const TIME_COL_WIDTH = 96;
@@ -20,6 +19,7 @@ const TIME_COL_WIDTH = 96;
 type SillonesLibresGridProps = {
   weekStart: Date;
   appointments: Appointment[];
+  stepMinutes: number;
   onSlotClick: (startAt: Date) => void;
   onAppointmentClick: (appointment: Appointment) => void;
 };
@@ -27,11 +27,12 @@ type SillonesLibresGridProps = {
 export function SillonesLibresGrid({
   weekStart,
   appointments,
+  stepMinutes,
   onSlotClick,
   onAppointmentClick,
 }: SillonesLibresGridProps) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const slots = generateTimeSlots(START_HOUR, END_HOUR, STEP_MINUTES);
+  const slots = generateTimeSlots(START_HOUR, END_HOUR, stepMinutes);
   const today = new Date();
   const [now, setNow] = useState(() => new Date());
 
@@ -42,7 +43,7 @@ export function SillonesLibresGrid({
 
   const nowMinutes = minutesSinceMidnight(now);
   const nowWithinHours = nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
-  const nowOffset = ((nowMinutes - START_HOUR * 60) / STEP_MINUTES) * ROW_HEIGHT;
+  const nowOffset = ((nowMinutes - START_HOUR * 60) / stepMinutes) * ROW_HEIGHT;
   const todayColumnIndex = days.findIndex((day) => isSameDay(day, today));
 
   const gridTemplateColumns = `${TIME_COL_WIDTH}px repeat(7, minmax(150px, 1fr))`;
@@ -112,7 +113,7 @@ export function SillonesLibresGrid({
             if (covering) {
               const spanRows = Math.max(
                 1,
-                Math.round((covering.end.getTime() - covering.start.getTime()) / (STEP_MINUTES * 60_000))
+                Math.round((covering.end.getTime() - covering.start.getTime()) / (stepMinutes * 60_000))
               );
               skipUntil = rowIndex + spanRows;
               cells.push(

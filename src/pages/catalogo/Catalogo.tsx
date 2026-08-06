@@ -14,7 +14,9 @@ function zonesSummary(allowedZones: string[]): string {
 
 export default function Catalogo() {
   const { user } = useAuth();
-  const isEstetica = user?.clinicaTipo === 'estetica';
+  // Clínicas "ambas" también gestionan zonas faciales (dejando el campo vacío
+  // en las prestaciones puramente dentales, sin restricción).
+  const isEstetica = !!user?.clinicaTipo && user.clinicaTipo !== 'dental';
   const [prestaciones, setPrestaciones] = useState<Prestacion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

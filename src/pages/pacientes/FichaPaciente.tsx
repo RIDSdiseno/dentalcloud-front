@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchPatient, type Patient } from '../../api/patients';
 import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
+import { fetchPatientBalance } from '../../api/ledger';
 import { getErrorMessage } from '../../api/client';
 import { formatRut } from '../../utils/rut';
 import { formatLongDate, formatTime } from '../agenda/dateUtils';
@@ -38,6 +39,7 @@ import { ObservacionesTab } from './ObservacionesTab';
 import { DocumentosClinicosTab } from './DocumentosClinicosTab';
 import { RxTab } from './RxTab';
 import { ConsentimientosTab } from './ConsentimientosTab';
+import { DebtNotificationModal } from './DebtNotificationModal';
 
 const TABS = [
   { key: 'datos', label: 'Datos paciente', icon: IdBadgeIcon },
@@ -140,6 +142,7 @@ export default function FichaPaciente() {
     if (!moduleKey) return true;
     return user?.clinicaModules?.[moduleKey] !== false && user?.permissions?.[moduleKey] !== false;
   });
+  const cartolaEnabled = user?.clinicaModules?.cartola !== false && user?.permissions?.cartola !== false;
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +150,8 @@ export default function FichaPaciente() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('datos');
+  const [debtSaldo, setDebtSaldo] = useState<number | null>(null);
+  const [showDebtNotification, setShowDebtNotification] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -160,6 +165,19 @@ export default function FichaPaciente() {
       .catch((err) => setError(getErrorMessage(err, 'No se pudo cargar la ficha del paciente')))
       .finally(() => setIsLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !cartolaEnabled) return;
+    setDebtSaldo(null);
+    setShowDebtNotification(false);
+    fetchPatientBalance(id)
+      .then((saldoTotal) => {
+        setDebtSaldo(saldoTotal);
+        if (saldoTotal > 0) setShowDebtNotification(true);
+      })
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, cartolaEnabled]);
 
   async function handleCancelAppointment(appointment: Appointment) {
     const confirmed = window.confirm(
@@ -489,6 +507,19 @@ export default function FichaPaciente() {
               )
             );
             setShowNewAppointment(false);
+          }}
+        />
+      )}
+
+      {showDebtNotification && debtSaldo != null && debtSaldo > 0 && (
+        <DebtNotificationModal
+          patientId={patient.id}
+          patientEmail={patient.email}
+          saldoTotal={debtSaldo}
+          onClose={() => setShowDebtNotification(false)}
+          onViewCartola={() => {
+            setActiveTab('cartola');
+            setShowDebtNotification(false);
           }}
         />
       )}

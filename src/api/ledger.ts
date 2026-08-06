@@ -23,6 +23,7 @@ export type PlanLedgerRow = {
   id: string;
   number: number;
   name: string | null;
+  professional: string | null;
   createdAt: string;
   subtotal: number;
   interes: number;
@@ -80,6 +81,23 @@ export type LedgerMovementInput = {
 export async function fetchLedgerSummary(patientId: string) {
   const { data } = await api.get<LedgerSummary>('/ledger/summary', { params: { patientId } });
   return data;
+}
+
+export async function downloadLedgerPdf(patientId: string) {
+  const { data } = await api.get<Blob>('/ledger/summary/pdf', { params: { patientId }, responseType: 'blob' });
+  return data;
+}
+
+export async function fetchPatientBalance(patientId: string) {
+  const { data } = await api.get<{ saldoTotal: number }>('/ledger/balance', { params: { patientId } });
+  return data.saldoTotal;
+}
+
+// Envía la cartola en PDF al correo del paciente — con lenguaje de
+// recordatorio de pago si tiene saldo pendiente, o de cartola al día si no.
+export async function sendCartolaEmail(patientId: string) {
+  const { data } = await api.post<{ sent: boolean }>('/ledger/send-email', { patientId });
+  return data.sent;
 }
 
 export async function createLedgerMovement(input: LedgerMovementInput) {

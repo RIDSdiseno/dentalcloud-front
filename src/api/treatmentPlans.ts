@@ -14,6 +14,11 @@ export type TreatmentItem = {
   convenioDiscountPercent: number;
   cost: number;
   completed: boolean;
+  // Profesional que efectivamente trató el procedimiento — se registra solo
+  // al marcar `completed`, distinto de `TreatmentPlan.professional` (quien
+  // creó el presupuesto).
+  treatedBy: { id: string; name: string } | null;
+  treatedAt: string | null;
   // Observación clínica del procedimiento (ej. producto usado, reacción del
   // paciente) — distinta de las notas generales del presupuesto.
   notes: string | null;
@@ -33,9 +38,16 @@ export type TreatmentPlan = {
   status: TreatmentStatus;
   amount: number;
   notes: string | null;
+  // "dental" | "estetica" — qué diagrama se usó para armar este plan. Solo
+  // relevante para clínicas tipo "ambas"; en clínicas puras coincide siempre
+  // con el tipo de la clínica.
+  diagramType: 'dental' | 'estetica';
   createdAt: string;
   updatedAt: string;
   professional: { id: string; name: string } | null;
+  // Usuario que efectivamente creó el registro — distinto de `professional`,
+  // ya que un admin puede crear el presupuesto y asignarlo a otro profesional.
+  createdBy: { id: string; name: string } | null;
   sucursal: Sucursal | null;
   prevision: Prevision | null;
   convenio: Convenio | null;
@@ -61,6 +73,7 @@ export type TreatmentPlanInput = {
   name?: string;
   paymentMethod?: string;
   notes?: string;
+  diagramType?: 'dental' | 'estetica';
   items?: TreatmentItemInput[];
 };
 

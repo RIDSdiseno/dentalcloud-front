@@ -5,6 +5,8 @@ import {
   fetchExamCatalog,
   createRxOrder,
   sendRxOrder,
+  fetchRxOrderDetail,
+  uploadRxOrderFiles,
   type ExamGroup,
   type ExamType,
 } from '../../api/rx';
@@ -15,11 +17,19 @@ import { roleLabel } from '../../utils/roles';
 import { formatRut } from '../../utils/rut';
 import type { Patient } from '../../api/patients';
 import { BulletListIcon, EditIcon, InfoCircleIcon } from '../../components/icons';
+import { Odontogram, type ToothSelection } from './Odontogram';
 
-const PRIORITIES = ['Normal', 'Urgente'];
+const PRIORITIES = ['1 día', '2 días', '3 días', 'Normal', 'Urgente'];
 
-function normalizeKey(value?: string | null) {
-  return (value ?? '').trim().toLowerCase();
+type ExamDraft = {
+  selection: ToothSelection[];
+  urlTexto: string;
+  files: File[];
+  showPiezas: boolean;
+};
+
+function emptyExamDraft(): ExamDraft {
+  return { selection: [], urlTexto: '', files: [], showPiezas: false };
 }
 
 function SectionCard({ icon: Icon, title, children }: { icon: typeof InfoCircleIcon; title: string; children: ReactNode }) {
@@ -85,8 +95,7 @@ function ExamCatalogPicker({
 
   function examsForColumn(group: ExamGroup) {
     if (groupsForTab.length === 0) return examTypes;
-    const key = normalizeKey(group.nombre);
-    return examTypes.filter((t) => normalizeKey(t.grupo ?? t.group) === key);
+    return examTypes.filter((t) => String(t.grupo ?? t.group ?? '') === String(group.id));
   }
 
   return (
@@ -153,15 +162,18 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
   const [examGroups, setExamGroups] = useState<ExamGroup[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [professionals, setProfessionals] = useState<StaffUser[]>([]);
-  const [selectedExamIds, setSelectedExamIds] = useState<number[]>([]);
+  const [examDrafts, setExamDrafts] = useState<Record<number, ExamDraft>>({});
   const [sucursalId, setSucursalId] = useState('');
   const [professionalId, setProfessionalId] = useState('');
   const [diagnostico, setDiagnostico] = useState('');
+  const [sinDiagnostico, setSinDiagnostico] = useState(false);
   const [observaciones, setObservaciones] = useState('');
   const [prioridad, setPrioridad] = useState(PRIORITIES[0]);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [submitMode, setSubmitMode] = useState<'draft' | 'send' | null>(null);
+
+  const selectedExamIds = useMemo(() => Object.keys(examDrafts).map(Number), [examDrafts]);
 
   const connectedSucursales = useMemo(() => sucursales.filter((s) => !!s.dimageClinicId), [sucursales]);
 
@@ -182,7 +194,17 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
   }, [isAdmin]);
 
   function toggleExam(id: number) {
-    setSelectedExamIds((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]));
+    setExamDrafts((prev) => {
+      if (prev[id]) {
+        const { [id]: _removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [id]: emptyExamDraft() };
+    });
+  }
+
+  function updateExamDraft(id: number, patch: Partial<ExamDraft>) {
+    setExamDrafts((prev) => (prev[id] ? { ...prev, [id]: { ...prev[id], ...patch } } : prev));
   }
 
   async function handleSubmit(mode: 'draft' | 'send') {
@@ -190,8 +212,8 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
       setError('Selecciona una clínica conectada a Rx');
       return;
     }
-    if (!diagnostico.trim()) {
-      setError('El diagnóstico clínico es requerido');
+    if (!sinDiagnostico && !diagnostico.trim()) {
+      setError('El diagnóstico clínico es requerido (o marca "Sin diagnóstico clínico")');
       return;
     }
     if (selectedExamIds.length === 0) {
@@ -205,11 +227,38 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
         patientId: patient.id,
         sucursalId,
         professionalId: isAdmin && professionalId ? professionalId : undefined,
-        diagnostico,
+        diagnostico: sinDiagnostico ? 'Sin diagnóstico' : diagnostico,
         observaciones: observaciones || undefined,
         prioridad,
-        examenes: selectedExamIds.map((kindId) => ({ kindId })),
+        examenes: Object.entries(examDrafts).map(([kindId, draft]) => ({
+          kindId: Number(kindId),
+          dientes: draft.selection.length
+            ? Array.from(new Set(draft.selection.map((s) => s.tooth)))
+            : undefined,
+          urlTexto: draft.urlTexto.trim() || undefined,
+        })),
       });
+
+      const pendingFiles = Object.entries(examDrafts).filter(([, draft]) => draft.files.length > 0);
+      if (pendingFiles.length > 0) {
+        try {
+          const detail = await fetchRxOrderDetail(order.id);
+          for (const [kindId, draft] of pendingFiles) {
+            const examination = detail.examenes.find((e) => e.id_tipo_examen === Number(kindId));
+            if (examination) {
+              await uploadRxOrderFiles(order.id, examination.id, draft.files);
+            }
+          }
+        } catch (uploadErr) {
+          // La orden ya existe en Dimage en este punto; no se revierte por un adjunto fallido.
+          // El modal se cierra al terminar (onCreated), así que se avisa con un alert en vez
+          // de un mensaje de error que nunca llegaría a verse.
+          window.alert(
+            getErrorMessage(uploadErr, 'La orden se creó, pero no se pudieron adjuntar todos los archivos. Puedes agregarlos después desde el detalle de la orden.')
+          );
+        }
+      }
+
       if (mode === 'send') {
         await sendRxOrder(order.id);
       }
@@ -290,14 +339,24 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
 
         <SectionCard icon={EditIcon} title="Diagnóstico clínico">
           <div className="flex flex-col gap-4">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={sinDiagnostico}
+                onChange={(e) => setSinDiagnostico(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              Examen sin diagnóstico clínico
+            </label>
             <div>
-              <FieldLabel required>Diagnóstico</FieldLabel>
+              <FieldLabel required={!sinDiagnostico}>Diagnóstico</FieldLabel>
               <textarea
                 value={diagnostico}
                 onChange={(e) => setDiagnostico(e.target.value)}
+                disabled={sinDiagnostico}
                 rows={3}
                 placeholder="Describe el diagnóstico clínico..."
-                className={`${selectClassName} resize-y`}
+                className={`${selectClassName} resize-y disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
               />
             </div>
             <div>
@@ -322,6 +381,66 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
             isLoading={isLoadingCatalog}
           />
         </SectionCard>
+
+        {selectedExamIds.length > 0 && (
+          <SectionCard icon={EditIcon} title="Detalle por examen">
+            <div className="flex flex-col gap-4">
+              {selectedExamIds.map((kindId) => {
+                const exam = examTypes.find((t) => t.id === kindId);
+                const draft = examDrafts[kindId];
+                if (!draft) return null;
+                return (
+                  <div key={kindId} className="rounded-lg border border-slate-200 p-3">
+                    <p className="mb-2 text-sm font-semibold text-slate-700">{exam?.descripcion ?? `Examen #${kindId}`}</p>
+
+                    <div className="flex flex-col gap-2">
+                      <div>
+                        <label className="text-xs font-medium text-slate-600">Observación / URL del examen (opcional)</label>
+                        <input
+                          value={draft.urlTexto}
+                          onChange={(e) => updateExamDraft(kindId, { urlTexto: e.target.value })}
+                          placeholder="Ej: link de imagen externa, nota puntual del examen..."
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-medium text-slate-600">Archivos (opcional)</label>
+                        <input
+                          type="file"
+                          multiple
+                          onChange={(e) => updateExamDraft(kindId, { files: Array.from(e.target.files ?? []) })}
+                          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-brand-600 hover:file:bg-brand-100"
+                        />
+                        {draft.files.length > 0 && (
+                          <p className="mt-1 text-xs text-slate-400">{draft.files.length} archivo(s) seleccionado(s)</p>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => updateExamDraft(kindId, { showPiezas: !draft.showPiezas })}
+                        className="w-fit text-xs font-semibold text-brand-600 hover:text-brand-700"
+                      >
+                        {draft.showPiezas ? 'Ocultar piezas' : '+ Especificar piezas (opcional)'}
+                      </button>
+
+                      {draft.showPiezas && (
+                        <div className="rounded-lg bg-slate-50 p-2">
+                          <Odontogram
+                            mode="extraction"
+                            selection={draft.selection}
+                            onSelectionChange={(selection) => updateExamDraft(kindId, { selection })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </SectionCard>
+        )}
 
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 

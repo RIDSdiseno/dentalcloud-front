@@ -4,6 +4,7 @@ import { getErrorMessage } from '../../api/client';
 import { createClinica, type Clinica } from '../../api/clinicas';
 import { CameraIcon } from '../../components/icons';
 import { formatRutInput, isValidRut } from '../../utils/rut';
+import { PAIS_OPTIONS, TIPO_LABELS } from './clinicaShared';
 
 type CrearClinicaModalProps = {
   onClose: () => void;
@@ -16,7 +17,8 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
   const [name, setName] = useState('');
   const [rut, setRut] = useState('');
   const [rutTouched, setRutTouched] = useState(false);
-  const [tipo, setTipo] = useState<'dental' | 'estetica'>('dental');
+  const [tipo, setTipo] = useState<'dental' | 'estetica' | 'ambas'>('dental');
+  const [pais, setPais] = useState(PAIS_OPTIONS[0]);
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -54,6 +56,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
         name,
         rut: rut.trim() || undefined,
         tipo,
+        pais,
         adminName,
         adminEmail,
         adminPassword,
@@ -129,19 +132,42 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
           {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600">RUT inválido</p>}
         </div>
 
-        <div>
-          <label htmlFor="clinica-tipo" className="text-sm font-medium text-slate-700">
-            Tipo
-          </label>
-          <select
-            id="clinica-tipo"
-            value={tipo}
-            onChange={(e) => setTipo(e.target.value as 'dental' | 'estetica')}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-          >
-            <option value="dental">Dental</option>
-            <option value="estetica">Estética facial</option>
-          </select>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="clinica-tipo" className="text-sm font-medium text-slate-700">
+              Tipo
+            </label>
+            <select
+              id="clinica-tipo"
+              value={tipo}
+              onChange={(e) => setTipo(e.target.value as 'dental' | 'estetica' | 'ambas')}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            >
+              {Object.entries(TIPO_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="clinica-pais" className="text-sm font-medium text-slate-700">
+              País
+            </label>
+            <select
+              id="clinica-pais"
+              value={pais}
+              onChange={(e) => setPais(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            >
+              {PAIS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="border-t border-slate-100 pt-4">

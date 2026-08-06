@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react';
-import { fetchUsers, updateUserRut, type StaffUser } from '../../api/users';
+import { fetchUsers, updateUserRut, importProfessionalsFromDimage, type StaffUser } from '../../api/users';
 import { getErrorMessage } from '../../api/client';
-import { ClockIcon, PlusIcon, UsersIcon } from '../../components/icons';
+import { useAuth } from '../../context/AuthContext';
+import { ClockIcon, DownloadIcon, PlusIcon, UsersIcon } from '../../components/icons';
 import { roleLabel } from '../../utils/roles';
 import { formatRutInput } from '../../utils/rut';
 import { ProfessionalFormModal } from './ProfessionalFormModal';
 import { ScheduleModal } from './ScheduleModal';
 import { PermisosPerfilPanel } from './PermisosPerfilPanel';
+import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 
 const SCHEDULABLE_ROLES = ['odontologo', 'radiologo', 'operador'];
 
-function RutCell({ user, onUpdated }: { user: StaffUser; onUpdated: (user: StaffUser) => void }) {
+function RutCell({
+  user,
+  onUpdated,
+}: {
+  user: StaffUser;
+  onUpdated: (user: StaffUser, dimageGeneratedPassword?: string | null) => void;
+}) {
   const [value, setValue] = useState(user.rut ? formatRutInput(user.rut) : '');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,8 +29,8 @@ function RutCell({ user, onUpdated }: { user: StaffUser; onUpdated: (user: Staff
     setIsSaving(true);
     setError(null);
     try {
-      const updated = await updateUserRut(user.id, trimmed || null);
-      onUpdated(updated);
+      const { user: updated, dimageGeneratedPassword } = await updateUserRut(user.id, trimmed || null);
+      onUpdated(updated, dimageGeneratedPassword);
       setValue(updated.rut ? formatRutInput(updated.rut) : '');
     } catch (err) {
       setError(getErrorMessage(err, 'RUT inválido'));
@@ -47,11 +55,14 @@ function RutCell({ user, onUpdated }: { user: StaffUser; onUpdated: (user: Staff
 }
 
 export default function Profesionales() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<StaffUser[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [scheduleFor, setScheduleFor] = useState<StaffUser | null>(null);
+  const [passwordEntries, setPasswordEntries] = useState<{ label: string; password: string }[] | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     fetchUsers()
@@ -59,6 +70,32 @@ export default function Profesionales() {
       .catch((err) => setError(getErrorMessage(err, 'No se pudo cargar la lista de profesionales')))
       .finally(() => setIsLoading(false));
   }, []);
+
+  function handleProfessionalSynced(user: StaffUser, dimageGeneratedPassword?: string | null) {
+    setUsers((prev) => (prev.some((u) => u.id === user.id) ? prev.map((u) => (u.id === user.id ? user : u)) : [...prev, user]));
+    if (dimageGeneratedPassword) {
+      setPasswordEntries([{ label: `${user.name} (RIDS RX)`, password: dimageGeneratedPassword }]);
+    }
+  }
+
+  async function handleImportFromDimage() {
+    setError(null);
+    setIsImporting(true);
+    try {
+      const imported = await importProfessionalsFromDimage();
+      if (imported.length === 0) {
+        setError('No hay profesionales nuevos para importar desde RIDS RX.');
+      } else {
+        const refreshed = await fetchUsers();
+        setUsers(refreshed);
+        setPasswordEntries(imported.map((i) => ({ label: `${i.name} (${roleLabel(i.role)})`, password: i.generatedPassword })));
+      }
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo importar desde RIDS RX'));
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
@@ -69,14 +106,27 @@ export default function Profesionales() {
             {users.length} usuario{users.length === 1 ? '' : 's'}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Agregar profesional
-        </button>
+        <div className="flex items-center gap-2">
+          {currentUser?.role === 'admin' && currentUser?.rxEnabled && (
+            <button
+              type="button"
+              onClick={handleImportFromDimage}
+              disabled={isImporting}
+              className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <DownloadIcon className="h-4 w-4" />
+              {isImporting ? 'Importando...' : 'Importar desde RIDS RX'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Agregar profesional
+          </button>
+        </div>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
@@ -108,10 +158,7 @@ export default function Profesionales() {
                   <td className="px-4 py-3 font-medium text-slate-800">{user.name}</td>
                   <td className="px-4 py-3 text-slate-500">{user.email}</td>
                   <td className="px-4 py-3">
-                    <RutCell
-                      user={user}
-                      onUpdated={(updated) => setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)))}
-                    />
+                    <RutCell user={user} onUpdated={handleProfessionalSynced} />
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -148,11 +195,18 @@ export default function Profesionales() {
       {showForm && (
         <ProfessionalFormModal
           onClose={() => setShowForm(false)}
-          onCreated={(user) => {
+          onCreated={(user, dimageGeneratedPassword) => {
             setUsers((prev) => [...prev, user]);
             setShowForm(false);
+            if (dimageGeneratedPassword) {
+              setPasswordEntries([{ label: `${user.name} (RIDS RX)`, password: dimageGeneratedPassword }]);
+            }
           }}
         />
+      )}
+
+      {passwordEntries && (
+        <GeneratedPasswordDialog entries={passwordEntries} onClose={() => setPasswordEntries(null)} />
       )}
 
       {scheduleFor && <ScheduleModal professional={scheduleFor} onClose={() => setScheduleFor(null)} />}

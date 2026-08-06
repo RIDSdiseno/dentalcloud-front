@@ -10,7 +10,27 @@ import {
   UsersIcon,
 } from '../../components/icons';
 
-export const TIPO_LABELS: Record<string, string> = { dental: 'Dental', estetica: 'Estética facial' };
+export const TIPO_LABELS: Record<string, string> = {
+  dental: 'Dental',
+  estetica: 'Estética facial',
+  ambas: 'Dental y estética',
+};
+
+export const PAIS_OPTIONS = [
+  'Chile',
+  'Argentina',
+  'Perú',
+  'Colombia',
+  'México',
+  'Bolivia',
+  'Ecuador',
+  'Uruguay',
+  'Paraguay',
+  'Venezuela',
+  'España',
+  'Estados Unidos',
+  'Otro',
+];
 
 export const MODULE_LABELS: Record<ClinicaModuleKey, string> = {
   pacientes: 'Pacientes',

@@ -2,10 +2,11 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createUser, type StaffUser } from '../../api/users';
+import { formatRutInput, isValidRut } from '../../utils/rut';
 
 type ProfessionalFormModalProps = {
   onClose: () => void;
-  onCreated: (user: StaffUser) => void;
+  onCreated: (user: StaffUser, dimageGeneratedPassword?: string | null) => void;
 };
 
 export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormModalProps) {
@@ -13,16 +14,31 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'odontologo' | 'admin' | 'radiologo' | 'operador'>('odontologo');
+  const [rut, setRut] = useState('');
+  const [rutTouched, setRutTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const rutIsValid = rut.trim() === '' ? true : isValidRut(rut);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    setRutTouched(true);
     setError(null);
+    if (rut.trim() && !isValidRut(rut)) {
+      setError('El RUT ingresado no es válido');
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const user = await createUser({ name, email, password, role });
-      onCreated(user);
+      const { user, dimageGeneratedPassword } = await createUser({
+        name,
+        email,
+        password,
+        role,
+        rut: rut.trim() || undefined,
+      });
+      onCreated(user, dimageGeneratedPassword);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo crear el usuario'));
     } finally {
@@ -91,6 +107,32 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
             <option value="operador">Operador</option>
             <option value="admin">Administrador</option>
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="prof-rut" className="text-sm font-medium text-slate-700">
+            RUT
+          </label>
+          <input
+            id="prof-rut"
+            value={rut}
+            onChange={(e) => setRut(formatRutInput(e.target.value))}
+            onBlur={() => setRutTouched(true)}
+            placeholder="76.123.456-7"
+            maxLength={12}
+            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 ${
+              rutTouched && !rutIsValid
+                ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
+                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15'
+            }`}
+          />
+          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600">RUT inválido</p>}
+          {(role === 'odontologo' || role === 'radiologo') && (
+            <p className="mt-1 text-xs text-slate-400">
+              Opcional, pero si tu clínica tiene el módulo Rx habilitado y lo completas ahora, este profesional queda
+              sincronizado con RIDS RX de inmediato.
+            </p>
+          )}
         </div>
 
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}

@@ -93,7 +93,10 @@ export default function Clinicas() {
                       <span className="font-medium text-slate-800">{clinica.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{TIPO_LABELS[clinica.tipo] ?? clinica.tipo}</td>
+                  <td className="px-4 py-3 text-slate-500">
+                    {TIPO_LABELS[clinica.tipo] ?? clinica.tipo}
+                    <span className="text-slate-400"> · {clinica.pais}</span>
+                  </td>
                   <td className="px-4 py-3 text-slate-500">{clinica.rut ? formatRut(clinica.rut) : '—'}</td>
                   <td className="px-4 py-3">
                     <span

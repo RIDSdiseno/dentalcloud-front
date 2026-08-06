@@ -4,10 +4,11 @@ import { getErrorMessage } from '../../api/client';
 import { createAppointment, type Appointment } from '../../api/appointments';
 import type { Patient } from '../../api/patients';
 import type { Chair } from '../../api/chairs';
+import { useAuth } from '../../context/AuthContext';
 import { PatientPicker } from './PatientPicker';
 import { formatLongDate, formatTime } from './dateUtils';
 
-const DURATION_OPTIONS = [15, 30, 45, 60, 90];
+const ALL_DURATION_OPTIONS = [15, 30, 45, 60, 90];
 
 type AppointmentFormModalProps = {
   chair: Chair;
@@ -17,8 +18,12 @@ type AppointmentFormModalProps = {
 };
 
 export function AppointmentFormModal({ chair, startAt, onClose, onCreated }: AppointmentFormModalProps) {
+  const { user } = useAuth();
+  const stepMinutes = user?.slotDurationMinutes ?? 15;
+  const DURATION_OPTIONS = ALL_DURATION_OPTIONS.filter((minutes) => minutes % stepMinutes === 0);
+
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-  const [duration, setDuration] = useState(30);
+  const [duration, setDuration] = useState(stepMinutes);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

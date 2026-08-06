@@ -142,7 +142,10 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
   const patientId = patient.id;
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
-  const isEstetica = user?.clinicaTipo === 'estetica';
+  const clinicaTipo = user?.clinicaTipo;
+  const clinicaOfreceAmbas = clinicaTipo === 'ambas';
+  const [diagramType, setDiagramType] = useState<'dental' | 'estetica'>(clinicaTipo === 'estetica' ? 'estetica' : 'dental');
+  const isEstetica = clinicaOfreceAmbas ? diagramType === 'estetica' : clinicaTipo === 'estetica';
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [error, setError] = useState<string | null>(null);
@@ -376,6 +379,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         name: name || undefined,
         paymentMethod,
         notes: notes || undefined,
+        diagramType: clinicaOfreceAmbas ? diagramType : undefined,
         items: itemInputs,
       });
       onCreated(plan);
@@ -417,6 +421,37 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
 
         {step === 1 && (
           <div className="flex flex-col gap-4">
+            {clinicaOfreceAmbas && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">
+                  Tipo de diagrama <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 inline-flex rounded-lg border border-slate-300 p-1">
+                  {(
+                    [
+                      { value: 'dental' as const, label: 'Odontograma' },
+                      { value: 'estetica' as const, label: 'Mapa facial' },
+                    ]
+                  ).map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      disabled={items.length > 0}
+                      onClick={() => setDiagramType(opt.value)}
+                      title={items.length > 0 ? 'No se puede cambiar con prestaciones ya agregadas' : undefined}
+                      className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                        diagramType === opt.value ? 'bg-brand-600 text-white' : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  Esta clínica ofrece ambos tipos de atención — elige qué diagrama usará este presupuesto.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="text-sm font-medium text-slate-700">

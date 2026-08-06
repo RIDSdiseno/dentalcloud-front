@@ -38,7 +38,7 @@ const MODULE_META: Record<ModuleRouteKey, { label: string; description: string }
   evoluciones: { label: 'Evoluciones', description: 'Evoluciones clínicas registradas por clínica.' },
   observaciones: { label: 'Observaciones', description: 'Observaciones administrativas registradas por clínica.' },
   consentimientos: { label: 'Consentimientos', description: 'Estado de los consentimientos informados de los pacientes.' },
-  rx: { label: 'Módulo Rx', description: 'Integración con Dimage. Hoy usa credenciales globales, no hay consumo por clínica todavía.' },
+  rx: { label: 'Módulo Rx', description: 'Integración con RIDS RX. Hoy usa credenciales globales, no hay consumo por clínica todavía.' },
 };
 
 function isValidModuleKey(key: string | undefined): key is ModuleRouteKey {

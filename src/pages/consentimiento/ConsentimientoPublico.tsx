@@ -130,9 +130,27 @@ export default function ConsentimientoPublico() {
       <h1 className="mb-1 text-lg font-bold text-slate-900">{consent?.consentTypeName}</h1>
       <p className="mb-4 text-sm text-slate-500">Hola {consent?.patientName}, por favor revisa el siguiente documento.</p>
 
-      <div className="mb-5 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">
-        {consent?.contentSnapshot}
-      </div>
+      {consent?.pdfUrl ? (
+        <div className="mb-5 flex flex-col gap-2">
+          <iframe
+            src={consent.pdfUrl}
+            title={consent.consentTypeName}
+            className="h-80 w-full rounded-lg border border-slate-200 bg-slate-50"
+          />
+          <a
+            href={consent.pdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="self-start text-sm font-semibold text-brand-600 hover:underline"
+          >
+            Descargar / abrir en otra pestaña
+          </a>
+        </div>
+      ) : (
+        <div className="mb-5 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">
+          {consent?.contentSnapshot}
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         <div>

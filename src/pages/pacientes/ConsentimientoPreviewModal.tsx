@@ -25,6 +25,7 @@ export function ConsentimientoPreviewModal({
   onSigned: (result: { status: ConsentStatus; respondedAt: string; signerName: string; signerRut: string }) => void;
 }) {
   const [text, setText] = useState<string | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [signerName, setSignerName] = useState(`${patient.firstName} ${patient.lastName}`);
@@ -35,8 +36,11 @@ export function ConsentimientoPreviewModal({
 
   useEffect(() => {
     fetchConsentText(consentType.id)
-      .then(setText)
-      .catch((err) => setLoadError(getErrorMessage(err, 'No se pudo cargar el texto del consentimiento')));
+      .then((result) => {
+        setText(result.text);
+        setPdfUrl(result.pdfUrl);
+      })
+      .catch((err) => setLoadError(getErrorMessage(err, 'No se pudo cargar el documento del consentimiento')));
   }, [consentType.id]);
 
   const alreadyResponded = consent?.status === 'firmado' || consent?.status === 'rechazado';
@@ -69,10 +73,28 @@ export function ConsentimientoPreviewModal({
       <div className="flex flex-col gap-4">
         {loadError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{loadError}</p>}
 
-        {text && (
-          <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">
-            {text}
+        {pdfUrl ? (
+          <div className="flex flex-col gap-2">
+            <iframe
+              src={pdfUrl}
+              title={`Consentimiento ${consentType.name}`}
+              className="h-80 w-full rounded-lg border border-slate-200 bg-slate-50"
+            />
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="self-start text-sm font-semibold text-brand-600 hover:underline"
+            >
+              Descargar / abrir en otra pestaña
+            </a>
           </div>
+        ) : (
+          text && (
+            <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">
+              {text}
+            </div>
+          )
         )}
 
         {alreadyResponded ? (

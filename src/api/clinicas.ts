@@ -20,6 +20,7 @@ export type Clinica = {
   rut: string | null;
   active: boolean;
   tipo: string;
+  pais: string;
   logoUrl: string | null;
   rxEnabled: boolean;
   modules: ClinicaModules;
@@ -161,6 +162,7 @@ export async function updateClinica(
     rut?: string;
     active?: boolean;
     tipo?: string;
+    pais?: string;
     rxEnabled?: boolean;
     modules?: Partial<ClinicaModules>;
   }
@@ -169,10 +171,20 @@ export async function updateClinica(
   return data.clinica;
 }
 
+export async function updateClinicaLogo(id: string, logo: File) {
+  const formData = new FormData();
+  formData.append('logo', logo);
+  const { data } = await api.patch<{ clinica: Clinica }>(`/clinicas/${id}/logo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.clinica;
+}
+
 export async function createClinica(input: {
   name: string;
   rut?: string;
   tipo: string;
+  pais: string;
   adminName: string;
   adminEmail: string;
   adminPassword: string;
@@ -182,6 +194,7 @@ export async function createClinica(input: {
   formData.append('name', input.name);
   if (input.rut) formData.append('rut', input.rut);
   formData.append('tipo', input.tipo);
+  formData.append('pais', input.pais);
   formData.append('adminName', input.adminName);
   formData.append('adminEmail', input.adminEmail);
   formData.append('adminPassword', input.adminPassword);
