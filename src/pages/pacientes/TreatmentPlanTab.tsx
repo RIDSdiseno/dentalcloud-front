@@ -75,7 +75,11 @@ function PlantillaFotografica({
     }
   }
 
-  async function handleDelete(photoId: string) {
+  async function handleDelete(photoId: string, label: string | null) {
+    const confirmed = window.confirm(
+      label ? `¿Eliminar la foto "${label}"? Esta acción no se puede deshacer.` : '¿Eliminar esta foto? Esta acción no se puede deshacer.'
+    );
+    if (!confirmed) return;
     try {
       const updated = await deleteTreatmentPlanPhoto(photoId);
       onUpdated(updated);
@@ -129,7 +133,7 @@ function PlantillaFotografica({
             )}
             <button
               type="button"
-              onClick={() => handleDelete(photo.id)}
+              onClick={() => handleDelete(photo.id, photo.label)}
               aria-label="Eliminar foto"
               className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
             >
@@ -186,6 +190,12 @@ function ItemDetailsPanel({
     productExpiresAt !== (item.productExpiresAt?.slice(0, 10) ?? '') ||
     productQuantity !== (item.productQuantity ?? '');
 
+  // Si la prestación exige trazabilidad (ver Catálogo) pero el ítem nunca
+  // registró el producto (ej. se creó antes de que existiera este control, o
+  // se agregó como personalizada), es un vacío más grave que fotos faltantes.
+  const requiresProduct = item.prestacion?.requiresProductTracking ?? false;
+  const missingProduct = requiresProduct && !item.productName?.trim();
+
   // Si el procedimiento registra un producto (ej. Ácido Hialurónico), se
   // esperan las 2 fotos de sticker del lote (ficha + paciente) — se avisa
   // contra `item.photos` (ya guardado), no contra el estado local sin guardar.
@@ -228,7 +238,11 @@ function ItemDetailsPanel({
     }
   }
 
-  async function handleDeletePhoto(photoId: string) {
+  async function handleDeletePhoto(photoId: string, label: string | null) {
+    const confirmed = window.confirm(
+      label ? `¿Eliminar la foto "${label}"? Esta acción no se puede deshacer.` : '¿Eliminar esta foto? Esta acción no se puede deshacer.'
+    );
+    if (!confirmed) return;
     try {
       const plan = await deleteTreatmentItemPhoto(photoId);
       onUpdated(plan);
@@ -287,6 +301,12 @@ function ItemDetailsPanel({
         )}
       </div>
 
+      {missingProduct && (
+        <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">
+          Esta prestación requiere registrar el producto y su lote — complétalo arriba.
+        </p>
+      )}
+
       {missingStickers.length > 0 && (
         <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700">
           Falta subir el sticker del producto para {missingStickers.join(' y ')}.
@@ -323,7 +343,7 @@ function ItemDetailsPanel({
             )}
             <button
               type="button"
-              onClick={() => handleDeletePhoto(photo.id)}
+              onClick={() => handleDeletePhoto(photo.id, photo.label)}
               aria-label="Eliminar foto"
               className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
             >
@@ -403,7 +423,9 @@ function PlanCard({
     }
   }
 
-  async function handleDeleteItem(itemId: string) {
+  async function handleDeleteItem(itemId: string, description: string) {
+    const confirmed = window.confirm(`¿Eliminar el procedimiento "${description}"? Se perderá su registro de producto/lote y fotos asociadas.`);
+    if (!confirmed) return;
     try {
       const updated = await deleteTreatmentItem(itemId);
       onUpdated(updated);
@@ -521,6 +543,22 @@ function PlanCard({
         </button>
       </div>
 
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-1.5 text-[11px] text-slate-400">
+        <span>Creado por {plan.createdBy?.name ?? 'Sin registro'}</span>
+        {plan.startedAt && (
+          <span>
+            · Pasó a tratamiento el {new Date(plan.startedAt).toLocaleDateString('es-CL')}
+            {plan.startedBy && ` (${plan.startedBy.name})`}
+          </span>
+        )}
+        {plan.completedAt && (
+          <span>
+            · Completado el {new Date(plan.completedAt).toLocaleDateString('es-CL')}
+            {plan.completedBy && ` (${plan.completedBy.name})`}
+          </span>
+        )}
+      </div>
+
       {expanded && (
         <div className="border-t border-slate-100 p-4">
           <div className="flex flex-col gap-2">
@@ -546,7 +584,7 @@ function PlanCard({
                   <span className="text-sm text-slate-500">{formatCLP(item.cost)}</span>
                   <button
                     type="button"
-                    onClick={() => handleDeleteItem(item.id)}
+                    onClick={() => handleDeleteItem(item.id, item.description)}
                     aria-label="Eliminar procedimiento"
                     className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
                   >

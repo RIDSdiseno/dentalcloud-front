@@ -67,6 +67,14 @@ export type TreatmentPlan = {
   photos: TreatmentPlanPhoto[];
   facialAnnotations: FacialAnnotations | null;
   facialGender: 'hombre' | 'mujer' | null;
+  // Trazabilidad de ciclo de vida: quién creó el presupuesto, quién dio la
+  // orden de pasar a "en_tratamiento" y quién lo dejó en "terminado" — cada
+  // uno se estampa una sola vez, la primera vez que ocurre (ver backend).
+  createdBy: { id: string; name: string } | null;
+  startedBy: { id: string; name: string } | null;
+  startedAt: string | null;
+  completedBy: { id: string; name: string } | null;
+  completedAt: string | null;
 };
 
 export type TreatmentItemInput = {

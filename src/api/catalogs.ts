@@ -21,6 +21,9 @@ export type Prestacion = {
   // Zonas del mapa facial donde aplica (solo clínicas tipo "estetica").
   // Array vacío = sin restricción, aplica a cualquier zona.
   allowedZones: string[];
+  // Marca prestaciones que usan un producto con lote/trazabilidad obligatoria
+  // (ej. Ácido Hialurónico) — ver TreatmentPlanFormModal/TreatmentPlanTab.
+  requiresProductTracking: boolean;
   odontogramMode?: 'session' | 'tooth' | 'surface' | 'extraction';
   odontogram_mode?: 'session' | 'tooth' | 'surface' | 'extraction';
   markColor?: string;
@@ -69,14 +72,27 @@ export async function fetchAllPrestaciones() {
   return data.prestaciones;
 }
 
-export async function createPrestacion(input: { name: string; code?: string; basePrice: number; allowedZones?: string[] }) {
+export async function createPrestacion(input: {
+  name: string;
+  code?: string;
+  basePrice: number;
+  allowedZones?: string[];
+  requiresProductTracking?: boolean;
+}) {
   const { data } = await api.post<{ prestacion: Prestacion }>('/catalogs/prestaciones', input);
   return data.prestacion;
 }
 
 export async function updatePrestacion(
   id: string,
-  patch: { name?: string; code?: string | null; basePrice?: number; active?: boolean; allowedZones?: string[] }
+  patch: {
+    name?: string;
+    code?: string | null;
+    basePrice?: number;
+    active?: boolean;
+    allowedZones?: string[];
+    requiresProductTracking?: boolean;
+  }
 ) {
   const { data } = await api.patch<{ prestacion: Prestacion }>(`/catalogs/prestaciones/${id}`, patch);
   return data.prestacion;

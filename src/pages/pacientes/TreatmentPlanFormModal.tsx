@@ -191,6 +191,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
   const [conflictingAllergies, setConflictingAllergies] = useState<AllergyKey[]>([]);
   const [facialAnnotations, setFacialAnnotations] = useState<FacialAnnotations>(EMPTY_FACIAL_ANNOTATIONS);
   const [facialGender, setFacialGender] = useState<FacialGender>('mujer');
+  // Se incrementa cada vez que se empieza a configurar una prestación nueva —
+  // le dice a FacialMap que vuelva la herramienta de dibujo a "puntero", para
+  // que un círculo/lápiz que quedó seleccionado no tape el clic con el que se
+  // elige la zona (ver FacialMap.tsx, useDrawing).
+  const [toolResetTrigger, setToolResetTrigger] = useState(0);
 
   const [prestacionesTab, setPrestacionesTab] = useState<'prestaciones' | 'plantilla'>('prestaciones');
   const [pendingPhotos, setPendingPhotos] = useState<{ key: string; blob: Blob; previewUrl: string; label: string }[]>([]);
@@ -253,6 +258,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setDraftProductQuantity('');
     setDraftError(null);
     setConflictingAllergies([]);
+    setToolResetTrigger((t) => t + 1);
   }
 
   function handlePickPrestacion(prestacion: Prestacion) {
@@ -272,6 +278,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setDraftError(null);
     const detected = detectAllergensInPrestacion(prestacion.name);
     setConflictingAllergies(detected.filter((a) => patient.allergies.includes(a)));
+    setToolResetTrigger((t) => t + 1);
   }
 
   function openCustomItem() {
@@ -281,6 +288,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setActiveMode(customMode);
     setDraftSelection([]);
     setActiveColor(undefined);
+    setToolResetTrigger((t) => t + 1);
     setDraftError(null);
     setConflictingAllergies([]);
   }
@@ -309,6 +317,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
             ? 'Selecciona al menos una zona antes de agregar la prestación.'
             : 'Selecciona al menos una pieza antes de agregar la prestación.'
       );
+      return;
+    }
+
+    if (!isCustomActive && activePrestacion?.requiresProductTracking && !draftProductName.trim()) {
+      setDraftError('Esta prestación requiere registrar el producto y su lote antes de agregarla.');
       return;
     }
 
@@ -745,12 +758,20 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                     <p className="mt-1 font-medium">{selectionLabel(isEstetica, activeMode, draftSelection)}</p>
                   )}
                   {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
+                  {activePrestacion.requiresProductTracking && !draftProductName.trim() && (
+                    <p className="mt-1 flex items-center gap-1 font-semibold text-red-600">
+                      <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+                      Esta prestación requiere registrar el producto y su lote (trazabilidad).
+                    </p>
+                  )}
                   <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                     <input
                       value={draftProductName}
                       onChange={(e) => setDraftProductName(e.target.value)}
                       placeholder="Producto (ej. Ácido Hialurónico)"
-                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                        activePrestacion.requiresProductTracking && !draftProductName.trim() ? 'border-red-300' : 'border-amber-200'
+                      }`}
                     />
                     <input
                       value={draftProductLot}
@@ -812,6 +833,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                   onAnnotationsChange={setFacialAnnotations}
                   gender={facialGender}
                   onGenderChange={setFacialGender}
+                  resetToolTrigger={toolResetTrigger}
                 />
               ) : (
                 <Odontogram

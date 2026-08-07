@@ -17,6 +17,7 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
   const [basePrice, setBasePrice] = useState(String(prestacion?.basePrice ?? ''));
   const [unrestricted, setUnrestricted] = useState((prestacion?.allowedZones.length ?? 0) === 0);
   const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set(prestacion?.allowedZones ?? []));
+  const [requiresProductTracking, setRequiresProductTracking] = useState(prestacion?.requiresProductTracking ?? false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -44,8 +45,8 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
     try {
       const allowedZones = unrestricted ? [] : Array.from(selectedZones);
       const saved = prestacion
-        ? await updatePrestacion(prestacion.id, { name, code: code || null, basePrice: price, allowedZones })
-        : await createPrestacion({ name, code: code || undefined, basePrice: price, allowedZones });
+        ? await updatePrestacion(prestacion.id, { name, code: code || null, basePrice: price, allowedZones, requiresProductTracking })
+        : await createPrestacion({ name, code: code || undefined, basePrice: price, allowedZones, requiresProductTracking });
       onSaved(saved);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo guardar la prestación'));
@@ -93,6 +94,24 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
             />
           </div>
         </div>
+
+        {isEstetica && (
+          <div>
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={requiresProductTracking}
+                onChange={(e) => setRequiresProductTracking(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+              />
+              Requiere registrar producto y lote (ej. Ácido Hialurónico, Toxina Botulínica)
+            </label>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Si se marca, el sistema recordará al profesional completar el producto/lote y subir las fotos de sticker
+              al agregar esta prestación a un presupuesto.
+            </p>
+          </div>
+        )}
 
         {isEstetica && (
           <div>

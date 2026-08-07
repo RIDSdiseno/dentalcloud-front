@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentType, type RefObject, type SVGProps } from 'react';
+import { useEffect, useRef, useState, type ComponentType, type RefObject, type SVGProps } from 'react';
 import type { OdontogramMark, OdontogramMode, ToothSelection } from './Odontogram';
 import {
   FACIAL_ZONES,
@@ -328,12 +328,22 @@ function useDrawing(
   viewBoxW: number,
   viewBoxH: number,
   strokes: FacialStroke[],
-  onStrokesChange: (strokes: FacialStroke[]) => void
+  onStrokesChange: (strokes: FacialStroke[]) => void,
+  // Cambia (ej. incrementa) cada vez que el padre empieza a configurar una
+  // prestación nueva — vuelve la herramienta a "puntero" para que un círculo/
+  // lápiz que quedó seleccionado no tape el clic con el que se elige la zona
+  // (el overlay de dibujo intercepta todo el click salvo con "puntero").
+  resetSignal?: number
 ) {
   const [tool, setTool] = useState<DrawTool>('puntero');
   const [draft, setDraft] = useState<FacialStroke | null>(null);
   const [redoStack, setRedoStack] = useState<FacialStroke[]>([]);
   const eraserThreshold = Math.max(viewBoxW, viewBoxH) * 0.025;
+
+  useEffect(() => {
+    if (resetSignal !== undefined) setTool('puntero');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetSignal]);
 
   function toPoint(e: React.PointerEvent): FacialPoint {
     const rect = containerRef.current!.getBoundingClientRect();
@@ -542,6 +552,11 @@ interface FacialMapProps {
   // sin afectar el toggle Piel/Músculos, que sigue libre. Pensado para mostrar
   // un presupuesto ya guardado con el género con el que se creó.
   lockGender?: boolean;
+  // Cambia (ej. incrementa) cada vez que el padre empieza a configurar una
+  // prestación nueva — vuelve la herramienta de dibujo a "puntero" en las 3
+  // superficies (frontal/perfil), para que un círculo/lápiz que quedó
+  // seleccionado no tape el clic con el que se elige la zona.
+  resetToolTrigger?: number;
 }
 
 function ZoneDot({
@@ -614,6 +629,7 @@ function ProfilePanel({
   onToggle,
   strokes,
   onStrokesChange,
+  resetToolTrigger,
 }: {
   flip: boolean;
   selectedZones: Set<string>;
@@ -624,11 +640,12 @@ function ProfilePanel({
   onToggle: (zone: string) => void;
   strokes: FacialStroke[];
   onStrokesChange: (strokes: FacialStroke[]) => void;
+  resetToolTrigger?: number;
 }) {
   const labelX = flip ? flipProfileX(PROFILE_LABEL_X) : PROFILE_LABEL_X;
   const textAnchor: 'start' | 'end' = flip ? 'end' : 'start';
   const svgRef = useRef<SVGSVGElement>(null);
-  const drawing = useDrawing(svgRef, PROFILE_W, PROFILE_H, strokes, onStrokesChange);
+  const drawing = useDrawing(svgRef, PROFILE_W, PROFILE_H, strokes, onStrokesChange, resetToolTrigger);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -707,6 +724,7 @@ function ProfilePhotoPanel({
   onToggle,
   strokes,
   onStrokesChange,
+  resetToolTrigger,
 }: {
   gender: FacialGender;
   side: ProfileSide;
@@ -718,11 +736,12 @@ function ProfilePhotoPanel({
   onToggle: (zone: string) => void;
   strokes: FacialStroke[];
   onStrokesChange: (strokes: FacialStroke[]) => void;
+  resetToolTrigger?: number;
 }) {
   const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
   const containerRef = useRef<HTMLDivElement>(null);
   const photos = PROFILE_PHOTOS[gender]![side];
-  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange);
+  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange, resetToolTrigger);
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -859,6 +878,7 @@ function FacialPhotoView({
   onToggle,
   strokes,
   onStrokesChange,
+  resetToolTrigger,
 }: {
   gender: FacialGender;
   onGenderChange: (gender: FacialGender) => void;
@@ -872,11 +892,12 @@ function FacialPhotoView({
   onToggle: (zone: string) => void;
   strokes: FacialStroke[];
   onStrokesChange: (strokes: FacialStroke[]) => void;
+  resetToolTrigger?: number;
 }) {
   const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
   const containerRef = useRef<HTMLDivElement>(null);
   const photos = FRONT_PHOTOS[gender];
-  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange);
+  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange, resetToolTrigger);
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -1221,6 +1242,7 @@ export function FacialMap({
   gender,
   onGenderChange,
   lockGender = false,
+  resetToolTrigger,
 }: FacialMapProps) {
   const [view, setView] = useState<'frontal' | 'perfil'>('frontal');
   const [localGender, setLocalGender] = useState<FacialGender>('mujer');
@@ -1295,6 +1317,7 @@ export function FacialMap({
           onToggle={toggleZone}
           strokes={currentAnnotations.frontal}
           onStrokesChange={(frontal) => setAnnotations({ ...currentAnnotations, frontal })}
+          resetToolTrigger={resetToolTrigger}
         />
       ) : PROFILE_PHOTOS[currentGender] ? (
         <div className="flex flex-wrap items-start justify-center gap-6">
@@ -1310,6 +1333,7 @@ export function FacialMap({
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilDerecho}
               onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
+              resetToolTrigger={resetToolTrigger}
             />
             <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
           </div>
@@ -1325,6 +1349,7 @@ export function FacialMap({
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilIzquierdo}
               onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
+              resetToolTrigger={resetToolTrigger}
             />
             <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
           </div>
@@ -1342,6 +1367,7 @@ export function FacialMap({
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilDerecho}
               onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
+              resetToolTrigger={resetToolTrigger}
             />
             <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
           </div>
@@ -1356,6 +1382,7 @@ export function FacialMap({
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilIzquierdo}
               onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
+              resetToolTrigger={resetToolTrigger}
             />
             <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
           </div>
