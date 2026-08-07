@@ -20,6 +20,7 @@ export type User = {
   clinicaName: string | null;
   clinicaLogoUrl: string | null;
   rxEnabled: boolean | null;
+  slotDurationMinutes: number | null;
   permissions: Record<string, boolean> | null;
 };
 
@@ -28,6 +29,7 @@ type AuthContextValue = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
+  updateUser: (patch: Partial<User>) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -67,8 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  function updateUser(patch: Partial<User>) {
+    setUser((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -12,7 +12,6 @@ import {
 
 const START_HOUR = 8;
 const END_HOUR = 20;
-const STEP_MINUTES = 15;
 const ROW_HEIGHT = 40;
 const HEADER_HEIGHT = 56;
 const TIME_COL_WIDTH = 96;
@@ -21,6 +20,7 @@ type ChairAgendaGridProps = {
   date: Date;
   chairs: Chair[];
   appointments: Appointment[];
+  stepMinutes: number;
   onSlotClick: (chair: Chair, startAt: Date) => void;
   onAppointmentClick: (appointment: Appointment) => void;
   onRemoveChair: (chair: Chair) => void;
@@ -30,11 +30,12 @@ export function ChairAgendaGrid({
   date,
   chairs,
   appointments,
+  stepMinutes,
   onSlotClick,
   onAppointmentClick,
   onRemoveChair,
 }: ChairAgendaGridProps) {
-  const slots = generateTimeSlots(START_HOUR, END_HOUR, STEP_MINUTES);
+  const slots = generateTimeSlots(START_HOUR, END_HOUR, stepMinutes);
   const isToday = isSameDay(date, new Date());
   const [now, setNow] = useState(() => new Date());
 
@@ -46,7 +47,7 @@ export function ChairAgendaGrid({
 
   const nowMinutes = minutesSinceMidnight(now);
   const showNowLine = isToday && nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
-  const nowOffset = ((nowMinutes - START_HOUR * 60) / STEP_MINUTES) * ROW_HEIGHT;
+  const nowOffset = ((nowMinutes - START_HOUR * 60) / stepMinutes) * ROW_HEIGHT;
 
   const gridTemplateColumns = `${TIME_COL_WIDTH}px repeat(${chairs.length}, minmax(190px, 1fr))`;
 
@@ -119,7 +120,7 @@ export function ChairAgendaGrid({
             if (covering) {
               const spanRows = Math.max(
                 1,
-                Math.round((covering.end.getTime() - covering.start.getTime()) / (STEP_MINUTES * 60_000))
+                Math.round((covering.end.getTime() - covering.start.getTime()) / (stepMinutes * 60_000))
               );
               skipUntil = rowIndex + spanRows;
               cells.push(

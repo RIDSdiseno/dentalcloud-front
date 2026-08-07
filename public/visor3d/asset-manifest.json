@@ -1,0 +1,39 @@
+{
+  "files": {
+    "main.css": "/visor3d/static/css/main.befffb1c.chunk.css",
+    "main.js": "/visor3d/static/js/main.88cbe2d5.chunk.js",
+    "main.js.map": "/visor3d/static/js/main.88cbe2d5.chunk.js.map",
+    "runtime-main.js": "/visor3d/static/js/runtime-main.e3da7bbe.js",
+    "runtime-main.js.map": "/visor3d/static/js/runtime-main.e3da7bbe.js.map",
+    "static/css/2.16f47b55.chunk.css": "/visor3d/static/css/2.16f47b55.chunk.css",
+    "static/js/2.8a2780fa.chunk.js": "/visor3d/static/js/2.8a2780fa.chunk.js",
+    "static/js/2.8a2780fa.chunk.js.map": "/visor3d/static/js/2.8a2780fa.chunk.js.map",
+    "index.html": "/visor3d/index.html",
+    "static/css/2.16f47b55.chunk.css.map": "/visor3d/static/css/2.16f47b55.chunk.css.map",
+    "static/css/main.befffb1c.chunk.css.map": "/visor3d/static/css/main.befffb1c.chunk.css.map",
+    "static/js/2.8a2780fa.chunk.js.LICENSE.txt": "/visor3d/static/js/2.8a2780fa.chunk.js.LICENSE.txt",
+    "static/media/backface.3dc9d515.vert": "/visor3d/static/media/backface.3dc9d515.vert",
+    "static/media/backface.84a75448.frag": "/visor3d/static/media/backface.84a75448.frag",
+    "static/media/blur.a62df0a0.vert": "/visor3d/static/media/blur.a62df0a0.vert",
+    "static/media/blur.d95db93c.frag": "/visor3d/static/media/blur.d95db93c.frag",
+    "static/media/clipplane.7ba65be0.vert": "/visor3d/static/media/clipplane.7ba65be0.vert",
+    "static/media/clipplane.d594e568.frag": "/visor3d/static/media/clipplane.d594e568.frag",
+    "static/media/createAO.a62df0a0.vert": "/visor3d/static/media/createAO.a62df0a0.vert",
+    "static/media/createAO.bae764f9.frag": "/visor3d/static/media/createAO.bae764f9.frag",
+    "static/media/frontface.6197e7b1.vert": "/visor3d/static/media/frontface.6197e7b1.vert",
+    "static/media/frontface.7ecf0644.frag": "/visor3d/static/media/frontface.7ecf0644.frag",
+    "static/media/interpolation.ae2f2bf4.vert": "/visor3d/static/media/interpolation.ae2f2bf4.vert",
+    "static/media/interpolation.b65fb94f.frag": "/visor3d/static/media/interpolation.b65fb94f.frag",
+    "static/media/rendertotexture.b51229d9.vert": "/visor3d/static/media/rendertotexture.b51229d9.vert",
+    "static/media/rendertotexture.f0ef0a21.frag": "/visor3d/static/media/rendertotexture.f0ef0a21.frag",
+    "static/media/volumerender.0fdf551f.vert": "/visor3d/static/media/volumerender.0fdf551f.vert",
+    "static/media/volumerender.fb827430.frag": "/visor3d/static/media/volumerender.fb827430.frag"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.e3da7bbe.js",
+    "static/css/2.16f47b55.chunk.css",
+    "static/js/2.8a2780fa.chunk.js",
+    "static/css/main.befffb1c.chunk.css",
+    "static/js/main.88cbe2d5.chunk.js"
+  ]
+}

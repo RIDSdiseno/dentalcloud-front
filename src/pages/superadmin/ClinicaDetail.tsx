@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchClinicas, updateClinica, type Clinica, type ClinicaModuleKey } from '../../api/clinicas';
+import { fetchClinicas, updateClinica, updateClinicaLogo, type Clinica, type ClinicaModuleKey } from '../../api/clinicas';
 import { getErrorMessage } from '../../api/client';
 import { formatCLP } from '../../utils/treatmentStatus';
 import { formatRut, formatRutInput, isValidRut } from '../../utils/rut';
-import { MODULE_ICONS, MODULE_LABELS, MODULE_ORDER, StatTile, TIPO_LABELS, Toggle } from './clinicaShared';
+import { MODULE_ICONS, MODULE_LABELS, MODULE_ORDER, PAIS_OPTIONS, StatTile, TIPO_LABELS, Toggle } from './clinicaShared';
 import {
   ActivityIcon,
   ArrowLeftIcon,
   CalendarIcon,
+  CameraIcon,
   ChatIcon,
   ClipboardIcon,
   FolderIcon,
@@ -18,6 +19,8 @@ import {
   UsersIcon,
   XrayIcon,
 } from '../../components/icons';
+
+const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 
 const CONSENT_STATUS_STYLES = {
   firmado: { label: 'Firmados', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
@@ -36,6 +39,9 @@ export default function ClinicaDetail() {
   const [rut, setRut] = useState('');
   const [rutTouched, setRutTouched] = useState(false);
   const [rutError, setRutError] = useState<string | null>(null);
+
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -61,6 +67,23 @@ export default function ClinicaDetail() {
       setError(getErrorMessage(err, 'No se pudo actualizar la clínica'));
     } finally {
       setBusyField(null);
+    }
+  }
+
+  async function handleLogoChange(file: File | null) {
+    if (!clinica || !file) return;
+    setError(null);
+    if (file.size > MAX_LOGO_BYTES) {
+      setError('El logo no puede pesar más de 5 MB');
+      return;
+    }
+    setIsUploadingLogo(true);
+    try {
+      setClinica(await updateClinicaLogo(clinica.id, file));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo actualizar el logo'));
+    } finally {
+      setIsUploadingLogo(false);
     }
   }
 
@@ -108,7 +131,13 @@ export default function ClinicaDetail() {
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-500/10 text-brand-600">
+          <button
+            type="button"
+            onClick={() => logoInputRef.current?.click()}
+            disabled={isUploadingLogo}
+            title="Cambiar logo"
+            className="group relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-500/10 text-brand-600 disabled:cursor-not-allowed"
+          >
             {clinica.logoUrl ? (
               <img src={clinica.logoUrl} alt={`Logo de ${clinica.name}`} className="h-full w-full object-cover" />
             ) : clinica.tipo === 'estetica' ? (
@@ -116,7 +145,22 @@ export default function ClinicaDetail() {
             ) : (
               <ToothCloudIcon className="h-6 w-6" />
             )}
-          </span>
+            <span className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
+              <CameraIcon className="h-5 w-5 text-white" />
+            </span>
+            {isUploadingLogo && (
+              <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[10px] font-semibold text-white">
+                ...
+              </span>
+            )}
+          </button>
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => handleLogoChange(e.target.files?.[0] ?? null)}
+          />
           <div>
             <h1 className="text-xl font-bold text-slate-900">{clinica.name}</h1>
             <p className="mt-0.5 text-sm text-slate-500">
@@ -148,7 +192,7 @@ export default function ClinicaDetail() {
       )}
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <label htmlFor="detail-rut" className="text-sm font-medium text-slate-700">
             RUT
@@ -194,6 +238,25 @@ export default function ClinicaDetail() {
             {Object.entries(TIPO_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <label htmlFor="detail-pais" className="text-sm font-medium text-slate-700">
+            País
+          </label>
+          <select
+            id="detail-pais"
+            value={clinica.pais}
+            onChange={(e) => applyUpdate({ pais: e.target.value }, 'pais')}
+            disabled={busyField === 'pais'}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60"
+          >
+            {PAIS_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </select>

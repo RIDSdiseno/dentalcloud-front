@@ -4,13 +4,17 @@ import { ChairAgendaGrid } from './ChairAgendaGrid';
 import { AppointmentFormModal } from './AppointmentFormModal';
 import { NewAppointmentModal } from './NewAppointmentModal';
 import { ChairFormModal } from './ChairFormModal';
+import { SlotDurationControl } from './SlotDurationControl';
 import { formatLongDate, isSameDay, toDateParam } from './dateUtils';
 import { fetchChairs, deleteChair, type Chair } from '../../api/chairs';
 import { fetchAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
 import { getErrorMessage } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { PlusIcon } from '../../components/icons';
 
 export default function Agenda() {
+  const { user } = useAuth();
+  const stepMinutes = user?.slotDurationMinutes ?? 15;
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [chairs, setChairs] = useState<Chair[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -82,6 +86,7 @@ export default function Agenda() {
             {appointments.length} cita{appointments.length === 1 ? '' : 's'} agendada
             {appointments.length === 1 ? '' : 's'}
           </span>
+          <SlotDurationControl />
           <button
             type="button"
             onClick={() => setShowNewAppointment(true)}
@@ -127,6 +132,7 @@ export default function Agenda() {
           date={selectedDate}
           chairs={chairs}
           appointments={appointments}
+          stepMinutes={stepMinutes}
           onSlotClick={(chair, startAt) => setPendingSlot({ chair, startAt })}
           onAppointmentClick={handleCancelAppointment}
           onRemoveChair={handleRemoveChair}

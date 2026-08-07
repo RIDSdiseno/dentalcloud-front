@@ -121,7 +121,7 @@ export function RxTab({ patient }: { patient: Patient }) {
             onClick={() => setShowConfig((v) => !v)}
             className="w-full px-5 py-3 text-left text-sm font-semibold text-slate-700"
           >
-            Configuración de integración Dimage {showConfig ? '▲' : '▼'}
+            Configuración de integración RIDS RX {showConfig ? '▲' : '▼'}
           </button>
           {showConfig && (
             <div className="flex flex-col gap-2 border-t border-slate-100 px-5 py-4">
@@ -131,7 +131,7 @@ export function RxTab({ patient }: { patient: Patient }) {
                   <input
                     defaultValue={s.dimageClinicId ?? ''}
                     onBlur={(e) => handleUpdateClinicId(s.id, e.target.value.trim())}
-                    placeholder="ID clínica en Dimage"
+                    placeholder="ID clínica en RIDS RX"
                     className="w-48 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
                   />
                 </div>
@@ -176,14 +176,16 @@ export function RxTab({ patient }: { patient: Patient }) {
             >
               {isSyncing ? 'Actualizando...' : 'Actualizar datos en Plataforma'}
             </button>
-            <button
-              type="button"
-              onClick={() => setShowCreateOrder(true)}
-              className="flex items-center justify-center gap-1.5 rounded-lg border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50"
-            >
-              <PlusIcon className="h-4 w-4" />
-              Crear Orden
-            </button>
+            {user?.role !== 'radiologo' && (
+              <button
+                type="button"
+                onClick={() => setShowCreateOrder(true)}
+                className="flex items-center justify-center gap-1.5 rounded-lg border border-brand-200 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Crear Orden
+              </button>
+            )}
           </div>
         </div>
 

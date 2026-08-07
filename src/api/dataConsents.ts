@@ -8,6 +8,8 @@ export type ConsentType = {
   name: string;
   legalText: string;
   active: boolean;
+  pdfUrl: string | null;
+  pdfPublicId: string | null;
 };
 
 export type PatientConsent = {
@@ -41,8 +43,29 @@ export async function sendDataConsent(patientId: string, consentTypeId: string) 
 }
 
 export async function fetchConsentText(consentTypeId: string) {
-  const { data } = await api.get<{ text: string }>(`/data-consents/text/${consentTypeId}`);
-  return data.text;
+  const { data } = await api.get<{ text: string; pdfUrl: string | null }>(`/data-consents/text/${consentTypeId}`);
+  return data;
+}
+
+export async function uploadConsentTypePdf(consentTypeId: string, file: File) {
+  const formData = new FormData();
+  formData.append('pdf', file);
+  const { data } = await api.post<{ consentType: ConsentType }>(
+    `/data-consents/types/${consentTypeId}/pdf`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
+  return data.consentType;
+}
+
+export async function removeConsentTypePdf(consentTypeId: string) {
+  const { data } = await api.delete<{ consentType: ConsentType }>(`/data-consents/types/${consentTypeId}/pdf`);
+  return data.consentType;
+}
+
+export async function downloadConsentPdf(consentId: string) {
+  const { data } = await api.get<Blob>(`/data-consents/${consentId}/pdf`, { responseType: 'blob' });
+  return data;
 }
 
 export async function respondDataConsentInPerson(

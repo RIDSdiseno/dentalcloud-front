@@ -10,7 +10,7 @@ import { PatientPicker } from './PatientPicker';
 import { toDateParam } from './dateUtils';
 import { roleLabel } from '../../utils/roles';
 
-const DURATION_OPTIONS = [15, 30, 45, 60, 90];
+const ALL_DURATION_OPTIONS = [15, 30, 45, 60, 90];
 
 type NewAppointmentModalProps = {
   defaultDate: Date;
@@ -29,6 +29,8 @@ export function NewAppointmentModal({
 }: NewAppointmentModalProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const stepMinutes = user?.slotDurationMinutes ?? 15;
+  const DURATION_OPTIONS = ALL_DURATION_OPTIONS.filter((minutes) => minutes % stepMinutes === 0);
 
   const [chairs, setChairs] = useState<Chair[]>([]);
   const [professionals, setProfessionals] = useState<StaffUser[]>([]);
@@ -36,7 +38,7 @@ export function NewAppointmentModal({
   const [time, setTime] = useState('09:00');
   const [chairId, setChairId] = useState('');
   const [professionalId, setProfessionalId] = useState('');
-  const [duration, setDuration] = useState(30);
+  const [duration, setDuration] = useState(stepMinutes);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(initialPatient ?? null);
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);

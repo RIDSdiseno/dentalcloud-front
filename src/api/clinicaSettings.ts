@@ -19,3 +19,13 @@ export async function updateRolePermissions(
   const { data } = await api.patch<{ rolePermissions: RolePermissions }>('/clinica/role-permissions', patch);
   return data.rolePermissions;
 }
+
+export const SLOT_DURATION_OPTIONS = [15, 30, 60] as const;
+export type SlotDurationMinutes = (typeof SLOT_DURATION_OPTIONS)[number];
+
+export async function updateAgendaSettings(slotDurationMinutes: SlotDurationMinutes) {
+  const { data } = await api.patch<{ slotDurationMinutes: number }>('/clinica/agenda-settings', {
+    slotDurationMinutes,
+  });
+  return data.slotDurationMinutes;
+}

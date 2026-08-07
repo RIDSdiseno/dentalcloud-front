@@ -3,6 +3,7 @@ import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import {
   fetchRxOrderDetail,
+  fetchDicomViewerToken,
   updateRxOrder,
   uploadRxOrderFiles,
   deleteRxOrderFile,
@@ -10,7 +11,46 @@ import {
   fetchRxOrderZipUrl,
   type RxOrderDetail,
 } from '../../api/rx';
-import { DownloadIcon, TrashIcon, UploadIcon } from '../../components/icons';
+import { DownloadIcon, EyeIcon, TrashIcon, UploadIcon } from '../../components/icons';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL as string;
+
+// El visor Med3Web valida la URL del archivo con un regex que solo acepta un
+// dominio real (algo.tld) o una IP con puntos — "localhost" no matchea
+// ninguno de los dos y el visor la rechaza como "URL incorrecta". En
+// producción esto nunca aplica (dominio real), pero en desarrollo local hay
+// que darle 127.0.0.1 en su lugar. Se reescribe solo el string que arma ESTA
+// URL puntual — el resto de la app (login, refresh, todo lo demás) sigue
+// usando "localhost" sin tocar, para no romper la cookie de sesión (el
+// navegador trata localhost y 127.0.0.1 como sitios distintos para SameSite).
+function viewerCompatibleBaseUrl(url: string): string {
+  return url.replace('://localhost', '://127.0.0.1');
+}
+
+// El visor Med3Web se sirve desde este mismo sitio (dentalcloud-front/public/visor3d)
+// — nunca desde RIDS RX, que exige sesión en /visor-dicom. El visor pide sus
+// archivos con XHR planas a nuestro propio backend (/api/rx-viewer/:token/...),
+// que a su vez los sirve directo desde el storage S3 de RIDS RX.
+//
+// Se abre la ventana ANTES del fetch (no después) para que el navegador la
+// reconozca como resultado directo del click y no la bloquee como popup —
+// solo se navega a la URL real una vez que el token está listo.
+async function openDicomViewer(orderId: number, onError: (message: string) => void) {
+  const popup = window.open('', 'popup', 'fullscreen');
+  try {
+    const { token, entryFilename } = await fetchDicomViewerToken(orderId);
+    if (!popup) return;
+    const fileUrl = `${viewerCompatibleBaseUrl(API_BASE_URL)}/rx-viewer/${token}/${encodeURIComponent(entryFilename)}`;
+    popup.location.href = `/visor3d/index.html?file=${encodeURIComponent(fileUrl)}`;
+    if (popup.outerWidth < screen.availWidth || popup.outerHeight < screen.availHeight) {
+      popup.moveTo(0, 0);
+      popup.resizeTo(screen.availWidth, screen.availHeight);
+    }
+  } catch (err) {
+    popup?.close();
+    onError(getErrorMessage(err, 'No se pudo abrir el visor 3D'));
+  }
+}
 
 const PRIORITIES = ['Normal', 'Urgente'];
 
@@ -187,6 +227,16 @@ export function RxOrderDetailModal({ orderId, onClose }: { orderId: number; onCl
                     <div key={file.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 text-sm">
                       <span className="truncate text-slate-600">{file.name}</span>
                       <div className="flex items-center gap-2">
+                        {file.ruta_dcm && (
+                          <button
+                            type="button"
+                            onClick={() => openDicomViewer(order.id, setError)}
+                            className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                            Ver en 3D
+                          </button>
+                        )}
                         {file.download_url && (
                           <a
                             href={file.download_url}

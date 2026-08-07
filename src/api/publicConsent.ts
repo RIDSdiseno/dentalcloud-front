@@ -9,6 +9,7 @@ export type PublicConsent = {
   patientName: string;
   consentTypeName: string;
   contentSnapshot: string;
+  pdfUrl: string | null;
   expiresAt: string;
 };
 

@@ -253,6 +253,12 @@ function ItemDetailsPanel({
 
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-white/70 p-2.5" onClick={(e) => e.stopPropagation()}>
+      {item.completed && item.treatedBy && (
+        <p className="text-xs text-slate-400">
+          Tratado por {item.treatedBy.name}
+          {item.treatedAt && ` · ${new Date(item.treatedAt).toLocaleDateString('es-CL')}`}
+        </p>
+      )}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <input
           value={productName}
@@ -404,23 +410,96 @@ function PlanCard({
   onDeleted: (id: string) => void;
   onError: (message: string) => void;
 }) {
-  const { user } = useAuth();
-  const isEstetica = user?.clinicaTipo === 'estetica';
+  const isEstetica = plan.diagramType === 'estetica';
   const [expanded, setExpanded] = useState(false);
   const [newDescription, setNewDescription] = useState('');
   const [newCost, setNewCost] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
+  // El viaje al servidor toma varios segundos (recalcula el plan completo),
+  // así que el check debe reflejarse al instante en cada click sin bloquear
+  // el checkbox (bloquearlo se sentía como si la casilla tuviera delay). En
+  // vez de eso: se agrupan los clicks rápidos sobre el mismo ítem en una sola
+  // solicitud (debounce) y se descarta cualquier respuesta que ya haya sido
+  // superada por un click más reciente (token por ítem).
+  const pendingToggles = useRef(
+    new Map<string, { token: number; timer: ReturnType<typeof setTimeout>; previousCompleted: boolean }>()
+  );
+
+  // Cada respuesta del servidor trae una FOTO completa del plan (todos los
+  // ítems), tomada en el momento en que ESA solicitud se procesó. Si dos
+  // ítems distintos se tocan casi al mismo tiempo, la respuesta de uno puede
+  // llegar mientras la del otro sigue en camino, y esa foto puede mostrar al
+  // otro ítem todavía con su valor viejo — aplicarla tal cual pisaría (con
+  // datos desactualizados) un cambio más reciente que ya se ve en pantalla.
+  // `planRef` mantiene accesible el estado MÁS actual del plan (no el de
+  // cuando se programó el timeout) para poder fusionar correctamente.
+  const planRef = useRef(plan);
+  useEffect(() => {
+    planRef.current = plan;
+  }, [plan]);
+
+  useEffect(() => {
+    const pending = pendingToggles.current;
+    return () => {
+      pending.forEach(({ timer }) => clearTimeout(timer));
+    };
+  }, []);
+
+  // Aplica una foto del plan que vino del servidor, preservando el valor
+  // ACTUAL en pantalla de cualquier ítem que todavía tenga su propio toggle
+  // en curso (salvo `authoritativeItemId`, el ítem que esta respuesta en
+  // particular sí confirma de forma definitiva).
+  function applyServerPlan(serverPlan: TreatmentPlan, authoritativeItemId?: string) {
+    if (pendingToggles.current.size === 0) {
+      onUpdated(serverPlan);
+      return;
+    }
+    const currentItems = planRef.current.items;
+    onUpdated({
+      ...serverPlan,
+      items: serverPlan.items.map((serverItem) => {
+        if (serverItem.id === authoritativeItemId) return serverItem;
+        if (!pendingToggles.current.has(serverItem.id)) return serverItem;
+        return currentItems.find((i) => i.id === serverItem.id) ?? serverItem;
+      }),
+    });
+  }
+
   const completedCount = plan.items.filter((i) => i.completed).length;
   const percent = plan.items.length ? (completedCount / plan.items.length) * 100 : 0;
 
-  async function handleToggleItem(itemId: string, completed: boolean) {
-    try {
-      const updated = await updateTreatmentItem(itemId, { completed });
-      onUpdated(updated);
-    } catch (err) {
-      onError(getErrorMessage(err, 'No se pudo actualizar el procedimiento'));
-    }
+  function handleToggleItem(itemId: string, completed: boolean) {
+    const existing = pendingToggles.current.get(itemId);
+    if (existing) clearTimeout(existing.timer);
+    const previousCompleted = existing?.previousCompleted ?? (plan.items.find((i) => i.id === itemId)?.completed ?? false);
+    const token = (existing?.token ?? 0) + 1;
+
+    onUpdated({
+      ...plan,
+      items: plan.items.map((i) => (i.id === itemId ? { ...i, completed } : i)),
+    });
+
+    const timer = setTimeout(async () => {
+      try {
+        const updated = await updateTreatmentItem(itemId, { completed });
+        if (pendingToggles.current.get(itemId)?.token === token) {
+          pendingToggles.current.delete(itemId);
+          applyServerPlan(updated, itemId);
+        }
+      } catch (err) {
+        if (pendingToggles.current.get(itemId)?.token === token) {
+          pendingToggles.current.delete(itemId);
+          onUpdated({
+            ...planRef.current,
+            items: planRef.current.items.map((i) => (i.id === itemId ? { ...i, completed: previousCompleted } : i)),
+          });
+          onError(getErrorMessage(err, 'No se pudo actualizar el procedimiento'));
+        }
+      }
+    }, 400);
+
+    pendingToggles.current.set(itemId, { token, timer, previousCompleted });
   }
 
   async function handleDeleteItem(itemId: string, description: string) {
@@ -428,7 +507,7 @@ function PlanCard({
     if (!confirmed) return;
     try {
       const updated = await deleteTreatmentItem(itemId);
-      onUpdated(updated);
+      applyServerPlan(updated);
     } catch (err) {
       onError(getErrorMessage(err, 'No se pudo eliminar el procedimiento'));
     }
@@ -442,7 +521,7 @@ function PlanCard({
         description: newDescription.trim(),
         cost: Number(newCost) || 0,
       });
-      onUpdated(updated);
+      applyServerPlan(updated);
       setNewDescription('');
       setNewCost('');
     } catch (err) {
@@ -455,7 +534,7 @@ function PlanCard({
   async function handleStatusChange(status: TreatmentStatus) {
     try {
       const updated = await updateTreatmentPlan(plan.id, { status });
-      onUpdated(updated);
+      applyServerPlan(updated);
     } catch (err) {
       onError(getErrorMessage(err, 'No se pudo actualizar el estado'));
     }
@@ -591,14 +670,14 @@ function PlanCard({
                     <TrashIcon className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <ItemDetailsPanel item={item} onUpdated={onUpdated} onError={onError} />
+                <ItemDetailsPanel item={item} onUpdated={applyServerPlan} onError={onError} />
               </div>
             ))}
           </div>
 
           {isEstetica && (
             <div className="mt-4 border-t border-slate-100 pt-4">
-              <PlantillaFotografica plan={plan} onUpdated={onUpdated} onError={onError} />
+              <PlantillaFotografica plan={plan} onUpdated={applyServerPlan} onError={onError} />
             </div>
           )}
 
@@ -745,6 +824,10 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
             </span>
           </div>
           <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Creado por</p>
+            <p className="text-sm text-slate-700">{plan.createdBy?.name ?? '—'}</p>
+          </div>
+          <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Profesional</p>
             <p className="text-sm text-slate-700">{plan.professional?.name ?? 'Sin diagnosticador'}</p>
           </div>
@@ -801,6 +884,13 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
                   </div>
                   <span className="shrink-0 text-sm font-semibold text-slate-700">{formatCLP(item.cost)}</span>
                 </div>
+
+                {item.completed && item.treatedBy && (
+                  <p className="mt-1.5 text-xs text-slate-400">
+                    Tratado por {item.treatedBy.name}
+                    {item.treatedAt && ` · ${new Date(item.treatedAt).toLocaleDateString('es-CL')}`}
+                  </p>
+                )}
 
                 {(item.productName || item.productLot || item.productExpiresAt || item.productQuantity) && (
                   <p className="mt-1.5 text-xs text-slate-500">
@@ -869,11 +959,15 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
 export function TreatmentPlanTab({ patient }: { patient: Patient }) {
   const patientId = patient.id;
   const { user } = useAuth();
-  const isEstetica = user?.clinicaTipo === 'estetica';
+  // Clínicas "ambas" mezclan presupuestos dental/estética — la sección de
+  // zonas tratadas debe seguir disponible para ellas, no solo para clínicas
+  // puramente "estetica".
+  const isEstetica = user?.clinicaTipo === 'estetica' || user?.clinicaTipo === 'ambas';
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | 'all'>('all');
 
   useEffect(() => {
     fetchTreatmentPlans(patientId)
@@ -888,23 +982,42 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
 
   function handleDeleted(id: string) {
     setPlans((prev) => prev.filter((p) => p.id !== id));
+    setSelectedPlanId((current) => (current === id ? 'all' : current));
   }
 
-  const allItems = plans.flatMap((p) => p.items);
-  const completedCount = allItems.filter((i) => i.completed).length;
-  const percentTreated = allItems.length ? (completedCount / allItems.length) * 100 : 0;
+  const selectedPlan = selectedPlanId === 'all' ? null : plans.find((p) => p.id === selectedPlanId) ?? null;
+  const chartItems = selectedPlan ? selectedPlan.items : plans.flatMap((p) => p.items);
+  const completedCount = chartItems.filter((i) => i.completed).length;
+  const percentTreated = chartItems.length ? (completedCount / chartItems.length) * 100 : 0;
 
-  // Presupuestos con al menos una prestación que tiene zona(s) asignada(s) —
-  // se muestran de más reciente a más antiguo (igual orden que ya trae `plans`
-  // desde el backend).
-  const plansWithZones = plans.filter((p) => p.items.some((i) => i.toothNumber));
+  // Presupuestos con al menos una prestación con zona asignada — solo los
+  // armados con mapa facial tienen `toothNumber` en formato de zona; mezclar
+  // ítems de presupuestos con odontograma (clínicas "ambas") produciría
+  // zonas inválidas.
+  const plansWithZones = plans.filter((p) => p.diagramType === 'estetica' && p.items.some((i) => i.toothNumber));
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
       <div className="flex flex-col gap-5">
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h3 className="mb-3 text-sm font-semibold text-slate-800">No tratado vs. tratado</h3>
-          {allItems.length === 0 ? (
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold text-slate-800">No tratado vs. tratado</h3>
+            {plans.length > 0 && (
+              <select
+                value={selectedPlanId}
+                onChange={(e) => setSelectedPlanId(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              >
+                <option value="all">Todos los presupuestos</option>
+                {plans.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    N° {p.number}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          {chartItems.length === 0 ? (
             <p className="text-sm text-slate-400">Aún no hay procedimientos registrados.</p>
           ) : (
             <div className="flex flex-col items-center gap-3">
@@ -916,7 +1029,7 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
-                  Sin tratar ({allItems.length - completedCount})
+                  Sin tratar ({chartItems.length - completedCount})
                 </span>
               </div>
             </div>

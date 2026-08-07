@@ -53,6 +53,10 @@ export type RxOrderFile = {
   file_size: number;
   url: string | null;
   download_url: string | null;
+  // Presente solo para estudios 3D (CBCT): URL al primer archivo DICOM de la
+  // serie, en el mismo dominio de RIDS RX donde vive el visor Med3Web
+  // (RIDS RX sirve una carpeta plana de .dcm + un file_list.txt junto a él).
+  ruta_dcm?: string | null;
 };
 
 export type RxOrderExam = {
@@ -141,6 +145,13 @@ export async function fetchRxOrderZipUrl(orderId: number) {
 
 export async function fetchRxOrderDetail(orderId: number) {
   const { data } = await api.get<RxOrderDetail>(`/rx/orders/${orderId}`);
+  return data;
+}
+
+export async function fetchDicomViewerToken(orderId: number) {
+  const { data } = await api.post<{ token: string; entryFilename: string }>(
+    `/rx/orders/${orderId}/dicom-viewer-token`
+  );
   return data;
 }
 
