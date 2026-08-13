@@ -29,6 +29,20 @@ export type Prestacion = {
   // Zonas del mapa facial donde aplica (solo category = "estetica").
   // Array vacío = sin restricción, aplica a cualquier zona.
   allowedZones: string[];
+  // Marca prestaciones que usan un producto con lote/trazabilidad obligatoria
+  // (ej. Ácido Hialurónico) — ver TreatmentPlanFormModal/TreatmentPlanTab.
+  requiresProductTracking: boolean;
+  // Aplica siempre a todo el rostro (ej. limpieza facial) — al elegirla en un
+  // presupuesto no requiere marcar ninguna zona.
+  appliesToWholeFace: boolean;
+  // Con 2+ zonas en `allowedZones`: si es true, van siempre todas juntas (se
+  // preseleccionan solas); si es false, son un menú y el profesional elige
+  // cuáles aplican cada vez. Sin efecto con 0 o 1 zona.
+  zonesApplyTogether: boolean;
+  // Precio distinto por zona (ej. Botox: Cuello $X, Frente $Y) — null cuando
+  // todas las zonas comparten `basePrice` (comportamiento de siempre). Solo
+  // tiene sentido con 2+ `allowedZones`.
+  zonePrices: Record<string, number> | null;
   markColor?: string;
   mark_color?: string;
   allowMultipleTeeth?: boolean;
@@ -82,6 +96,10 @@ export async function createPrestacion(input: {
   category?: 'dental' | 'estetica';
   odontogramMode?: PrestacionOdontogramMode;
   allowedZones?: string[];
+  requiresProductTracking?: boolean;
+  appliesToWholeFace?: boolean;
+  zonesApplyTogether?: boolean;
+  zonePrices?: Record<string, number> | null;
 }) {
   const { data } = await api.post<{ prestacion: Prestacion }>('/catalogs/prestaciones', input);
   return data.prestacion;
@@ -97,6 +115,10 @@ export async function updatePrestacion(
     category?: 'dental' | 'estetica';
     odontogramMode?: PrestacionOdontogramMode;
     allowedZones?: string[];
+    requiresProductTracking?: boolean;
+    zonesApplyTogether?: boolean;
+    appliesToWholeFace?: boolean;
+    zonePrices?: Record<string, number> | null;
   }
 ) {
   const { data } = await api.patch<{ prestacion: Prestacion }>(`/catalogs/prestaciones/${id}`, patch);

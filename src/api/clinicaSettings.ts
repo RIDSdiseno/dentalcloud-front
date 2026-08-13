@@ -4,7 +4,7 @@ import type { ClinicaModuleKey } from './clinicas';
 export const PERMISSIONED_ROLES = ['odontologo', 'radiologo', 'operador'] as const;
 export type PermissionedRole = (typeof PERMISSIONED_ROLES)[number];
 
-export type PermissionKey = ClinicaModuleKey | 'rx';
+export type PermissionKey = ClinicaModuleKey | 'rx' | 'crearPresupuestos';
 
 export type RolePermissions = Record<PermissionedRole, Record<PermissionKey, boolean>>;
 

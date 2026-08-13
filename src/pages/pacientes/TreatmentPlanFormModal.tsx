@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
-import { createTreatmentPlan, uploadTreatmentPlanPhoto, type TreatmentPlan, type TreatmentItemInput } from '../../api/treatmentPlans';
+import {
+  createTreatmentPlan,
+  addTreatmentItem,
+  uploadTreatmentPlanPhoto,
+  type TreatmentPlan,
+  type TreatmentItem,
+  type TreatmentItemInput,
+} from '../../api/treatmentPlans';
 import { fetchUsers, type StaffUser } from '../../api/users';
 import { fetchSucursales, fetchPrevisiones, fetchConvenios, fetchPrestaciones } from '../../api/catalogs';
 import type { Sucursal, Prevision, Convenio, Prestacion } from '../../api/catalogs';
@@ -28,6 +35,7 @@ import {
   FACIAL_ZONE_LABELS,
   formatFacialSelection,
   getFacialConfig,
+  parseTreatedZones,
   zoneAreaLabel,
   zoneNumberForBackend,
   type FacialAnnotations,
@@ -43,8 +51,11 @@ function pickConfig(isEstetica: boolean, prestacion: Prestacion) {
     return {
       mode: config.mode,
       markColor: undefined as string | undefined,
-      defaultTeeth: undefined as string[] | undefined,
-      defaultSurfaces: undefined as ToothSurface[] | undefined,
+      defaultTeeth: config.defaultZones as string[] | undefined,
+      // Las zonas faciales siempre usan una única "cara" fija ('center', ver
+      // FacialMap.tsx) — a diferencia del odontograma, no hay caras reales
+      // que elegir.
+      defaultSurfaces: config.defaultZones ? (['center'] as ToothSurface[]) : undefined,
     };
   }
   const config = getOdontogramConfig(prestacion);
@@ -94,6 +105,10 @@ type ItemRow = {
   productLot?: string;
   productExpiresAt?: string;
   productQuantity?: string;
+  // Ya existía en el presupuesto que se está modificando (ver `editingPlan`)
+  // — se muestra sin poder editarla/quitarla y no se reenvía al grabar, solo
+  // las prestaciones nuevas agregadas en esta sesión.
+  existing?: boolean;
 };
 
 const MODE_INSTRUCTIONS: Record<OdontogramMode, string> = {
@@ -139,8 +154,42 @@ function detailLabel(item: ItemRow, isEstetica: boolean): string {
 type TreatmentPlanFormModalProps = {
   patient: Patient;
   onClose: () => void;
-  onCreated: (plan: TreatmentPlan) => void;
+  onSaved: (plan: TreatmentPlan) => void;
+  // Si se pasa, el modal abre directo en "Prestaciones" para agregar
+  // prestaciones NUEVAS a este presupuesto ya existente — no permite tocar
+  // sucursal/convenio/previsión ni modificar/quitar lo ya agregado (pedido
+  // explícito: un presupuesto "en tratamiento" solo se amplía, no se reescribe).
+  editingPlan?: TreatmentPlan | null;
 };
+
+// Reconstruye la fila de "Prestaciones agregadas" para un ítem que YA existe
+// en el presupuesto que se está modificando — solo para mostrarlo (marcado
+// `existing`, sin poder editarlo/quitarlo) y que sus zonas sigan apareciendo
+// en el mapa facial/odontograma al agregar prestaciones nuevas encima.
+function existingItemToRow(item: TreatmentItem, isEstetica: boolean): ItemRow {
+  const zones = isEstetica ? parseTreatedZones(item.toothNumber) : [];
+  const odontogramSelection: ToothSelection[] = zones.map((zone) => ({ tooth: zone, surface: 'center' }));
+  return {
+    key: item.id,
+    prestacionId: item.prestacionId ?? undefined,
+    description: item.description,
+    toothNumber: item.toothNumber,
+    listPrice: item.listPrice,
+    convenioDiscountPercent: item.convenioDiscountPercent,
+    cost: item.cost,
+    // Sin reconstrucción de zonas para odontograma dental (no hay parser de
+    // vuelta desde `toothNumber` para ese caso) — el ítem se sigue mostrando
+    // en la lista, solo no marca sus piezas en el odontograma.
+    odontogramMode: odontogramSelection.length > 0 ? 'tooth' : 'session',
+    odontogramSelection,
+    notes: item.notes ?? undefined,
+    productName: item.productName ?? undefined,
+    productLot: item.productLot ?? undefined,
+    productExpiresAt: item.productExpiresAt ?? undefined,
+    productQuantity: item.productQuantity ?? undefined,
+    existing: true,
+  };
+}
 
 const STEPS = [
   { key: 1, label: 'Datos administrativos' },
@@ -154,27 +203,75 @@ function convenioPrice(listPrice: number, discountPercent: number) {
   return Math.round(listPrice * (1 - discountPercent / 100));
 }
 
-export function TreatmentPlanFormModal({ patient, onClose, onCreated }: TreatmentPlanFormModalProps) {
+// Si la prestación tiene precio distinto por zona (ej. Botox: Cuello $X,
+// Frente $Y — ver Catálogo), el precio de lista es la suma de las zonas
+// elegidas; si no, es el precio único de siempre sin importar cuántas zonas
+// se marquen (pensado para "un mismo implemento cubre varias zonas").
+function listPriceForPrestacion(prestacion: Prestacion, selection: ToothSelection[]): number {
+  if (!prestacion.zonePrices) return prestacion.basePrice;
+  const zones = Array.from(new Set(selection.map((s) => s.tooth)));
+  if (zones.length === 0) return prestacion.basePrice;
+  return zones.reduce((sum, zone) => sum + (prestacion.zonePrices![zone] ?? prestacion.basePrice), 0);
+}
+
+// Compartido entre el alta manual (handleConfirmActive) y el alta automática
+// (handlePickPrestacion, cuando la zona ya es inequívoca) para no duplicar el
+// cálculo de precio/descuento al construir la fila de "Prestaciones Agregadas".
+function buildCatalogRow(
+  isEstetica: boolean,
+  prestacion: Prestacion,
+  mode: OdontogramMode,
+  selection: ToothSelection[],
+  color: string | undefined,
+  discount: number,
+  extras?: { notes?: string; productName?: string; productLot?: string; productExpiresAt?: string; productQuantity?: string }
+): ItemRow {
+  const listPrice = listPriceForPrestacion(prestacion, selection);
+  const cost = convenioPrice(listPrice, discount);
+  return {
+    key: `${prestacion.id}-${Date.now()}`,
+    prestacionId: prestacion.id,
+    description: prestacion.name,
+    toothNumber: locationForBackend(isEstetica, mode, selection),
+    listPrice,
+    convenioDiscountPercent: discount,
+    cost,
+    odontogramMode: mode,
+    odontogramSelection: selection,
+    odontogramColor: color,
+    notes: extras?.notes,
+    productName: extras?.productName,
+    productLot: extras?.productLot,
+    productExpiresAt: extras?.productExpiresAt,
+    productQuantity: extras?.productQuantity,
+  };
+}
+
+export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan = null }: TreatmentPlanFormModalProps) {
   const patientId = patient.id;
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const clinicaTipo = user?.clinicaTipo;
   const clinicaOfreceAmbas = clinicaTipo === 'ambas';
-  const [diagramType, setDiagramType] = useState<'dental' | 'estetica'>(clinicaTipo === 'estetica' ? 'estetica' : 'dental');
+  const [diagramType, setDiagramType] = useState<'dental' | 'estetica'>(
+    editingPlan?.diagramType ?? (clinicaTipo === 'estetica' ? 'estetica' : 'dental')
+  );
   const isEstetica = clinicaOfreceAmbas ? diagramType === 'estetica' : clinicaTipo === 'estetica';
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  // Modificando un presupuesto existente: se salta directo a "Prestaciones"
+  // (sucursal/convenio/previsión/pago quedan fijos, no son editables aquí).
+  const [step, setStep] = useState<1 | 2 | 3>(editingPlan ? 2 : 1);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [professionals, setProfessionals] = useState<StaffUser[]>([]);
-  const [professionalId, setProfessionalId] = useState('');
+  const [professionalId, setProfessionalId] = useState(editingPlan?.professionalId ?? '');
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [sucursalId, setSucursalId] = useState('');
+  const [sucursalId, setSucursalId] = useState(editingPlan?.sucursalId ?? '');
   const [previsiones, setPrevisiones] = useState<Prevision[]>([]);
-  const [previsionId, setPrevisionId] = useState('');
+  const [previsionId, setPrevisionId] = useState(editingPlan?.previsionId ?? '');
   const [convenios, setConvenios] = useState<Convenio[]>([]);
-  const [convenioId, setConvenioId] = useState('');
+  const [convenioId, setConvenioId] = useState(editingPlan?.convenioId ?? '');
 
   const [prestaciones, setPrestaciones] = useState<Prestacion[]>([]);
   const [prestacionSearch, setPrestacionSearch] = useState('');
@@ -193,8 +290,15 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
   const [draftProductQuantity, setDraftProductQuantity] = useState('');
   const [draftError, setDraftError] = useState<string | null>(null);
   const [conflictingAllergies, setConflictingAllergies] = useState<AllergyKey[]>([]);
-  const [facialAnnotations, setFacialAnnotations] = useState<FacialAnnotations>(EMPTY_FACIAL_ANNOTATIONS);
-  const [facialGender, setFacialGender] = useState<FacialGender>('mujer');
+  const [facialAnnotations, setFacialAnnotations] = useState<FacialAnnotations>(
+    editingPlan?.facialAnnotations ?? EMPTY_FACIAL_ANNOTATIONS
+  );
+  const [facialGender, setFacialGender] = useState<FacialGender>(editingPlan?.facialGender ?? 'mujer');
+  // Se incrementa cada vez que se empieza a configurar una prestación nueva —
+  // le dice a FacialMap que vuelva la herramienta de dibujo a "puntero", para
+  // que un círculo/lápiz que quedó seleccionado no tape el clic con el que se
+  // elige la zona (ver FacialMap.tsx, useDrawing).
+  const [toolResetTrigger, setToolResetTrigger] = useState(0);
 
   const [prestacionesTab, setPrestacionesTab] = useState<'prestaciones' | 'plantilla'>('prestaciones');
   const [pendingPhotos, setPendingPhotos] = useState<{ key: string; blob: Blob; previewUrl: string; label: string }[]>([]);
@@ -210,16 +314,18 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     };
   }, []);
 
-  const [items, setItems] = useState<ItemRow[]>([]);
+  const [items, setItems] = useState<ItemRow[]>(
+    () => editingPlan?.items.map((i) => existingItemToRow(i, editingPlan.diagramType === 'estetica')) ?? []
+  );
   const [lastAddedKeys, setLastAddedKeys] = useState<string[]>([]);
   const [showCustomItem, setShowCustomItem] = useState(false);
   const [customDescription, setCustomDescription] = useState('');
   const [customCost, setCustomCost] = useState('');
   const [customMode, setCustomMode] = useState<OdontogramMode>('tooth');
 
-  const [name, setName] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState(editingPlan?.name ?? '');
+  const [paymentMethod, setPaymentMethod] = useState(editingPlan?.paymentMethod ?? PAYMENT_METHODS[0]);
+  const [notes, setNotes] = useState(editingPlan?.notes ?? '');
 
   useEffect(() => {
     if (isAdmin) fetchUsers().then(setProfessionals).catch(() => undefined);
@@ -257,16 +363,36 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setDraftProductQuantity('');
     setDraftError(null);
     setConflictingAllergies([]);
+    setToolResetTrigger((t) => t + 1);
   }
 
   function handlePickPrestacion(prestacion: Prestacion) {
     setPrestacionSearch('');
     const config = pickConfig(isEstetica, prestacion);
+    const selection = selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces);
+    const detected = detectAllergensInPrestacion(prestacion.name);
+    const allergyConflicts = detected.filter((a) => patient.allergies.includes(a));
+
+    // Si la zona a aplicar ya es inequívoca (única zona permitida, varias que
+    // siempre se aplican juntas, o toda la boca/rostro — `getFacialConfig`/
+    // `getOdontogramConfig` la devuelven como `defaultTeeth` o `mode:'session'`),
+    // se agrega directo a "Prestaciones Agregadas" sin pedir el clic manual en
+    // "Agregar prestación". Alergia en conflicto o falta de trazabilidad de
+    // producto sí requieren revisión manual (ver handleConfirmActive).
+    const isUnambiguous = config.mode === 'session' || config.defaultTeeth !== undefined;
+    if (isUnambiguous && allergyConflicts.length === 0 && !prestacion.requiresProductTracking) {
+      const discount = selectedConvenio?.discountPercent ?? 0;
+      const row = buildCatalogRow(isEstetica, prestacion, config.mode, selection, config.markColor, discount);
+      setItems((prev) => [...prev, row]);
+      setLastAddedKeys([row.key]);
+      resetActive();
+      return;
+    }
 
     setActivePrestacion(prestacion);
     setIsCustomActive(false);
     setActiveMode(config.mode);
-    setDraftSelection(selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces));
+    setDraftSelection(selection);
     setActiveColor(config.markColor);
     setDraftNotes('');
     setDraftProductName('');
@@ -274,8 +400,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setDraftProductExpiresAt('');
     setDraftProductQuantity('');
     setDraftError(null);
-    const detected = detectAllergensInPrestacion(prestacion.name);
-    setConflictingAllergies(detected.filter((a) => patient.allergies.includes(a)));
+    setConflictingAllergies(allergyConflicts);
+    setToolResetTrigger((t) => t + 1);
   }
 
   function openCustomItem() {
@@ -285,6 +411,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     setActiveMode(customMode);
     setDraftSelection([]);
     setActiveColor(undefined);
+    setToolResetTrigger((t) => t + 1);
     setDraftError(null);
     setConflictingAllergies([]);
   }
@@ -313,6 +440,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
             ? 'Selecciona al menos una zona antes de agregar la prestación.'
             : 'Selecciona al menos una pieza antes de agregar la prestación.'
       );
+      return;
+    }
+
+    if (!isCustomActive && activePrestacion?.requiresProductTracking && !draftProductName.trim()) {
+      setDraftError('Esta prestación requiere registrar el producto y su lote antes de agregarla.');
       return;
     }
 
@@ -349,31 +481,33 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
     }
 
     if (!activePrestacion) return;
-    const price = convenioPrice(activePrestacion.basePrice, discount);
     // El precio de catálogo es por pieza/zona, no por presupuesto completo:
-    // si se marcaron varias piezas en un modo que se cobra por pieza
-    // (pieza completa/cara/extracción; "zona" en el mapa facial), se agrega
-    // una línea por cada una en vez de una sola línea con todas adentro. Los
-    // modos de grupo (cuadrante/sextante/arcada/sesión) siguen siendo una
-    // sola línea, porque ahí el precio ya es por el grupo completo.
-    const perUnitModes: OdontogramMode[] = isEstetica ? ['tooth'] : ['tooth', 'extraction', 'surface'];
-    const groups = perUnitModes.includes(activeMode) ? splitSelectionByTooth(draftSelection) : [draftSelection];
-    const newRows: ItemRow[] = groups.map((group, index) => ({
-      key: `${activePrestacion.id}-${Date.now()}-${index}`,
-      prestacionId: activePrestacion.id,
-      description: activePrestacion.name,
-      toothNumber: locationForBackend(isEstetica, activeMode, group),
-      listPrice: activePrestacion.basePrice,
-      convenioDiscountPercent: discount,
-      cost: price,
-      odontogramMode: activeMode,
-      odontogramSelection: group,
-      odontogramColor: activeColor,
+    // si se marcaron varias piezas en un modo que se cobra por pieza (pieza
+    // completa/cara/extracción), se agrega una línea por cada una en vez de
+    // una sola con todas adentro. Los modos de grupo (cuadrante/sextante/
+    // arcada/sesión) siguen siendo una sola línea, porque ahí el precio ya
+    // es por el grupo completo. El mapa facial no se separa así: cuando hay
+    // varias zonas con precio propio (`zonePrices`), van en una sola línea
+    // cuyo total es la suma de esas zonas (ver listPriceForPrestacion).
+    const extras = {
       notes: draftNotes.trim() || undefined,
       productName: draftProductName.trim() || undefined,
       productLot: draftProductLot.trim() || undefined,
       productExpiresAt: draftProductExpiresAt || undefined,
       productQuantity: draftProductQuantity.trim() || undefined,
+    };
+    if (isEstetica) {
+      const row = buildCatalogRow(isEstetica, activePrestacion, activeMode, draftSelection, activeColor, discount, extras);
+      setItems((prev) => [...prev, row]);
+      setLastAddedKeys([row.key]);
+      resetActive();
+      return;
+    }
+    const perUnitModes: OdontogramMode[] = ['tooth', 'extraction', 'surface'];
+    const groups = perUnitModes.includes(activeMode) ? splitSelectionByTooth(draftSelection) : [draftSelection];
+    const newRows: ItemRow[] = groups.map((group, index) => ({
+      ...buildCatalogRow(isEstetica, activePrestacion, activeMode, group, activeColor, discount, extras),
+      key: `${activePrestacion.id}-${Date.now()}-${index}`,
     }));
     setItems((prev) => [...prev, ...newRows]);
     setLastAddedKeys(newRows.map((r) => r.key));
@@ -455,9 +589,46 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         plan = await uploadTreatmentPlanPhoto(plan.id, photo.blob, photo.label);
       }
 
-      onCreated(plan);
+      onSaved(plan);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo crear el presupuesto'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  // Modificar un presupuesto existente solo agrega prestaciones nuevas — las
+  // que ya estaban (`existing`) no se reenvían, cada una nueva se agrega con
+  // su propia llamada (mismo endpoint que "Agregar procedimiento" del detalle).
+  async function handleSaveEdits() {
+    if (!editingPlan) return;
+    const newItems = items.filter((i) => !i.existing);
+    if (newItems.length === 0) {
+      setError('Agrega al menos una prestación nueva');
+      return;
+    }
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      let plan = editingPlan;
+      for (const i of newItems) {
+        plan = await addTreatmentItem(editingPlan.id, {
+          description: i.description,
+          cost: i.cost,
+          prestacionId: i.prestacionId,
+          toothNumber: i.toothNumber ?? undefined,
+          listPrice: i.listPrice,
+          convenioDiscountPercent: i.convenioDiscountPercent,
+          notes: i.notes,
+          productName: i.productName,
+          productLot: i.productLot,
+          productExpiresAt: i.productExpiresAt,
+          productQuantity: i.productQuantity,
+        });
+      }
+      onSaved(plan);
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudieron agregar las prestaciones nuevas'));
     } finally {
       setIsSubmitting(false);
     }
@@ -466,33 +637,43 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
   const showActiveBanner = !isCustomActive && activePrestacion !== null && activeMode !== null;
 
   return (
-    <Modal title="Nuevo presupuesto" onClose={onClose} maxWidth="max-w-[1400px]">
+    <Modal
+      title={editingPlan ? `Modificar presupuesto Nº${editingPlan.number}` : 'Nuevo presupuesto'}
+      onClose={onClose}
+      maxWidth="max-w-[1700px]"
+    >
       <div className="flex flex-col gap-5">
-        <div className="flex items-center gap-2">
-          {STEPS.map((s, idx) => (
-            <div key={s.key} className="flex flex-1 items-center gap-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    step === s.key
-                      ? 'bg-brand-600 text-white'
-                      : step > s.key
-                        ? 'bg-brand-100 text-brand-600'
-                        : 'bg-slate-100 text-slate-400'
-                  }`}
-                >
-                  {step > s.key ? <CheckIcon className="h-3.5 w-3.5" /> : s.key}
-                </span>
-                <span className={`text-xs font-medium ${step === s.key ? 'text-slate-800' : 'text-slate-400'}`}>
-                  {s.label}
-                </span>
+        {editingPlan ? (
+          <p className="text-xs text-slate-500">
+            Sucursal, convenio, previsión y forma de pago quedan fijos — acá solo se agregan prestaciones nuevas.
+          </p>
+        ) : (
+          <div className="flex items-center gap-2">
+            {STEPS.map((s, idx) => (
+              <div key={s.key} className="flex flex-1 items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                      step === s.key
+                        ? 'bg-brand-600 text-white'
+                        : step > s.key
+                          ? 'bg-brand-100 text-brand-600'
+                          : 'bg-slate-100 text-slate-400'
+                    }`}
+                  >
+                    {step > s.key ? <CheckIcon className="h-3.5 w-3.5" /> : s.key}
+                  </span>
+                  <span className={`text-xs font-medium ${step === s.key ? 'text-slate-800' : 'text-slate-400'}`}>
+                    {s.label}
+                  </span>
+                </div>
+                {idx < STEPS.length - 1 && <div className="h-px flex-1 bg-slate-200" />}
               </div>
-              {idx < STEPS.length - 1 && <div className="h-px flex-1 bg-slate-200" />}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {step === 1 && (
+        {step === 1 && !editingPlan && (
           <div className="flex flex-col gap-4">
             {clinicaOfreceAmbas && (
               <div>
@@ -762,7 +943,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                         className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50"
                       >
                         <span className="text-slate-700">{p.name}</span>
-                        <span className="text-slate-500">{formatCLP(p.basePrice)}</span>
+                        <span className="text-slate-500">{p.zonePrices ? 'Precio según zona' : formatCLP(p.basePrice)}</span>
                       </button>
                     ))}
                   </div>
@@ -789,12 +970,20 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                     <p className="mt-1 font-medium">{selectionLabel(isEstetica, activeMode, draftSelection)}</p>
                   )}
                   {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
+                  {activePrestacion.requiresProductTracking && !draftProductName.trim() && (
+                    <p className="mt-1 flex items-center gap-1 font-semibold text-red-600">
+                      <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
+                      Esta prestación requiere registrar el producto y su lote (trazabilidad).
+                    </p>
+                  )}
                   <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                     <input
                       value={draftProductName}
                       onChange={(e) => setDraftProductName(e.target.value)}
                       placeholder="Producto (ej. Ácido Hialurónico)"
-                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                        activePrestacion.requiresProductTracking && !draftProductName.trim() ? 'border-red-300' : 'border-amber-200'
+                      }`}
                     />
                     <input
                       value={draftProductLot}
@@ -856,6 +1045,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                   onAnnotationsChange={setFacialAnnotations}
                   gender={facialGender}
                   onGenderChange={setFacialGender}
+                  resetToolTrigger={toolResetTrigger}
                 />
               ) : (
                 <Odontogram
@@ -968,6 +1158,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                         <div className="min-w-0">
                           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                             {areaLabelFor(isEstetica, item.odontogramMode)}
+                            {item.existing && (
+                              <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-slate-500">
+                                Ya en el presupuesto
+                              </span>
+                            )}
                           </p>
                           <p className="break-words text-sm font-medium text-slate-700">
                             {item.description}
@@ -977,25 +1172,28 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                           </p>
                           <p className="mt-0.5 break-words text-xs text-slate-400">{detailLabel(item, isEstetica)}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeItem(item.key);
-                          }}
-                          aria-label="Quitar"
-                          className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-                        >
-                          <TrashIcon className="h-3.5 w-3.5" />
-                        </button>
+                        {!item.existing && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeItem(item.key);
+                            }}
+                            aria-label="Quitar"
+                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          >
+                            <TrashIcon className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                       <input
                         type="number"
                         min={0}
                         value={item.cost}
+                        disabled={item.existing}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateItemCost(item.key, e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-slate-50 disabled:text-slate-400"
                       />
                     </div>
                   ))}
@@ -1012,7 +1210,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
           </div>
         )}
 
-        {step === 3 && (
+        {step === 3 && !editingPlan && (
           <div className="flex flex-col gap-4">
             <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
               <table className="w-full text-sm">
@@ -1103,39 +1301,52 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
         <div className="flex justify-between gap-2 border-t border-slate-100 pt-4">
           <button
             type="button"
-            onClick={() => (step === 1 ? onClose() : setStep((s) => ((s - 1) as 1 | 2 | 3)))}
+            onClick={() => (step === 1 || editingPlan ? onClose() : setStep((s) => ((s - 1) as 1 | 2 | 3)))}
             className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
           >
-            {step === 1 ? 'Cancelar' : 'Prev'}
+            {step === 1 || editingPlan ? 'Cancelar' : 'Prev'}
           </button>
 
-          {step === 1 && (
+          {editingPlan ? (
             <button
               type="button"
-              onClick={goToStep2}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-            >
-              Siguiente
-            </button>
-          )}
-          {step === 2 && (
-            <button
-              type="button"
-              onClick={goToStep3}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-            >
-              Siguiente
-            </button>
-          )}
-          {step === 3 && (
-            <button
-              type="button"
-              onClick={handleSubmit}
+              onClick={handleSaveEdits}
               disabled={isSubmitting}
               className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {isSubmitting ? 'Creando...' : 'Crear presupuesto'}
+              {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
             </button>
+          ) : (
+            <>
+              {step === 1 && (
+                <button
+                  type="button"
+                  onClick={goToStep2}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                >
+                  Siguiente
+                </button>
+              )}
+              {step === 2 && (
+                <button
+                  type="button"
+                  onClick={goToStep3}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
+                >
+                  Siguiente
+                </button>
+              )}
+              {step === 3 && (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isSubmitting ? 'Creando...' : 'Crear presupuesto'}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

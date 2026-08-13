@@ -1,9 +1,12 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getErrorMessage } from '../../api/client';
 import {
   fetchEvolutions,
   createEvolution,
   updateEvolution,
+  uploadEvolutionPhoto,
+  deleteEvolutionPhoto,
+  deleteEvolution,
   type Evolution,
   type EnabledFilter,
 } from '../../api/evolutions';
@@ -11,14 +14,17 @@ import { fetchEvolutionTemplates } from '../../api/catalogs';
 import type { EvolutionTemplate } from '../../api/catalogs';
 import { fetchUsers, type StaffUser } from '../../api/users';
 import { fetchPatientAppointments, type Appointment } from '../../api/appointments';
+import { fetchTreatmentPlans } from '../../api/treatmentPlans';
 import type { Patient } from '../../api/patients';
 import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatLongDate, formatTime } from '../agenda/dateUtils';
 import { NewAppointmentModal } from '../agenda/NewAppointmentModal';
 import { Modal } from '../../components/Modal';
+import { ReasonModal } from '../../components/ReasonModal';
 import { RichTextEditor } from '../../components/RichTextEditor';
-import { ActivityIcon, CalendarIcon, EyeIcon, EyeOffIcon, PrinterIcon } from '../../components/icons';
+import { ActivityIcon, CalendarIcon, EyeIcon, EyeOffIcon, PrinterIcon, TrashIcon, UploadIcon } from '../../components/icons';
+import { PHOTO_LABELS, missingRequiredProductFields, type PhotoLabel } from './photoLabels';
 
 const STATUS_TABS: { key: EnabledFilter; label: string }[] = [
   { key: 'true', label: 'Habilitadas' },
@@ -33,9 +39,13 @@ function isContentEmpty(html: string) {
 function EvolutionCard({
   evolution,
   onToggle,
+  onDeletePhoto,
+  onRequestDelete,
 }: {
   evolution: Evolution;
   onToggle: (evolution: Evolution) => void;
+  onDeletePhoto: (photoId: string, label: string | null) => void;
+  onRequestDelete: (evolution: Evolution) => void;
 }) {
   return (
     <div className={`rounded-xl border p-4 ${evolution.enabled ? 'border-slate-200' : 'border-slate-100 bg-slate-50 opacity-70'}`}>
@@ -47,28 +57,85 @@ function EvolutionCard({
             {new Date(evolution.createdAt).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={() => onToggle(evolution)}
-          className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100"
-        >
-          {evolution.enabled ? (
-            <>
-              <EyeIcon className="h-3.5 w-3.5" /> Deshabilitar
-            </>
-          ) : (
-            <>
-              <EyeOffIcon className="h-3.5 w-3.5" /> Habilitar
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onToggle(evolution)}
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100"
+          >
+            {evolution.enabled ? (
+              <>
+                <EyeIcon className="h-3.5 w-3.5" /> Deshabilitar
+              </>
+            ) : (
+              <>
+                <EyeOffIcon className="h-3.5 w-3.5" /> Habilitar
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onRequestDelete(evolution)}
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50"
+          >
+            <TrashIcon className="h-3.5 w-3.5" /> Eliminar
+          </button>
+        </div>
       </div>
+      {evolution.treatmentItem && (
+        <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+          Procedimiento realizado: {evolution.treatmentItem.description}
+        </p>
+      )}
+      {evolution.productName && (
+        <p className="mb-2 text-xs text-slate-500">
+          Producto: <span className="font-medium text-slate-700">{evolution.productName}</span>
+          {evolution.productLot && ` · Lote: ${evolution.productLot}`}
+          {evolution.productQuantity && ` · ${evolution.productQuantity}`}
+          {evolution.productExpiresAt && ` · Vence: ${new Date(evolution.productExpiresAt).toLocaleDateString('es-CL')}`}
+        </p>
+      )}
       <div className="prose-sm text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: evolution.content }} />
+      {evolution.photos.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {evolution.photos.map((photo) => (
+            <div key={photo.id} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200">
+              <a href={photo.url} target="_blank" rel="noreferrer">
+                <img src={photo.url} alt={photo.label ?? 'Foto de la evolución'} className="h-full w-full object-cover" />
+              </a>
+              {photo.label && (
+                <span className="absolute bottom-0.5 left-0.5 rounded bg-slate-900/60 px-1 py-0.5 text-[9px] font-medium text-white">
+                  {photo.label}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => onDeletePhoto(photo.id, photo.label)}
+                aria-label="Eliminar foto"
+                className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <TrashIcon className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-export function EvolucionesTab({ patient }: { patient: Patient }) {
+export function EvolucionesTab({
+  patient,
+  preselectTreatmentItemId,
+  onPreselectionConsumed,
+}: {
+  patient: Patient;
+  // Al venir del botón "Evolucionar" de un presupuesto (Tratamientos) con un
+  // solo procedimiento pendiente, llega ya elegido — evita tener que
+  // buscarlo de nuevo en el desplegable.
+  preselectTreatmentItemId?: string | null;
+  onPreselectionConsumed?: () => void;
+}) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
@@ -83,6 +150,7 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [evolutions, setEvolutions] = useState<Evolution[]>([]);
+  const [deletingEvolution, setDeletingEvolution] = useState<Evolution | null>(null);
   const [filterProfessionalId, setFilterProfessionalId] = useState('');
   const [statusFilter, setStatusFilter] = useState<EnabledFilter>('true');
   const [isLoading, setIsLoading] = useState(true);
@@ -92,6 +160,57 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
   const [showUpcomingControls, setShowUpcomingControls] = useState(false);
   const [upcomingControls, setUpcomingControls] = useState<Appointment[]>([]);
   const [isLoadingControls, setIsLoadingControls] = useState(false);
+
+  // Procedimientos de presupuesto aún no marcados como realizados — al elegir
+  // uno y grabar, la evolución queda enlazada y el procedimiento se marca
+  // solo (ver createEvolution/evolutionsController.ts).
+  const [pendingItems, setPendingItems] = useState<{ id: string; label: string; requiresProductTracking: boolean }[]>([]);
+  const [treatmentItemId, setTreatmentItemId] = useState(preselectTreatmentItemId ?? '');
+
+  useEffect(() => {
+    if (preselectTreatmentItemId) onPreselectionConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Trazabilidad del producto usado, documentada acá (al evolucionar) — solo
+  // tiene sentido cuando la evolución documenta un procedimiento puntual.
+  const [productName, setProductName] = useState('');
+  const [productLot, setProductLot] = useState('');
+  const [productExpiresAt, setProductExpiresAt] = useState('');
+  const [productQuantity, setProductQuantity] = useState('');
+
+  // Fotos elegidas antes de grabar — se suben recién después de crear la
+  // evolución (necesitan su id). Mismas etiquetas que en el presupuesto.
+  const [pendingPhotos, setPendingPhotos] = useState<{ key: string; file: File; previewUrl: string; label: PhotoLabel }[]>(
+    []
+  );
+  const [pendingLabel, setPendingLabel] = useState<PhotoLabel>('Antes');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const pendingPhotosRef = useRef(pendingPhotos);
+  pendingPhotosRef.current = pendingPhotos;
+
+  useEffect(() => {
+    return () => {
+      pendingPhotosRef.current.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+    };
+  }, []);
+
+  useEffect(() => {
+    fetchTreatmentPlans(patient.id)
+      .then((plans) => {
+        const items = plans.flatMap((plan) =>
+          plan.items
+            .filter((item) => !item.completed)
+            .map((item) => ({
+              id: item.id,
+              label: `N° ${plan.number}${plan.name ? ` · ${plan.name}` : ''} — ${item.description}`,
+              requiresProductTracking: item.prestacion?.requiresProductTracking ?? false,
+            }))
+        );
+        setPendingItems(items);
+      })
+      .catch(() => setPendingItems([]));
+  }, [patient.id]);
 
   useEffect(() => {
     if (isAdmin) fetchUsers().then(setProfessionals).catch(() => undefined);
@@ -130,23 +249,51 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
     );
   }
 
+  const requiresProduct = pendingItems.find((i) => i.id === treatmentItemId)?.requiresProductTracking ?? false;
+
   async function handleSave() {
     if (isContentEmpty(content)) {
       setFormError('Escribe el contenido de la evolución');
       return;
     }
+    if (requiresProduct && missingRequiredProductFields({ productName, productLot, productExpiresAt, productQuantity })) {
+      setFormError('Este procedimiento requiere registrar producto, lote, vencimiento y cantidad para poder grabar la evolución');
+      return;
+    }
     setFormError(null);
     setIsSaving(true);
     try {
-      const evolution = await createEvolution({
+      let evolution = await createEvolution({
         patientId: patient.id,
         professionalId: isAdmin && professionalId ? professionalId : undefined,
         content,
+        treatmentItemId: treatmentItemId || undefined,
+        productName: productName.trim() || undefined,
+        productLot: productLot.trim() || undefined,
+        productExpiresAt: productExpiresAt || undefined,
+        productQuantity: productQuantity.trim() || undefined,
       });
+
+      // Las fotos se suben recién ahora que la evolución ya existe (una por
+      // una, para que cada una quede asociada a la anterior ya subida).
+      for (const photo of pendingPhotos) {
+        evolution = await uploadEvolutionPhoto(evolution.id, photo.file, photo.label);
+        URL.revokeObjectURL(photo.previewUrl);
+      }
+      setPendingPhotos([]);
+
       setContent('');
       setShowPreview(false);
+      setProductName('');
+      setProductLot('');
+      setProductExpiresAt('');
+      setProductQuantity('');
       if (statusFilter !== 'false') {
         setEvolutions((prev) => [evolution, ...prev]);
+      }
+      if (treatmentItemId) {
+        setPendingItems((prev) => prev.filter((item) => item.id !== treatmentItemId));
+        setTreatmentItemId('');
       }
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
@@ -154,6 +301,38 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
       setFormError(getErrorMessage(err, 'No se pudo guardar la evolución'));
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  function handlePickPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPendingPhotos((prev) => [
+        ...prev,
+        { key: `photo-${prev.length}-${file.name}`, file, previewUrl: URL.createObjectURL(file), label: pendingLabel },
+      ]);
+    }
+    e.target.value = '';
+  }
+
+  function removePendingPhoto(key: string) {
+    setPendingPhotos((prev) => {
+      const removed = prev.find((p) => p.key === key);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((p) => p.key !== key);
+    });
+  }
+
+  async function handleDeletePhoto(photoId: string, label: string | null) {
+    const confirmed = window.confirm(
+      label ? `¿Eliminar la foto "${label}"? Esta acción no se puede deshacer.` : '¿Eliminar esta foto? Esta acción no se puede deshacer.'
+    );
+    if (!confirmed) return;
+    try {
+      const updated = await deleteEvolutionPhoto(photoId);
+      setEvolutions((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+    } catch (err) {
+      setListError(getErrorMessage(err, 'No se pudo eliminar la foto'));
     }
   }
 
@@ -167,6 +346,19 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
       }
     } catch (err) {
       setListError(getErrorMessage(err, 'No se pudo actualizar la evolución'));
+    }
+  }
+
+  // Borrar (a diferencia de deshabilitar) exige un motivo — queda guardado
+  // para auditoría (ver EvolutionDeletion en el backend).
+  async function handleDelete(reason: string) {
+    if (!deletingEvolution) return;
+    try {
+      await deleteEvolution(deletingEvolution.id, reason);
+      setEvolutions((prev) => prev.filter((e) => e.id !== deletingEvolution.id));
+      setDeletingEvolution(null);
+    } catch (err) {
+      setListError(getErrorMessage(err, 'No se pudo eliminar la evolución'));
     }
   }
 
@@ -211,6 +403,113 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
           <ActivityIcon className="h-5 w-5 text-brand-500" />
           Crear nueva evolución
         </h2>
+
+        {pendingItems.length > 0 && (
+          <div>
+            <label className="text-sm font-medium text-slate-700">¿Documenta un procedimiento del presupuesto?</label>
+            <select
+              value={treatmentItemId}
+              onChange={(e) => setTreatmentItemId(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            >
+              <option value="">No, es una nota general</option>
+              {pendingItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            {treatmentItemId && (
+              <div className="mt-2 rounded-lg bg-amber-50 p-2.5">
+                <p className="text-xs text-amber-700">
+                  Al grabar, este procedimiento quedará marcado como realizado — no hace falta tildarlo aparte en el
+                  presupuesto.
+                  {requiresProduct && ' Este procedimiento requiere registrar producto, lote, vencimiento y cantidad para poder grabar.'}
+                </p>
+                <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+                  <input
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    placeholder="Producto (ej. Ácido Hialurónico)"
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                      requiresProduct && !productName.trim() ? 'border-red-300' : 'border-amber-200'
+                    }`}
+                  />
+                  <input
+                    value={productLot}
+                    onChange={(e) => setProductLot(e.target.value)}
+                    placeholder="N° de lote"
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                      requiresProduct && !productLot.trim() ? 'border-red-300' : 'border-amber-200'
+                    }`}
+                  />
+                  <input
+                    type="date"
+                    value={productExpiresAt}
+                    onChange={(e) => setProductExpiresAt(e.target.value)}
+                    title="Fecha de vencimiento"
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                      requiresProduct && !productExpiresAt ? 'border-red-300' : 'border-amber-200'
+                    }`}
+                  />
+                  <input
+                    value={productQuantity}
+                    onChange={(e) => setProductQuantity(e.target.value)}
+                    placeholder="Cantidad (ej. 1 jeringa 1ml)"
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                      requiresProduct && !productQuantity.trim() ? 'border-red-300' : 'border-amber-200'
+                    }`}
+                  />
+                </div>
+
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-[11px] font-medium text-amber-700">Fotos (antes/después, sticker)</span>
+                  <div className="flex flex-wrap shrink-0 gap-1 rounded-lg bg-white/70 p-0.5 text-[11px] font-medium">
+                    {PHOTO_LABELS.map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => setPendingLabel(l)}
+                        className={`rounded-md px-2 py-0.5 transition-colors ${
+                          pendingLabel === l ? 'bg-white text-brand-700 shadow-sm' : 'text-amber-700 hover:text-amber-900'
+                        }`}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                  {pendingPhotos.map((photo) => (
+                    <div key={photo.key} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-amber-200">
+                      <img src={photo.previewUrl} alt={photo.label} className="h-full w-full object-cover" />
+                      <span className="absolute bottom-0.5 left-0.5 rounded bg-slate-900/60 px-1 py-0.5 text-[9px] font-medium text-white">
+                        {photo.label}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removePendingPhoto(photo.key)}
+                        aria-label="Quitar foto"
+                        className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <TrashIcon className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePickPhoto} />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-amber-300 text-amber-500 hover:border-amber-400 hover:text-amber-700"
+                  >
+                    <UploadIcon className="h-4 w-4" />
+                    <span className="text-[10px] font-medium">Foto</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {isAdmin && (
           <div>
@@ -296,7 +595,10 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
           <button
             type="button"
             onClick={handleSave}
-            disabled={isSaving}
+            disabled={
+              isSaving ||
+              (requiresProduct && missingRequiredProductFields({ productName, productLot, productExpiresAt, productQuantity }))
+            }
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSaving ? 'Guardando...' : 'Grabar'}
@@ -351,7 +653,13 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
             <p className="py-8 text-center text-sm text-slate-400">No hay evoluciones registradas.</p>
           )}
           {evolutions.map((evolution) => (
-            <EvolutionCard key={evolution.id} evolution={evolution} onToggle={handleToggle} />
+            <EvolutionCard
+              key={evolution.id}
+              evolution={evolution}
+              onToggle={handleToggle}
+              onDeletePhoto={handleDeletePhoto}
+              onRequestDelete={setDeletingEvolution}
+            />
           ))}
         </div>
       </div>
@@ -386,6 +694,17 @@ export function EvolucionesTab({ patient }: { patient: Patient }) {
             </div>
           )}
         </Modal>
+      )}
+
+      {deletingEvolution && (
+        <ReasonModal
+          title="Eliminar evolución"
+          description="Esta acción no se puede deshacer. Indica el motivo por el que la vas a eliminar."
+          placeholder="Ej: se creó por error, es una nota duplicada."
+          acceptLabel="Eliminar"
+          onClose={() => setDeletingEvolution(null)}
+          onAccept={handleDelete}
+        />
       )}
     </div>
   );

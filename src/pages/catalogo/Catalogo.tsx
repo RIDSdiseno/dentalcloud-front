@@ -158,9 +158,29 @@ export default function Catalogo() {
             <tbody className="divide-y divide-slate-100">
               {prestaciones.map((p) => (
                 <tr key={p.id} className={`hover:bg-slate-50 ${!p.active ? 'opacity-50' : ''}`}>
-                  <td className="px-4 py-3 font-medium text-slate-800">{p.name}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800">
+                    {p.name}
+                    {isEstetica && p.requiresProductTracking && (
+                      <span
+                        title="Requiere registrar producto y lote"
+                        className="ml-1.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700"
+                      >
+                        Lote
+                      </span>
+                    )}
+                    {isEstetica && p.appliesToWholeFace && (
+                      <span
+                        title="Aplica siempre a todo el rostro"
+                        className="ml-1.5 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700"
+                      >
+                        Todo el rostro
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-500">{p.code ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-700">{formatCLP(p.basePrice)}</td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {p.zonePrices ? <span title="Cada zona tiene su propio precio">Según zona</span> : formatCLP(p.basePrice)}
+                  </td>
                   {showCategoryColumn && (
                     <td className="px-4 py-3">
                       <span
@@ -179,7 +199,7 @@ export default function Catalogo() {
                   )}
                   {isEstetica && (
                     <td className="px-4 py-3 max-w-[260px] text-xs text-slate-500">
-                      {p.category === 'estetica' ? zonesSummary(p.allowedZones) : '—'}
+                      {p.category !== 'estetica' ? '—' : p.appliesToWholeFace ? 'Todo el rostro' : zonesSummary(p.allowedZones)}
                     </td>
                   )}
                   <td className="px-4 py-3">

@@ -91,7 +91,7 @@ export function modeFromName(name: string): OdontogramMode {
 }
 
 export function getOdontogramConfig(prestacion: Prestacion): OdontogramConfig {
-  const mode = prestacion.odontogramMode ?? prestacion.odontogram_mode ?? modeFromName(prestacion.name);
+  const mode = prestacion.odontogramMode ?? modeFromName(prestacion.name);
   return {
     mode,
     markColor: prestacion.markColor ?? prestacion.mark_color,
