@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { fetchUsers, updateUserRut, importProfessionalsFromDimage, type StaffUser } from '../../api/users';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import { ClockIcon, DownloadIcon, PlusIcon, UsersIcon } from '../../components/icons';
+import { ClockIcon, DownloadIcon, PlusIcon, ShieldIcon, UsersIcon } from '../../components/icons';
 import { roleLabel } from '../../utils/roles';
 import { formatRutInput } from '../../utils/rut';
 import { ProfessionalFormModal } from './ProfessionalFormModal';
 import { ScheduleModal } from './ScheduleModal';
 import { PermisosPerfilPanel } from './PermisosPerfilPanel';
+import { PermisosUsuarioModal } from './PermisosUsuarioModal';
 import { GeneratedPasswordDialog } from './GeneratedPasswordDialog';
 
 const SCHEDULABLE_ROLES = ['odontologo', 'radiologo', 'operador'];
@@ -61,6 +62,7 @@ export default function Profesionales() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [scheduleFor, setScheduleFor] = useState<StaffUser | null>(null);
+  const [permissionsFor, setPermissionsFor] = useState<StaffUser | null>(null);
   const [passwordEntries, setPasswordEntries] = useState<{ label: string; password: string }[] | null>(null);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -172,16 +174,26 @@ export default function Profesionales() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {SCHEDULABLE_ROLES.includes(user.role) && (
+                    <div className="flex items-center justify-end gap-2">
                       <button
                         type="button"
-                        onClick={() => setScheduleFor(user)}
+                        onClick={() => setPermissionsFor(user)}
                         className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
                       >
-                        <ClockIcon className="h-4 w-4" />
-                        Horario
+                        <ShieldIcon className="h-4 w-4" />
+                        Permisos
                       </button>
-                    )}
+                      {SCHEDULABLE_ROLES.includes(user.role) && (
+                        <button
+                          type="button"
+                          onClick={() => setScheduleFor(user)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                          <ClockIcon className="h-4 w-4" />
+                          Horario
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -210,6 +222,8 @@ export default function Profesionales() {
       )}
 
       {scheduleFor && <ScheduleModal professional={scheduleFor} onClose={() => setScheduleFor(null)} />}
+
+      {permissionsFor && <PermisosUsuarioModal user={permissionsFor} onClose={() => setPermissionsFor(null)} />}
     </div>
   );
 }

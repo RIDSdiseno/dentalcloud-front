@@ -64,7 +64,19 @@ function normalize(text: string) {
   return text.toLowerCase().normalize('NFD').replace(DIACRITICS_PATTERN, '').replace(/\s+/g, ' ').trim();
 }
 
-function modeFromName(name: string): OdontogramMode {
+export const ODONTOGRAM_MODES: OdontogramMode[] = ['session', 'tooth', 'surface', 'extraction', 'cuadrante', 'sextante', 'arcada'];
+
+export const ODONTOGRAM_MODE_LABELS: Record<OdontogramMode, string> = {
+  session: 'Sesión (toda la boca)',
+  tooth: 'Pieza completa',
+  surface: 'Cara',
+  extraction: 'Extracción',
+  cuadrante: 'Cuadrante',
+  sextante: 'Sextante',
+  arcada: 'Arcada',
+};
+
+export function modeFromName(name: string): OdontogramMode {
   const normalized = normalize(name);
   if (EXTRACTION_KEYWORDS.some((k) => normalized.includes(k))) return 'extraction';
   if (WHOLE_MOUTH_ARCH_EXCEPTIONS.some((k) => normalized.includes(k))) return 'session';
@@ -103,6 +115,18 @@ function sortTeeth(teeth: string[]): string[] {
 function joinWithY(items: string[]): string {
   if (items.length <= 1) return items.join('');
   return `${items.slice(0, -1).join(', ')} y ${items[items.length - 1]}`;
+}
+
+// Separa una selección en un grupo por pieza — usado para que una prestación
+// cobrada por pieza (no por grupo/cuadrante/arcada) genere una línea por cada
+// una en vez de una sola línea con todas las piezas adentro.
+export function splitSelectionByTooth(selection: ToothSelection[]): ToothSelection[][] {
+  const byTooth = new Map<string, ToothSelection[]>();
+  for (const sel of selection) {
+    if (!byTooth.has(sel.tooth)) byTooth.set(sel.tooth, []);
+    byTooth.get(sel.tooth)!.push(sel);
+  }
+  return Array.from(byTooth.values());
 }
 
 function groupByTooth(selection: ToothSelection[]): Map<string, ToothSurface[]> {

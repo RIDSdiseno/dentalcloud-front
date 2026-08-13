@@ -12,17 +12,23 @@ export type Convenio = { id: string; name: string; discountPercent: number; acti
 // El backend todavía no expone configuración de odontograma por prestación;
 // estos campos quedan opcionales (camelCase y snake_case) para no romper
 // nada hoy y poder consumirlos el día que la API los entregue.
+export type PrestacionOdontogramMode = 'session' | 'tooth' | 'surface' | 'extraction' | 'cuadrante' | 'sextante' | 'arcada';
+
 export type Prestacion = {
   id: string;
   code: string | null;
   name: string;
   basePrice: number;
   active: boolean;
-  // Zonas del mapa facial donde aplica (solo clínicas tipo "estetica").
+  // "dental" | "estetica" — determina si usa el odontograma o el mapa facial.
+  category: 'dental' | 'estetica';
+  // Modo de selección del odontograma (sólo relevante si category = "dental").
+  // Se sugiere por palabras clave del nombre al crear, pero queda guardado y
+  // editable en el catálogo — ver odontogramConfig.ts (getOdontogramConfig).
+  odontogramMode: PrestacionOdontogramMode;
+  // Zonas del mapa facial donde aplica (solo category = "estetica").
   // Array vacío = sin restricción, aplica a cualquier zona.
   allowedZones: string[];
-  odontogramMode?: 'session' | 'tooth' | 'surface' | 'extraction';
-  odontogram_mode?: 'session' | 'tooth' | 'surface' | 'extraction';
   markColor?: string;
   mark_color?: string;
   allowMultipleTeeth?: boolean;
@@ -69,14 +75,29 @@ export async function fetchAllPrestaciones() {
   return data.prestaciones;
 }
 
-export async function createPrestacion(input: { name: string; code?: string; basePrice: number; allowedZones?: string[] }) {
+export async function createPrestacion(input: {
+  name: string;
+  code?: string;
+  basePrice: number;
+  category?: 'dental' | 'estetica';
+  odontogramMode?: PrestacionOdontogramMode;
+  allowedZones?: string[];
+}) {
   const { data } = await api.post<{ prestacion: Prestacion }>('/catalogs/prestaciones', input);
   return data.prestacion;
 }
 
 export async function updatePrestacion(
   id: string,
-  patch: { name?: string; code?: string | null; basePrice?: number; active?: boolean; allowedZones?: string[] }
+  patch: {
+    name?: string;
+    code?: string | null;
+    basePrice?: number;
+    active?: boolean;
+    category?: 'dental' | 'estetica';
+    odontogramMode?: PrestacionOdontogramMode;
+    allowedZones?: string[];
+  }
 ) {
   const { data } = await api.patch<{ prestacion: Prestacion }>(`/catalogs/prestaciones/${id}`, patch);
   return data.prestacion;
@@ -91,7 +112,62 @@ export async function fetchEvolutionTemplates() {
   return data.templates;
 }
 
-export async function updateSucursal(id: string, patch: { dimageClinicId?: string | null }) {
+export async function createSucursal(input: { name: string; address?: string }) {
+  const { data } = await api.post<{ sucursal: Sucursal }>('/catalogs/sucursales', input);
+  return data.sucursal;
+}
+
+export async function updateSucursal(
+  id: string,
+  patch: { name?: string; address?: string | null; active?: boolean; dimageClinicId?: string | null }
+) {
   const { data } = await api.patch<{ sucursal: Sucursal }>(`/catalogs/sucursales/${id}`, patch);
   return data.sucursal;
+}
+
+export async function deleteSucursal(id: string) {
+  await api.delete(`/catalogs/sucursales/${id}`);
+}
+
+export async function fetchAllSucursales() {
+  const { data } = await api.get<{ sucursales: Sucursal[] }>('/catalogs/sucursales', { params: { all: 'true' } });
+  return data.sucursales;
+}
+
+export async function createPrevision(input: { name: string }) {
+  const { data } = await api.post<{ prevision: Prevision }>('/catalogs/previsiones', input);
+  return data.prevision;
+}
+
+export async function updatePrevision(id: string, patch: { name?: string; active?: boolean }) {
+  const { data } = await api.patch<{ prevision: Prevision }>(`/catalogs/previsiones/${id}`, patch);
+  return data.prevision;
+}
+
+export async function deletePrevision(id: string) {
+  await api.delete(`/catalogs/previsiones/${id}`);
+}
+
+export async function fetchAllPrevisiones() {
+  const { data } = await api.get<{ previsiones: Prevision[] }>('/catalogs/previsiones', { params: { all: 'true' } });
+  return data.previsiones;
+}
+
+export async function createConvenio(input: { name: string; discountPercent?: number }) {
+  const { data } = await api.post<{ convenio: Convenio }>('/catalogs/convenios', input);
+  return data.convenio;
+}
+
+export async function updateConvenio(id: string, patch: { name?: string; discountPercent?: number; active?: boolean }) {
+  const { data } = await api.patch<{ convenio: Convenio }>(`/catalogs/convenios/${id}`, patch);
+  return data.convenio;
+}
+
+export async function deleteConvenio(id: string) {
+  await api.delete(`/catalogs/convenios/${id}`);
+}
+
+export async function fetchAllConvenios() {
+  const { data } = await api.get<{ convenios: Convenio[] }>('/catalogs/convenios', { params: { all: 'true' } });
+  return data.convenios;
 }

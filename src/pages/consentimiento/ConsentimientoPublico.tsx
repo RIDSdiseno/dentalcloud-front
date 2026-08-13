@@ -8,6 +8,7 @@ import {
 } from '../../api/publicConsent';
 import { formatRutInput, isValidRut } from '../../utils/rut';
 import { ShieldIcon } from '../../components/icons';
+import { SignaturePad } from '../../components/SignaturePad';
 
 type ViewState = 'loading' | 'form' | 'submitting' | 'success' | 'not_found' | 'expired' | 'already_responded' | 'error';
 
@@ -43,6 +44,7 @@ export default function ConsentimientoPublico() {
   const [signerName, setSignerName] = useState('');
   const [signerRut, setSignerRut] = useState('');
   const [readConfirmed, setReadConfirmed] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,20 +58,43 @@ export default function ConsentimientoPublico() {
   }, [token]);
 
   const canSubmit = readConfirmed && signerName.trim().length > 0 && isValidRut(signerRut);
+  const canAccept = canSubmit && Boolean(signatureDataUrl);
 
   async function handleDecision(decision: 'firmado' | 'rechazado') {
     if (!token || !canSubmit) {
       setFormError('Completa tu nombre, RUT y confirma que leíste el documento.');
       return;
     }
+    if (decision === 'firmado' && !signatureDataUrl) {
+      setFormError('Dibuja tu firma antes de aceptar.');
+      return;
+    }
     setFormError(null);
     setState('submitting');
     try {
-      await respondPublicConsent(token, { decision, signerName: signerName.trim(), signerRut, readConfirmed });
+      await respondPublicConsent(token, {
+        decision,
+        signerName: signerName.trim(),
+        signerRut,
+        readConfirmed,
+        signatureDataUrl: decision === 'firmado' ? signatureDataUrl : undefined,
+      });
       setDecidedAs(decision);
       setState('success');
     } catch (err) {
-      setState(statusFromError(err));
+      // 409 (ya respondido) / 410 (vencido) son terminales: no hay nada que
+      // reintentar, se muestra la pantalla completa. Cualquier otro error
+      // (ej. falla al subir la firma) se queda en el formulario para que el
+      // paciente pueda reintentar sin perder lo que ya llenó.
+      if (axios.isAxiosError(err) && (err.response?.status === 409 || err.response?.status === 410)) {
+        setState(statusFromError(err));
+        return;
+      }
+      setState('form');
+      setFormError(
+        (axios.isAxiosError(err) && (err.response?.data as { error?: string } | undefined)?.error) ||
+          'No se pudo registrar tu respuesta. Intenta nuevamente.'
+      );
     }
   }
 
@@ -186,12 +211,19 @@ export default function ConsentimientoPublico() {
           He leído y comprendo este documento.
         </label>
 
+        <div>
+          <label className="text-sm font-medium text-slate-700">Firma</label>
+          <div className="mt-1">
+            <SignaturePad onChange={setSignatureDataUrl} />
+          </div>
+        </div>
+
         {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
 
         <div className="mt-2 flex gap-3">
           <button
             type="button"
-            disabled={!canSubmit || state === 'submitting'}
+            disabled={!canAccept || state === 'submitting'}
             onClick={() => handleDecision('firmado')}
             className="flex-1 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
           >

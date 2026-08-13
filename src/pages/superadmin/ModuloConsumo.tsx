@@ -30,15 +30,15 @@ function isWithinLastDays(value: string, days: number) {
 type ModuleRouteKey = ClinicaModuleKey | 'rx';
 
 const MODULE_META: Record<ModuleRouteKey, { label: string; description: string }> = {
-  pacientes: { label: 'Pacientes', description: 'Fichas de pacientes registradas por clínica y su estado de consentimiento.' },
-  agenda: { label: 'Agenda y citas', description: 'Citas agendadas por clínica.' },
+  pacientes: { label: 'Pacientes', description: 'Fichas de pacientes registradas por holding y su estado de consentimiento.' },
+  agenda: { label: 'Agenda y citas', description: 'Citas agendadas por holding.' },
   tratamientos: { label: 'Planes de tratamiento', description: 'Presupuestos creados y monto total presupuestado.' },
-  documentosClinicos: { label: 'Documentos clínicos', description: 'Documentos clínicos subidos por clínica.' },
+  documentosClinicos: { label: 'Documentos clínicos', description: 'Documentos clínicos subidos por holding.' },
   cartola: { label: 'Cartola', description: 'Movimientos contables registrados y saldo neto (haber - debe).' },
-  evoluciones: { label: 'Evoluciones', description: 'Evoluciones clínicas registradas por clínica.' },
-  observaciones: { label: 'Observaciones', description: 'Observaciones administrativas registradas por clínica.' },
+  evoluciones: { label: 'Evoluciones', description: 'Evoluciones clínicas registradas por holding.' },
+  observaciones: { label: 'Observaciones', description: 'Observaciones administrativas registradas por holding.' },
   consentimientos: { label: 'Consentimientos', description: 'Estado de los consentimientos informados de los pacientes.' },
-  rx: { label: 'Módulo Rx', description: 'Integración con RIDS RX. Hoy usa credenciales globales, no hay consumo por clínica todavía.' },
+  rx: { label: 'Módulo Rx', description: 'Integración con RIDS RX. Hoy usa credenciales globales, no hay consumo por holding todavía.' },
 };
 
 function isValidModuleKey(key: string | undefined): key is ModuleRouteKey {
@@ -316,9 +316,9 @@ function PacientesDashboard({ clinicas }: { clinicas: Clinica[] }) {
 
       {clinicas.length > 1 && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <BarList title="Pacientes por clínica" rows={patientsPorClinicaRows} formatValue={(v) => String(v)} />
+          <BarList title="Pacientes por holding" rows={patientsPorClinicaRows} formatValue={(v) => String(v)} />
           <BarList
-            title="% de consentimiento firmado por clínica"
+            title="% de consentimiento firmado por holding"
             rows={consentRatePorClinicaRows}
             formatValue={(v) => `${v}%`}
           />
@@ -326,9 +326,9 @@ function PacientesDashboard({ clinicas }: { clinicas: Clinica[] }) {
       )}
 
       <DetailTable
-        title="Pacientes por clínica"
+        title="Pacientes por holding"
         rows={patients}
-        searchPlaceholder="Buscar por nombre, RUT o clínica..."
+        searchPlaceholder="Buscar por nombre, RUT o holding..."
         emptyLabel="Aún no hay pacientes registrados."
         filterFn={(p, term) =>
           `${p.firstName} ${p.lastName}`.toLowerCase().includes(term) ||
@@ -336,7 +336,7 @@ function PacientesDashboard({ clinicas }: { clinicas: Clinica[] }) {
           p.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
           {
             key: 'paciente',
             label: 'Paciente',
@@ -393,7 +393,7 @@ function ConsentimientosDashboard({ clinicas }: { clinicas: Clinica[] }) {
 
       {clinicas.length > 1 && (
         <BarList
-          title="% de consentimiento firmado por clínica"
+          title="% de consentimiento firmado por holding"
           rows={consentRatePorClinicaRows}
           formatValue={(v) => `${v}%`}
         />
@@ -402,7 +402,7 @@ function ConsentimientosDashboard({ clinicas }: { clinicas: Clinica[] }) {
       <DetailTable
         title="Consentimientos enviados"
         rows={sentPatients}
-        searchPlaceholder="Buscar por nombre, RUT o clínica..."
+        searchPlaceholder="Buscar por nombre, RUT o holding..."
         emptyLabel="Aún no se ha enviado ningún consentimiento."
         filterFn={(p, term) =>
           `${p.firstName} ${p.lastName}`.toLowerCase().includes(term) ||
@@ -410,7 +410,7 @@ function ConsentimientosDashboard({ clinicas }: { clinicas: Clinica[] }) {
           p.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
           {
             key: 'paciente',
             label: 'Paciente',
@@ -467,17 +467,17 @@ function AgendaDashboard({ clinicas }: { clinicas: Clinica[] }) {
       </div>
 
       {clinicas.length > 1 && (
-        <BarList title="Citas por clínica" rows={citasPorClinicaRows} formatValue={(v) => String(v)} />
+        <BarList title="Citas por holding" rows={citasPorClinicaRows} formatValue={(v) => String(v)} />
       )}
 
       <DetailTable
         title="Citas recientes"
         rows={appointments}
-        searchPlaceholder="Buscar por paciente o clínica..."
+        searchPlaceholder="Buscar por paciente o holding..."
         emptyLabel="Aún no hay citas registradas."
         filterFn={(a, term) => a.patientName.toLowerCase().includes(term) || a.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (a) => <span className="text-slate-500">{a.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (a) => <span className="text-slate-500">{a.clinicaName}</span> },
           { key: 'paciente', label: 'Paciente', render: (a) => <span className="font-medium text-slate-800">{a.patientName}</span> },
           { key: 'fecha', label: 'Fecha', render: (a) => <span className="text-slate-500">{formatDateTime(a.startAt)}</span> },
           { key: 'tipo', label: 'Tipo', render: (a) => <span className="text-slate-500 capitalize">{a.type}</span> },
@@ -550,19 +550,19 @@ function TratamientosDashboard({ clinicas }: { clinicas: Clinica[] }) {
 
       {clinicas.length > 1 && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <BarList title="Presupuestos por clínica" rows={planesPorClinicaRows} formatValue={(v) => String(v)} />
-          <BarList title="Monto presupuestado por clínica" rows={montoPorClinicaRows} formatValue={(v) => formatCLP(v)} />
+          <BarList title="Presupuestos por holding" rows={planesPorClinicaRows} formatValue={(v) => String(v)} />
+          <BarList title="Monto presupuestado por holding" rows={montoPorClinicaRows} formatValue={(v) => formatCLP(v)} />
         </div>
       )}
 
       <DetailTable
         title="Presupuestos recientes"
         rows={plans}
-        searchPlaceholder="Buscar por paciente o clínica..."
+        searchPlaceholder="Buscar por paciente o holding..."
         emptyLabel="Aún no hay presupuestos registrados."
         filterFn={(p, term) => p.patientName.toLowerCase().includes(term) || p.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
           { key: 'paciente', label: 'Paciente', render: (p) => <span className="font-medium text-slate-800">{p.patientName}</span> },
           { key: 'nombre', label: 'Plan', render: (p) => <span className="text-slate-500">{p.name ?? '—'}</span> },
           {
@@ -607,17 +607,17 @@ function DocumentosDashboard({ clinicas }: { clinicas: Clinica[] }) {
       </div>
 
       {clinicas.length > 1 && (
-        <BarList title="Documentos por clínica" rows={documentosPorClinicaRows} formatValue={(v) => String(v)} />
+        <BarList title="Documentos por holding" rows={documentosPorClinicaRows} formatValue={(v) => String(v)} />
       )}
 
       <DetailTable
         title="Documentos recientes"
         rows={documents}
-        searchPlaceholder="Buscar por paciente o clínica..."
+        searchPlaceholder="Buscar por paciente o holding..."
         emptyLabel="Aún no hay documentos registrados."
         filterFn={(d, term) => d.patientName.toLowerCase().includes(term) || d.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (d) => <span className="text-slate-500">{d.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (d) => <span className="text-slate-500">{d.clinicaName}</span> },
           { key: 'paciente', label: 'Paciente', render: (d) => <span className="font-medium text-slate-800">{d.patientName}</span> },
           { key: 'categoria', label: 'Categoría', render: (d) => <span className="text-slate-500">{d.category}</span> },
           { key: 'archivo', label: 'Archivo', render: (d) => <span className="text-slate-500">{d.fileName}</span> },
@@ -669,19 +669,19 @@ function CartolaDashboard({ clinicas }: { clinicas: Clinica[] }) {
 
       {clinicas.length > 1 && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <BarList title="Movimientos por clínica" rows={movimientosPorClinicaRows} formatValue={(v) => String(v)} />
-          <BarList title="Saldo neto por clínica" rows={saldoPorClinicaRows} formatValue={(v) => formatCLP(v)} />
+          <BarList title="Movimientos por holding" rows={movimientosPorClinicaRows} formatValue={(v) => String(v)} />
+          <BarList title="Saldo neto por holding" rows={saldoPorClinicaRows} formatValue={(v) => formatCLP(v)} />
         </div>
       )}
 
       <DetailTable
         title="Movimientos recientes"
         rows={movements}
-        searchPlaceholder="Buscar por paciente o clínica..."
+        searchPlaceholder="Buscar por paciente o holding..."
         emptyLabel="Aún no hay movimientos registrados."
         filterFn={(m, term) => m.patientName.toLowerCase().includes(term) || m.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (m) => <span className="text-slate-500">{m.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (m) => <span className="text-slate-500">{m.clinicaName}</span> },
           { key: 'paciente', label: 'Paciente', render: (m) => <span className="font-medium text-slate-800">{m.patientName}</span> },
           { key: 'tipo', label: 'Tipo', render: (m) => <span className="text-slate-500 capitalize">{m.type}</span> },
           { key: 'debe', label: 'Debe', render: (m) => <span className="text-slate-500">{m.debe > 0 ? formatCLP(m.debe) : '—'}</span> },
@@ -720,13 +720,13 @@ function EvolucionesDashboard({ clinicas }: { clinicas: Clinica[] }) {
       </div>
 
       {clinicas.length > 1 && (
-        <BarList title="Evoluciones por clínica" rows={evolucionesPorClinicaRows} formatValue={(v) => String(v)} />
+        <BarList title="Evoluciones por holding" rows={evolucionesPorClinicaRows} formatValue={(v) => String(v)} />
       )}
 
       <DetailTable
         title="Evoluciones recientes"
         rows={evolutions}
-        searchPlaceholder="Buscar por paciente, profesional o clínica..."
+        searchPlaceholder="Buscar por paciente, profesional o holding..."
         emptyLabel="Aún no hay evoluciones registradas."
         filterFn={(e, term) =>
           e.patientName.toLowerCase().includes(term) ||
@@ -734,7 +734,7 @@ function EvolucionesDashboard({ clinicas }: { clinicas: Clinica[] }) {
           e.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (e) => <span className="text-slate-500">{e.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (e) => <span className="text-slate-500">{e.clinicaName}</span> },
           { key: 'paciente', label: 'Paciente', render: (e) => <span className="font-medium text-slate-800">{e.patientName}</span> },
           { key: 'profesional', label: 'Profesional', render: (e) => <span className="text-slate-500">{e.professionalName}</span> },
           { key: 'resumen', label: 'Resumen', render: (e) => <span className="text-slate-500">{e.summary}</span> },
@@ -772,13 +772,13 @@ function ObservacionesDashboard({ clinicas }: { clinicas: Clinica[] }) {
       </div>
 
       {clinicas.length > 1 && (
-        <BarList title="Observaciones por clínica" rows={observacionesPorClinicaRows} formatValue={(v) => String(v)} />
+        <BarList title="Observaciones por holding" rows={observacionesPorClinicaRows} formatValue={(v) => String(v)} />
       )}
 
       <DetailTable
         title="Observaciones recientes"
         rows={observations}
-        searchPlaceholder="Buscar por paciente, profesional o clínica..."
+        searchPlaceholder="Buscar por paciente, profesional o holding..."
         emptyLabel="Aún no hay observaciones registradas."
         filterFn={(o, term) =>
           o.patientName.toLowerCase().includes(term) ||
@@ -786,7 +786,7 @@ function ObservacionesDashboard({ clinicas }: { clinicas: Clinica[] }) {
           o.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Clínica', render: (o) => <span className="text-slate-500">{o.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (o) => <span className="text-slate-500">{o.clinicaName}</span> },
           { key: 'paciente', label: 'Paciente', render: (o) => <span className="font-medium text-slate-800">{o.patientName}</span> },
           { key: 'profesional', label: 'Profesional', render: (o) => <span className="text-slate-500">{o.professionalName}</span> },
           { key: 'resumen', label: 'Resumen', render: (o) => <span className="text-slate-500">{o.summary}</span> },
@@ -891,7 +891,7 @@ function ClinicaRow({
     <tr className="border-t border-slate-100">
       <td className="px-4 py-3">
         <div className="font-semibold text-slate-800">{clinica.name}</div>
-        {!clinica.active && <div className="text-xs text-red-500">Clínica desactivada</div>}
+        {!clinica.active && <div className="text-xs text-red-500">Holding desactivado</div>}
         {error && <div className="text-xs text-red-500">{error}</div>}
       </td>
       <td className="px-4 py-3 text-sm text-slate-600">
@@ -918,7 +918,7 @@ export default function ModuloConsumo() {
   useEffect(() => {
     fetchClinicas()
       .then(setClinicas)
-      .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar las clínicas')))
+      .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar los holdings')))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -949,11 +949,11 @@ export default function ModuloConsumo() {
 
       {!isLoading && (
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-          <p className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-700">Habilitar por clínica</p>
+          <p className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-700">Habilitar por holding</p>
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50 text-xs font-semibold tracking-wide text-slate-400 uppercase">
-                <th className="px-4 py-3">Clínica</th>
+                <th className="px-4 py-3">Holding</th>
                 <th className="px-4 py-3">Consumo</th>
                 <th className="px-4 py-3">Habilitado</th>
               </tr>
@@ -965,7 +965,7 @@ export default function ModuloConsumo() {
             </tbody>
           </table>
           {clinicas.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-slate-400">Aún no hay clínicas registradas.</p>
+            <p className="px-4 py-8 text-center text-sm text-slate-400">Aún no hay holdings registrados.</p>
           )}
         </div>
       )}

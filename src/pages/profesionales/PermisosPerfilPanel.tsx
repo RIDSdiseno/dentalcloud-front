@@ -22,7 +22,7 @@ const PERMISSION_ORDER: PermissionKey[] = [
   'rx',
 ];
 
-const PERMISSION_LABELS: Record<PermissionKey, string> = {
+export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   pacientes: 'Pacientes',
   agenda: 'Agenda y citas',
   tratamientos: 'Planes de tratamiento',
@@ -67,7 +67,7 @@ export function PermisosPerfilPanel() {
     <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <h2 className="mb-1 text-sm font-semibold text-slate-800">Permisos por perfil</h2>
       <p className="mb-4 text-xs text-slate-500">
-        Qué puede ver cada perfil dentro de esta clínica. Los administradores siempre tienen acceso completo.
+        Qué puede ver cada perfil dentro de este holding. Los administradores siempre tienen acceso completo.
       </p>
 
       {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}

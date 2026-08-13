@@ -199,7 +199,7 @@ export default function Login() {
               onClick={() => handleQuickLogin('admin@clinicademo.local', 'Admin123!')}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Administrador Clínica Demo
+              Administrador Holding Demo
             </button>
             <button
               type="button"
@@ -207,7 +207,7 @@ export default function Login() {
               onClick={() => handleQuickLogin('admin@esteticademo.local', 'Admin123!')}
               className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Administrador Clínica Estética Demo
+              Administrador Holding Estética Demo
             </button>
           </div>
         </div>

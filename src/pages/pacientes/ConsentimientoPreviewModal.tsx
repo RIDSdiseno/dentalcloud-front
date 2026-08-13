@@ -10,6 +10,7 @@ import {
 } from '../../api/dataConsents';
 import type { Patient } from '../../api/patients';
 import { formatRutInput, isValidRut } from '../../utils/rut';
+import { SignaturePad } from '../../components/SignaturePad';
 
 export function ConsentimientoPreviewModal({
   patient,
@@ -31,6 +32,7 @@ export function ConsentimientoPreviewModal({
   const [signerName, setSignerName] = useState(`${patient.firstName} ${patient.lastName}`);
   const [signerRut, setSignerRut] = useState(patient.rut);
   const [readConfirmed, setReadConfirmed] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -45,10 +47,15 @@ export function ConsentimientoPreviewModal({
 
   const alreadyResponded = consent?.status === 'firmado' || consent?.status === 'rechazado';
   const canSubmit = !alreadyResponded && readConfirmed && signerName.trim().length > 0 && isValidRut(signerRut) && !isSubmitting;
+  const canAccept = canSubmit && Boolean(signatureDataUrl);
 
   async function handleDecision(decision: 'firmado' | 'rechazado') {
     if (!canSubmit) {
       setFormError('Completa el nombre, el RUT y confirma que el paciente leyó el documento.');
+      return;
+    }
+    if (decision === 'firmado' && !signatureDataUrl) {
+      setFormError('El paciente debe dibujar su firma antes de aceptar.');
       return;
     }
     setFormError(null);
@@ -59,6 +66,7 @@ export function ConsentimientoPreviewModal({
         signerName: signerName.trim(),
         signerRut,
         readConfirmed,
+        signatureDataUrl: decision === 'firmado' ? signatureDataUrl : undefined,
       });
       onSigned({ ...result, signerName: signerName.trim(), signerRut });
     } catch (err) {
@@ -143,12 +151,21 @@ export function ConsentimientoPreviewModal({
             El paciente leyó y comprende este documento.
           </label>
 
+          {!alreadyResponded && (
+            <div>
+              <label className="text-sm font-medium text-slate-700">Firma del paciente</label>
+              <div className="mt-1">
+                <SignaturePad onChange={setSignatureDataUrl} height={140} />
+              </div>
+            </div>
+          )}
+
           {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
 
           <div className="flex gap-3">
             <button
               type="button"
-              disabled={!canSubmit}
+              disabled={!canAccept}
               onClick={() => handleDecision('firmado')}
               className="flex-1 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
             >

@@ -5,18 +5,37 @@ import { useAuth } from '../../context/AuthContext';
 import { formatCLP } from '../../utils/treatmentStatus';
 import { ClipboardIcon, EditIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { FACIAL_ZONE_LABELS, type FacialZoneKey } from '../pacientes/facialZoneConfig';
+import { ODONTOGRAM_MODE_LABELS } from '../pacientes/odontogramConfig';
 import { PrestacionFormModal } from './PrestacionFormModal';
+import { ConveniosTab } from './ConveniosTab';
+import { PrevisionesTab } from './PrevisionesTab';
+import { ClinicasTab } from './ClinicasTab';
 
 function zonesSummary(allowedZones: string[]): string {
   if (allowedZones.length === 0) return 'Todas las zonas';
   return allowedZones.map((z) => FACIAL_ZONE_LABELS[z as FacialZoneKey] ?? z).join(', ');
 }
 
+const TABS = [
+  { key: 'prestaciones', label: 'Prestaciones' },
+  { key: 'convenios', label: 'Convenios' },
+  { key: 'previsiones', label: 'Previsiones' },
+  { key: 'clinicas', label: 'Clínicas' },
+] as const;
+
+type TabKey = (typeof TABS)[number]['key'];
+
 export default function Catalogo() {
   const { user } = useAuth();
-  // Clínicas "ambas" también gestionan zonas faciales (dejando el campo vacío
-  // en las prestaciones puramente dentales, sin restricción).
-  const isEstetica = !!user?.clinicaTipo && user.clinicaTipo !== 'dental';
+  const clinicaTipo = user?.clinicaTipo;
+  // Clínicas "ambas" administran ambas categorías, así que la columna de
+  // Tipo/Zonas sólo aporta cuando hay más de una categoría posible.
+  const isEstetica = !!clinicaTipo && clinicaTipo !== 'dental';
+  const showCategoryColumn = clinicaTipo === 'ambas';
+  // El modo de odontograma sólo aplica a prestaciones dentales — se omite
+  // por completo para clínicas puramente estéticas (nunca tienen ninguna).
+  const showModeColumn = clinicaTipo !== 'estetica';
+  const [tab, setTab] = useState<TabKey>('prestaciones');
   const [prestaciones, setPrestaciones] = useState<Prestacion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,13 +88,34 @@ export default function Catalogo() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Catálogo de prestaciones</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {prestaciones.length} {prestaciones.length === 1 ? 'prestación' : 'prestaciones'}
-          </p>
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Catálogo</h1>
+        <div className="mt-3 flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              className={`rounded-md px-3 py-1.5 transition-colors ${
+                tab === t.key ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {tab === 'convenios' && <ConveniosTab />}
+      {tab === 'previsiones' && <PrevisionesTab />}
+      {tab === 'clinicas' && <ClinicasTab />}
+
+      {tab === 'prestaciones' && (
+        <>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-slate-500">
+          {prestaciones.length} {prestaciones.length === 1 ? 'prestación' : 'prestaciones'}
+        </p>
         <button
           type="button"
           onClick={() => {
@@ -108,6 +148,8 @@ export default function Catalogo() {
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Código</th>
                 <th className="px-4 py-3">Precio</th>
+                {showCategoryColumn && <th className="px-4 py-3">Tipo</th>}
+                {showModeColumn && <th className="px-4 py-3">Modo</th>}
                 {isEstetica && <th className="px-4 py-3">Zonas</th>}
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3" />
@@ -119,8 +161,26 @@ export default function Catalogo() {
                   <td className="px-4 py-3 font-medium text-slate-800">{p.name}</td>
                   <td className="px-4 py-3 text-slate-500">{p.code ?? '—'}</td>
                   <td className="px-4 py-3 text-slate-700">{formatCLP(p.basePrice)}</td>
+                  {showCategoryColumn && (
+                    <td className="px-4 py-3">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          p.category === 'estetica' ? 'bg-purple-50 text-purple-700' : 'bg-sky-50 text-sky-700'
+                        }`}
+                      >
+                        {p.category === 'estetica' ? 'Estética' : 'Dental'}
+                      </span>
+                    </td>
+                  )}
+                  {showModeColumn && (
+                    <td className="px-4 py-3 text-xs text-slate-500">
+                      {p.category === 'dental' ? ODONTOGRAM_MODE_LABELS[p.odontogramMode] : '—'}
+                    </td>
+                  )}
                   {isEstetica && (
-                    <td className="px-4 py-3 max-w-[260px] text-xs text-slate-500">{zonesSummary(p.allowedZones)}</td>
+                    <td className="px-4 py-3 max-w-[260px] text-xs text-slate-500">
+                      {p.category === 'estetica' ? zonesSummary(p.allowedZones) : '—'}
+                    </td>
                   )}
                   <td className="px-4 py-3">
                     <button
@@ -168,13 +228,15 @@ export default function Catalogo() {
       {showForm && (
         <PrestacionFormModal
           prestacion={editing}
-          isEstetica={isEstetica}
+          clinicaTipo={clinicaTipo}
           onClose={() => {
             setShowForm(false);
             setEditing(null);
           }}
           onSaved={handleSaved}
         />
+      )}
+        </>
       )}
     </div>
   );

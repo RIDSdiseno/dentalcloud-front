@@ -1,24 +1,49 @@
 import { useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
-import { createPrestacion, updatePrestacion, type Prestacion } from '../../api/catalogs';
+import { createPrestacion, updatePrestacion, type Prestacion, type PrestacionOdontogramMode } from '../../api/catalogs';
 import { FACIAL_ZONES, FACIAL_ZONE_LABELS } from '../../pages/pacientes/facialZoneConfig';
+import { modeFromName, ODONTOGRAM_MODE_LABELS, ODONTOGRAM_MODES } from '../../pages/pacientes/odontogramConfig';
 
 type PrestacionFormModalProps = {
   prestacion: Prestacion | null;
-  isEstetica: boolean;
+  // Tipo de la clínica: determina si hace falta preguntar la categoría o si
+  // ya está implícita (clínicas puramente "dental" o "estetica").
+  clinicaTipo: string | null | undefined;
   onClose: () => void;
   onSaved: (prestacion: Prestacion) => void;
 };
 
-export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }: PrestacionFormModalProps) {
+export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved }: PrestacionFormModalProps) {
+  const showCategoryPicker = clinicaTipo === 'ambas';
   const [name, setName] = useState(prestacion?.name ?? '');
   const [code, setCode] = useState(prestacion?.code ?? '');
   const [basePrice, setBasePrice] = useState(String(prestacion?.basePrice ?? ''));
+  const [category, setCategory] = useState<'dental' | 'estetica'>(
+    prestacion?.category ?? (clinicaTipo === 'estetica' ? 'estetica' : 'dental')
+  );
   const [unrestricted, setUnrestricted] = useState((prestacion?.allowedZones.length ?? 0) === 0);
   const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set(prestacion?.allowedZones ?? []));
+  const [odontogramMode, setOdontogramMode] = useState<PrestacionOdontogramMode>(
+    prestacion?.odontogramMode ?? modeFromName(name)
+  );
+  // Mientras el usuario no toque el selector a mano, la sugerencia se
+  // recalcula sola a medida que escribe el nombre (sólo para prestaciones
+  // nuevas — al editar una existente su modo ya guardado manda siempre).
+  const [modeTouched, setModeTouched] = useState(Boolean(prestacion));
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const isEstetica = category === 'estetica';
+
+  function handleNameChange(value: string) {
+    setName(value);
+    if (!modeTouched) setOdontogramMode(modeFromName(value));
+  }
+
+  function handleModeChange(value: PrestacionOdontogramMode) {
+    setModeTouched(true);
+    setOdontogramMode(value);
+  }
 
   function toggleZone(zone: string) {
     setSelectedZones((prev) => {
@@ -42,10 +67,10 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
     }
     setIsSaving(true);
     try {
-      const allowedZones = unrestricted ? [] : Array.from(selectedZones);
+      const allowedZones = isEstetica ? (unrestricted ? [] : Array.from(selectedZones)) : [];
       const saved = prestacion
-        ? await updatePrestacion(prestacion.id, { name, code: code || null, basePrice: price, allowedZones })
-        : await createPrestacion({ name, code: code || undefined, basePrice: price, allowedZones });
+        ? await updatePrestacion(prestacion.id, { name, code: code || null, basePrice: price, category, odontogramMode, allowedZones })
+        : await createPrestacion({ name, code: code || undefined, basePrice: price, category, odontogramMode, allowedZones });
       onSaved(saved);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo guardar la prestación'));
@@ -63,11 +88,41 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
           </label>
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => handleNameChange(e.target.value)}
             placeholder="Ej: Ácido Hialurónico"
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
           />
         </div>
+
+        {showCategoryPicker && (
+          <div>
+            <label className="text-sm font-medium text-slate-700">Tipo de prestación</label>
+            <div className="mt-1 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setCategory('dental')}
+                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                  category === 'dental'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-slate-300 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                Dental
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategory('estetica')}
+                className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                  category === 'estetica'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700'
+                    : 'border-slate-300 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                Estética
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -93,6 +148,27 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
             />
           </div>
         </div>
+
+        {!isEstetica && (
+          <div>
+            <label className="text-sm font-medium text-slate-700">Modo de selección en el odontograma</label>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Sugerido automáticamente por el nombre — cámbialo si esta prestación no se elige por pieza (ej. flúor
+              se aplica a toda la boca, una resina se elige por cara).
+            </p>
+            <select
+              value={odontogramMode}
+              onChange={(e) => handleModeChange(e.target.value as PrestacionOdontogramMode)}
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            >
+              {ODONTOGRAM_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {ODONTOGRAM_MODE_LABELS[mode]}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {isEstetica && (
           <div>

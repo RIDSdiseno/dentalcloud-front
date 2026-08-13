@@ -69,6 +69,11 @@ export type TreatmentPlan = {
   createdAt: string;
   updatedAt: string;
   professional: { id: string; name: string } | null;
+  // Nombre informativo del profesional a cargo cuando este plan nació en
+  // Dental-Demo-Back (no hay federación de cuentas de staff entre ambos
+  // sistemas, así que no hay un `professional` real para enlazar). Null
+  // cuando el plan nació en esta misma plataforma.
+  remoteProfessionalName: string | null;
   // Usuario que efectivamente creó el registro — distinto de `professional`,
   // ya que un admin puede crear el presupuesto y asignarlo a otro profesional.
   createdBy: { id: string; name: string } | null;

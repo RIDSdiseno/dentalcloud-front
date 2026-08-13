@@ -107,7 +107,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
               {clinicaLogoUrl ? (
                 <img
                   src={clinicaLogoUrl}
-                  alt={user?.clinicaName ?? 'Logo de la clínica'}
+                  alt={user?.clinicaName ?? 'Logo del holding'}
                   className="h-full w-full object-cover"
                 />
               ) : isEstetica ? (

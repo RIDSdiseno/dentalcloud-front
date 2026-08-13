@@ -17,6 +17,7 @@ import {
   formatOdontogramSelection,
   getOdontogramConfig,
   selectionFromDefaults,
+  splitSelectionByTooth,
   toothNumberForBackend,
 } from './odontogramConfig';
 import { FacialMap, type FacialGender } from './FacialMap';
@@ -349,25 +350,33 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
 
     if (!activePrestacion) return;
     const price = convenioPrice(activePrestacion.basePrice, discount);
-    const row: ItemRow = {
-      key: `${activePrestacion.id}-${Date.now()}`,
+    // El precio de catálogo es por pieza/zona, no por presupuesto completo:
+    // si se marcaron varias piezas en un modo que se cobra por pieza
+    // (pieza completa/cara/extracción; "zona" en el mapa facial), se agrega
+    // una línea por cada una en vez de una sola línea con todas adentro. Los
+    // modos de grupo (cuadrante/sextante/arcada/sesión) siguen siendo una
+    // sola línea, porque ahí el precio ya es por el grupo completo.
+    const perUnitModes: OdontogramMode[] = isEstetica ? ['tooth'] : ['tooth', 'extraction', 'surface'];
+    const groups = perUnitModes.includes(activeMode) ? splitSelectionByTooth(draftSelection) : [draftSelection];
+    const newRows: ItemRow[] = groups.map((group, index) => ({
+      key: `${activePrestacion.id}-${Date.now()}-${index}`,
       prestacionId: activePrestacion.id,
       description: activePrestacion.name,
-      toothNumber: locationForBackend(isEstetica, activeMode, draftSelection),
+      toothNumber: locationForBackend(isEstetica, activeMode, group),
       listPrice: activePrestacion.basePrice,
       convenioDiscountPercent: discount,
       cost: price,
       odontogramMode: activeMode,
-      odontogramSelection: draftSelection,
+      odontogramSelection: group,
       odontogramColor: activeColor,
       notes: draftNotes.trim() || undefined,
       productName: draftProductName.trim() || undefined,
       productLot: draftProductLot.trim() || undefined,
       productExpiresAt: draftProductExpiresAt || undefined,
       productQuantity: draftProductQuantity.trim() || undefined,
-    };
-    setItems((prev) => [...prev, row]);
-    setLastAddedKeys([row.key]);
+    }));
+    setItems((prev) => [...prev, ...newRows]);
+    setLastAddedKeys(newRows.map((r) => r.key));
     resetActive();
   }
 
@@ -387,7 +396,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
 
   function goToStep2() {
     if (!sucursalId) {
-      setError('Selecciona una sucursal');
+      setError('Selecciona una clínica');
       return;
     }
     if (!convenioId) {
@@ -512,14 +521,14 @@ export function TreatmentPlanFormModal({ patient, onClose, onCreated }: Treatmen
                   ))}
                 </div>
                 <p className="mt-1 text-xs text-slate-400">
-                  Esta clínica ofrece ambos tipos de atención — elige qué diagrama usará este presupuesto.
+                  Este holding ofrece ambos tipos de atención — elige qué diagrama usará este presupuesto.
                 </p>
               </div>
             )}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="text-sm font-medium text-slate-700">
-                  Sucursal <span className="text-red-500">*</span>
+                  Clínica <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={sucursalId}

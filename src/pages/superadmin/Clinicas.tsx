@@ -19,7 +19,7 @@ export default function Clinicas() {
   useEffect(() => {
     fetchClinicas()
       .then(setClinicas)
-      .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar las clínicas')))
+      .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar los holdings')))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -32,9 +32,9 @@ export default function Clinicas() {
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Clínicas</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Holdings</h1>
           <p className="mt-1 text-sm text-slate-500">
-            {clinicas.length} clínica{clinicas.length === 1 ? '' : 's'} en la plataforma
+            {clinicas.length} holding{clinicas.length === 1 ? '' : 's'} en la plataforma
           </p>
         </div>
         <button
@@ -43,7 +43,7 @@ export default function Clinicas() {
           className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
         >
           <PlusIcon className="h-4 w-4" />
-          Crear clínica
+          Crear holding
         </button>
       </div>
 
@@ -51,7 +51,7 @@ export default function Clinicas() {
 
       {!isLoading && clinicas.length === 0 && (
         <div className="rounded-2xl bg-white py-16 text-center shadow-sm ring-1 ring-slate-200">
-          <p className="text-sm text-slate-400">Aún no hay clínicas registradas.</p>
+          <p className="text-sm text-slate-400">Aún no hay holdings registrados.</p>
         </div>
       )}
 
@@ -60,7 +60,7 @@ export default function Clinicas() {
           <table className="w-full text-left text-sm">
             <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
-                <th className="px-4 py-3">Clínica</th>
+                <th className="px-4 py-3">Holding</th>
                 <th className="px-4 py-3">Tipo</th>
                 <th className="px-4 py-3">RUT</th>
                 <th className="px-4 py-3">Estado</th>

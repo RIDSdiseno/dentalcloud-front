@@ -64,14 +64,14 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
       });
       onCreated(clinica);
     } catch (err) {
-      setError(getErrorMessage(err, 'No se pudo crear la clínica'));
+      setError(getErrorMessage(err, 'No se pudo crear el holding'));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <Modal title="Crear clínica" onClose={onClose} maxWidth="max-w-md">
+    <Modal title="Crear holding" onClose={onClose} maxWidth="max-w-md">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <button
@@ -86,7 +86,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
             )}
           </button>
           <div>
-            <p className="text-sm font-medium text-slate-700">Logo de la clínica</p>
+            <p className="text-sm font-medium text-slate-700">Logo del holding</p>
             <p className="text-xs text-slate-400">Opcional. PNG o JPG, máximo 5 MB.</p>
           </div>
           <input
@@ -100,7 +100,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
 
         <div>
           <label htmlFor="clinica-name" className="text-sm font-medium text-slate-700">
-            Nombre de la clínica
+            Nombre del holding
           </label>
           <input
             id="clinica-name"
@@ -234,7 +234,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
             disabled={isSubmitting}
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? 'Creando...' : 'Crear clínica'}
+            {isSubmitting ? 'Creando...' : 'Crear holding'}
           </button>
         </div>
       </form>

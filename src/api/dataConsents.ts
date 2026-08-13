@@ -71,7 +71,13 @@ export async function downloadConsentPdf(consentId: string) {
 export async function respondDataConsentInPerson(
   patientId: string,
   consentTypeId: string,
-  input: { decision: 'firmado' | 'rechazado'; signerName: string; signerRut: string; readConfirmed: boolean }
+  input: {
+    decision: 'firmado' | 'rechazado';
+    signerName: string;
+    signerRut: string;
+    readConfirmed: boolean;
+    signatureDataUrl?: string | null;
+  }
 ) {
   const { data } = await api.post<{ status: ConsentStatus; respondedAt: string }>(
     `/data-consents/${patientId}/${consentTypeId}/respond`,

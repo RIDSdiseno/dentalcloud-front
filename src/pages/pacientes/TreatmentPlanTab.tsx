@@ -22,6 +22,7 @@ import {
   ChevronDownIcon,
   ClipboardIcon,
   PlusIcon,
+  SearchIcon,
   TrashIcon,
   UploadIcon,
   UsersIcon,
@@ -32,6 +33,10 @@ import { PhotoEditorModal } from './PhotoEditorModal';
 import { FacialZonesHighlight } from './FacialMap';
 import { FACIAL_ZONES, FACIAL_ZONE_LABELS, parseTreatedZones, type FacialZoneKey } from './facialZoneConfig';
 import { useAuth } from '../../context/AuthContext';
+import { Odontogram, type OdontogramMode, type ToothSelection } from './Odontogram';
+import { getOdontogramConfig, selectionFromDefaults, splitSelectionByTooth, toothNumberForBackend } from './odontogramConfig';
+import { fetchPrestaciones } from '../../api/catalogs';
+import type { Prestacion } from '../../api/catalogs';
 
 // Etiquetas de foto por procedimiento: "Antes"/"Después" para registro clínico,
 // "Sticker ficha"/"Sticker paciente" para trazabilidad de producto (ej. las dos
@@ -396,6 +401,64 @@ function PlanCard({
   const [newCost, setNewCost] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
+  // Buscador de prestaciones + odontograma para agregar procedimientos a un
+  // plan YA EXISTENTE (antes sólo existía en el asistente "Nuevo presupuesto"
+  // al crear el plan desde cero) — mismo criterio que ahí: la pieza/cara la
+  // determina la prestación elegida, salvo que se abra "fuera de catálogo".
+  // Sólo para planes dentales; los estéticos siguen con el ingreso manual de
+  // siempre hasta que el mapa facial también se integre aquí.
+  const [prestaciones, setPrestaciones] = useState<Prestacion[]>([]);
+  const [prestacionSearch, setPrestacionSearch] = useState('');
+  const [pickedPrestacion, setPickedPrestacion] = useState<Prestacion | null>(null);
+  const [entryMode, setEntryMode] = useState<'catalog' | 'custom' | null>(null);
+  const [draftMode, setDraftMode] = useState<OdontogramMode | null>(null);
+  const [draftSelection, setDraftSelection] = useState<ToothSelection[]>([]);
+  const [draftError, setDraftError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isEstetica) return;
+    fetchPrestaciones()
+      .then((list) => setPrestaciones(list.filter((p) => p.category !== 'estetica')))
+      .catch(() => undefined);
+  }, [isEstetica]);
+
+  const filteredPrestaciones = (() => {
+    const q = prestacionSearch.trim().toLowerCase();
+    if (!q) return [];
+    return prestaciones.filter((p) => p.name.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q)).slice(0, 8);
+  })();
+
+  function resetEntry() {
+    setPickedPrestacion(null);
+    setEntryMode(null);
+    setDraftMode(null);
+    setDraftSelection([]);
+    setDraftError(null);
+    setNewDescription('');
+    setNewCost('');
+  }
+
+  function pickPrestacion(prestacion: Prestacion) {
+    setPrestacionSearch('');
+    const config = getOdontogramConfig(prestacion);
+    setPickedPrestacion(prestacion);
+    setEntryMode('catalog');
+    setDraftMode(config.mode);
+    setDraftSelection(selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces));
+    setDraftError(null);
+    setNewDescription(prestacion.name);
+    const discount = plan.convenio?.discountPercent ?? 0;
+    setNewCost(String(Math.round(prestacion.basePrice * (1 - discount / 100))));
+  }
+
+  function openCustomItem() {
+    setPickedPrestacion(null);
+    setEntryMode('custom');
+    setDraftMode('tooth');
+    setDraftSelection([]);
+    setDraftError(null);
+  }
+
   // El viaje al servidor toma varios segundos (recalcula el plan completo),
   // así que el check debe reflejarse al instante en cada click sin bloquear
   // el checkbox (bloquearlo se sentía como si la casilla tuviera delay). En
@@ -493,15 +556,39 @@ function PlanCard({
 
   async function handleAddItem() {
     if (!newDescription.trim()) return;
+    if (entryMode !== null && draftMode && draftMode !== 'session' && draftSelection.length === 0) {
+      setDraftError(draftMode === 'surface' ? 'Selecciona al menos una cara.' : 'Selecciona al menos una pieza.');
+      return;
+    }
     setIsAdding(true);
     try {
-      const updated = await addTreatmentItem(plan.id, {
-        description: newDescription.trim(),
-        cost: Number(newCost) || 0,
-      });
+      const discount = plan.convenio?.discountPercent ?? 0;
+      // El precio de catálogo es por pieza, no por presupuesto completo: si
+      // se marcaron varias piezas en un modo que se cobra por pieza (pieza
+      // completa/cara/extracción), se agrega un ítem por cada una en vez de
+      // uno solo con todas adentro. Se manda una llamada a la vez (no en
+      // paralelo) porque el backend recalcula el total sumando todos los
+      // ítems vigentes en cada creación.
+      const perUnitModes: OdontogramMode[] = ['tooth', 'extraction', 'surface'];
+      const groups = draftMode && perUnitModes.includes(draftMode) ? splitSelectionByTooth(draftSelection) : [draftSelection];
+      let updated = plan;
+      for (const group of groups) {
+        const toothNumber = draftMode ? toothNumberForBackend(draftMode, group) : undefined;
+        updated = await addTreatmentItem(plan.id, {
+          description: newDescription.trim(),
+          cost: Number(newCost) || 0,
+          ...(pickedPrestacion
+            ? {
+                prestacionId: pickedPrestacion.id,
+                listPrice: pickedPrestacion.basePrice,
+                convenioDiscountPercent: discount,
+              }
+            : {}),
+          ...(toothNumber ? { toothNumber } : {}),
+        });
+      }
       applyServerPlan(updated);
-      setNewDescription('');
-      setNewCost('');
+      resetEntry();
     } catch (err) {
       onError(getErrorMessage(err, 'No se pudo agregar el procedimiento'));
     } finally {
@@ -556,7 +643,7 @@ function PlanCard({
 
         <span className="flex items-center gap-1 text-xs text-slate-500">
           <UsersIcon className="h-3.5 w-3.5" />
-          {plan.professional?.name ?? 'Sin diagnosticador'}
+          {plan.professional?.name ?? plan.remoteProfessionalName ?? 'Sin diagnosticador'}
         </span>
 
         {plan.sucursal && (
@@ -643,31 +730,124 @@ function PlanCard({
             </div>
           )}
 
-          <div className="mt-3 flex items-center gap-2">
-            <input
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Nuevo procedimiento..."
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            />
-            <input
-              type="number"
-              min={0}
-              value={newCost}
-              onChange={(e) => setNewCost(e.target.value)}
-              placeholder="Costo"
-              className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            />
-            <button
-              type="button"
-              onClick={handleAddItem}
-              disabled={isAdding || !newDescription.trim()}
-              className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <PlusIcon className="h-3.5 w-3.5" />
-              Agregar
-            </button>
-          </div>
+          {isEstetica ? (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Nuevo procedimiento..."
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+              <input
+                type="number"
+                min={0}
+                value={newCost}
+                onChange={(e) => setNewCost(e.target.value)}
+                placeholder="Costo"
+                className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+              <button
+                type="button"
+                onClick={handleAddItem}
+                disabled={isAdding || !newDescription.trim()}
+                className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <PlusIcon className="h-3.5 w-3.5" />
+                Agregar
+              </button>
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-col gap-2.5 rounded-lg bg-slate-50 p-3">
+              {prestaciones.length > 0 && (
+                <div className="relative">
+                  <div className="relative">
+                    <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      value={prestacionSearch}
+                      onChange={(e) => setPrestacionSearch(e.target.value)}
+                      placeholder="Buscar prestación del catálogo..."
+                      className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    />
+                  </div>
+                  {filteredPrestaciones.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                      {filteredPrestaciones.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => pickPrestacion(p)}
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50"
+                        >
+                          <span className="text-slate-700">{p.name}</span>
+                          <span className="text-slate-500">{formatCLP(p.basePrice)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {entryMode === null ? (
+                <button
+                  type="button"
+                  onClick={openCustomItem}
+                  className="self-start bg-none text-xs font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  + Prestación fuera de catálogo
+                </button>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500">
+                      {entryMode === 'catalog' ? `Prestación del catálogo: ${pickedPrestacion?.name}` : 'Prestación fuera de catálogo'}
+                    </span>
+                    <button type="button" onClick={resetEntry} className="text-xs font-semibold text-slate-500 underline hover:text-slate-700">
+                      Cancelar
+                    </button>
+                  </div>
+
+                  {entryMode === 'custom' && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        value={newDescription}
+                        onChange={(e) => setNewDescription(e.target.value)}
+                        placeholder="Descripción del procedimiento"
+                        className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        value={newCost}
+                        onChange={(e) => setNewCost(e.target.value)}
+                        placeholder="Costo"
+                        className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      />
+                    </div>
+                  )}
+
+                  {draftError && <p className="text-xs font-medium text-red-600">{draftError}</p>}
+
+                  <Odontogram
+                    mode={draftMode ?? 'session'}
+                    selection={draftSelection}
+                    onSelectionChange={setDraftSelection}
+                    onModeChange={entryMode === 'custom' ? setDraftMode : undefined}
+                    allowedModes={entryMode === 'custom' || !draftMode ? undefined : [draftMode]}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    disabled={isAdding || !newDescription.trim()}
+                    className="flex items-center justify-center gap-1 self-end rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" />
+                    Agregar
+                  </button>
+                </>
+              )}
+            </div>
+          )}
 
           {plan.notes && <p className="mt-3 text-sm text-slate-500">{plan.notes}</p>}
         </div>
@@ -791,14 +971,14 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Profesional</p>
-            <p className="text-sm text-slate-700">{plan.professional?.name ?? 'Sin diagnosticador'}</p>
+            <p className="text-sm text-slate-700">{plan.professional?.name ?? plan.remoteProfessionalName ?? 'Sin diagnosticador'}</p>
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Forma de pago</p>
             <p className="text-sm text-slate-700">{plan.paymentMethod ?? '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Sucursal</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Clínica</p>
             <p className="text-sm text-slate-700">{plan.sucursal?.name ?? '—'}</p>
           </div>
           <div>

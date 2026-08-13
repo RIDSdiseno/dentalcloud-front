@@ -51,9 +51,9 @@ export default function ClinicaDetail() {
         const found = clinicas.find((c) => c.id === id) ?? null;
         setClinica(found);
         setRut(found?.rut ? formatRut(found.rut) : '');
-        setError(found ? null : 'Clínica no encontrada');
+        setError(found ? null : 'Holding no encontrado');
       })
-      .catch((err) => setError(getErrorMessage(err, 'No se pudo cargar la clínica')))
+      .catch((err) => setError(getErrorMessage(err, 'No se pudo cargar el holding')))
       .finally(() => setIsLoading(false));
   }, [id]);
 
@@ -64,7 +64,7 @@ export default function ClinicaDetail() {
     try {
       setClinica(await updateClinica(clinica.id, patch));
     } catch (err) {
-      setError(getErrorMessage(err, 'No se pudo actualizar la clínica'));
+      setError(getErrorMessage(err, 'No se pudo actualizar el holding'));
     } finally {
       setBusyField(null);
     }
@@ -108,9 +108,9 @@ export default function ClinicaDetail() {
           className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
         >
           <ArrowLeftIcon className="h-4 w-4" />
-          Volver a clínicas
+          Volver a holdings
         </button>
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error ?? 'Clínica no encontrada'}</p>
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error ?? 'Holding no encontrado'}</p>
       </div>
     );
   }
@@ -126,7 +126,7 @@ export default function ClinicaDetail() {
         className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
       >
         <ArrowLeftIcon className="h-4 w-4" />
-        Volver a clínicas
+        Volver a holdings
       </button>
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -179,7 +179,7 @@ export default function ClinicaDetail() {
           <Toggle
             checked={clinica.active}
             onChange={(value) => applyUpdate({ active: value }, 'active')}
-            label={`Clínica ${clinica.name} activa`}
+            label={`Holding ${clinica.name} activo`}
             disabled={busyField === 'active'}
           />
         </div>
@@ -187,7 +187,7 @@ export default function ClinicaDetail() {
 
       {!clinica.active && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-          Los usuarios de esta clínica no podrán iniciar sesión mientras esté desactivada.
+          Los usuarios de este holding no podrán iniciar sesión mientras esté desactivado.
         </p>
       )}
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
@@ -226,7 +226,7 @@ export default function ClinicaDetail() {
 
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <label htmlFor="detail-tipo" className="text-sm font-medium text-slate-700">
-            Tipo de clínica
+            Tipo de holding
           </label>
           <select
             id="detail-tipo"

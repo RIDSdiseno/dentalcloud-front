@@ -20,7 +20,13 @@ export async function fetchPublicConsent(token: string) {
 
 export async function respondPublicConsent(
   token: string,
-  input: { decision: 'firmado' | 'rechazado'; signerName: string; signerRut: string; readConfirmed: boolean }
+  input: {
+    decision: 'firmado' | 'rechazado';
+    signerName: string;
+    signerRut: string;
+    readConfirmed: boolean;
+    signatureDataUrl?: string | null;
+  }
 ) {
   const { data } = await publicApi.post<{ status: string; respondedAt: string }>(
     `/public/consents/${token}/respond`,
