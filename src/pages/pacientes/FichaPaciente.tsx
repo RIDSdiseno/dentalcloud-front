@@ -152,6 +152,16 @@ export default function FichaPaciente() {
   const [activeTab, setActiveTab] = useState<TabKey>('datos');
   const [debtSaldo, setDebtSaldo] = useState<number | null>(null);
   const [showDebtNotification, setShowDebtNotification] = useState(false);
+  // Al presionar "Evolucionar" en un presupuesto (Tratamientos), se salta a
+  // Evoluciones para documentar ahí — si el presupuesto tenía un solo
+  // procedimiento pendiente, queda preseleccionado en el desplegable de esa
+  // pestaña para no tener que buscarlo de nuevo.
+  const [preselectTreatmentItemId, setPreselectTreatmentItemId] = useState<string | null>(null);
+
+  function handleEvolucionar(treatmentItemId: string | null) {
+    setPreselectTreatmentItemId(treatmentItemId);
+    setActiveTab('evoluciones');
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -476,8 +486,14 @@ export default function FichaPaciente() {
         </div>
       )}
 
-      {activeTab === 'tratamiento' && <TreatmentPlanTab patient={patient} />}
-      {activeTab === 'evoluciones' && <EvolucionesTab patient={patient} />}
+      {activeTab === 'tratamiento' && <TreatmentPlanTab patient={patient} onEvolucionar={handleEvolucionar} />}
+      {activeTab === 'evoluciones' && (
+        <EvolucionesTab
+          patient={patient}
+          preselectTreatmentItemId={preselectTreatmentItemId}
+          onPreselectionConsumed={() => setPreselectTreatmentItemId(null)}
+        />
+      )}
       {activeTab === 'cartola' && <CartolaTab patientId={patient.id} />}
       {activeTab === 'observaciones' && <ObservacionesTab patientId={patient.id} />}
       {activeTab === 'documentos' && <DocumentosClinicosTab patientId={patient.id} />}

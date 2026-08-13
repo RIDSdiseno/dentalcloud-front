@@ -69,8 +69,10 @@ export type TreatmentPlan = {
   createdAt: string;
   updatedAt: string;
   professional: { id: string; name: string } | null;
-  // Usuario que efectivamente creó el registro — distinto de `professional`,
-  // ya que un admin puede crear el presupuesto y asignarlo a otro profesional.
+  // Trazabilidad de ciclo de vida: quién creó el presupuesto (distinto de
+  // `professional`, ya que un admin puede crearlo y asignarlo a otro
+  // profesional), quién dio la orden de pasar a "en_tratamiento" y quién lo
+  // dejó en "terminado" — cada uno se estampa una sola vez (ver backend).
   createdBy: { id: string; name: string } | null;
   sucursal: Sucursal | null;
   prevision: Prevision | null;
@@ -79,10 +81,6 @@ export type TreatmentPlan = {
   photos: TreatmentPlanPhoto[];
   facialAnnotations: FacialAnnotations | null;
   facialGender: 'hombre' | 'mujer' | null;
-  // Trazabilidad de ciclo de vida: quién creó el presupuesto, quién dio la
-  // orden de pasar a "en_tratamiento" y quién lo dejó en "terminado" — cada
-  // uno se estampa una sola vez, la primera vez que ocurre (ver backend).
-  createdBy: { id: string; name: string } | null;
   startedBy: { id: string; name: string } | null;
   startedAt: string | null;
   completedBy: { id: string; name: string } | null;
@@ -153,6 +151,12 @@ export async function addTreatmentItem(planId: string, item: TreatmentItemInput)
   return data.plan;
 }
 
+// Motivo por el que se modifica un presupuesto que ya está "en tratamiento"
+// (queda guardado para auditoría, no es solo una confirmación en pantalla).
+export async function addTreatmentPlanEdit(planId: string, reason: string) {
+  await api.post(`/treatment-plans/${planId}/edits`, { reason });
+}
+
 export async function updateTreatmentItem(
   id: string,
   patch: {
@@ -200,4 +204,14 @@ export async function uploadTreatmentPlanPhoto(planId: string, file: Blob, label
 export async function deleteTreatmentPlanPhoto(photoId: string) {
   const { data } = await api.delete<{ plan: TreatmentPlan }>(`/treatment-plans/photos/${photoId}`);
   return data.plan;
+}
+
+// Informe descargable de un presupuesto "de alta" — solo disponible en ese
+// estado (ver treatmentPlansController.ts → getReport).
+export async function downloadTreatmentPlanReport(planId: string, format: 'pdf' | 'docx') {
+  const { data } = await api.get<Blob>(`/treatment-plans/${planId}/report`, {
+    params: { format },
+    responseType: 'blob',
+  });
+  return data;
 }

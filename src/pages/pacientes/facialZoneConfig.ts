@@ -42,6 +42,9 @@ export const FACIAL_ZONE_LABELS: Record<FacialZoneKey, string> = {
 export interface FacialConfig {
   mode: OdontogramMode;
   allowMultipleZones: boolean;
+  // Zona(s) a preseleccionar al elegir la prestación — evita tener que hacer
+  // clic en el rostro cuando no hay ambigüedad (ver getFacialConfig).
+  defaultZones?: FacialZoneKey[];
 }
 
 // Trazos dibujados a mano sobre el mapa facial (ver FacialMap.tsx) — se
@@ -65,10 +68,23 @@ export const EMPTY_FACIAL_ANNOTATIONS: FacialAnnotations = {
   perfilIzquierdo: [],
 };
 
-// A diferencia del odontograma, una prestación de estética facial siempre se
-// resuelve eligiendo una o más zonas del rostro — no requiere heurística de
-// palabras clave sobre el nombre de la prestación.
-export function getFacialConfig(_prestacion: Prestacion): FacialConfig {
+// A diferencia del odontograma, esto no usa heurística de palabras clave
+// sobre el nombre de la prestación — se resuelve con datos explícitos del
+// catálogo (`appliesToWholeFace`/`allowedZones`), configurables en
+// PrestacionFormModal.
+export function getFacialConfig(prestacion: Prestacion): FacialConfig {
+  if (prestacion.appliesToWholeFace) {
+    return { mode: 'session', allowMultipleZones: true };
+  }
+  // Si solo hay una zona permitida no hay ambigüedad que resolver, o si el
+  // catálogo marcó que las zonas restringidas van siempre todas juntas (ej.
+  // un tratamiento que sí o sí cubre Frente + Entrecejo) — se preseleccionan
+  // para no obligar a marcarlas a mano en el rostro. Si son un menú de
+  // opciones (2+ zonas, `zonesApplyTogether` en false), el profesional elige
+  // cuáles aplican esta vez y no se preselecciona nada.
+  if (prestacion.allowedZones.length === 1 || (prestacion.allowedZones.length > 1 && prestacion.zonesApplyTogether)) {
+    return { mode: 'tooth', allowMultipleZones: true, defaultZones: prestacion.allowedZones as FacialZoneKey[] };
+  }
   return { mode: 'tooth', allowMultipleZones: true };
 }
 

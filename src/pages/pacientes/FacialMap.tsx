@@ -9,7 +9,24 @@ import {
   type FacialPoint,
   type FacialStroke,
 } from './facialZoneConfig';
-import { CircleToolIcon, EraserIcon, LineToolIcon, PenIcon, PointerIcon, RedoIcon, UndoIcon } from '../../components/icons';
+import {
+  CircleToolIcon,
+  EraserIcon,
+  LineToolIcon,
+  MinusIcon,
+  PenIcon,
+  PlusIcon,
+  PointerIcon,
+  RedoIcon,
+  UndoIcon,
+} from '../../components/icons';
+
+// Deshabilitado por ahora (pedido explícito) — la capa "Músculos" queda
+// bloqueada en los 3 toggles Piel/Músculos (ProfilePhotoPanel, FacialPhotoView,
+// FacialZonesHighlight), pero el resto del código (estado `layer`, fotos de
+// músculo, swap de opacidad) queda intacto para reactivarla más adelante
+// cambiando solo esta constante a `true`.
+const MUSCLE_LAYER_ENABLED = false;
 
 // ---------------------------------------------------------------------------
 // Vista frontal: un par de fotos (piel/músculos) por género, mismo ángulo y
@@ -259,6 +276,76 @@ const DRAW_TOOLS: { key: DrawTool; icon: ComponentType<SVGProps<SVGSVGElement>>;
   { key: 'borrador', icon: EraserIcon, label: 'Borrador' },
 ];
 
+// Zoom de la foto (frontal/perfil) para marcar zonas chicas (entrecejo,
+// patas de gallo) con precisión en pantallas pequeñas. Cambia el ancho/alto
+// real del contenedor (no un CSS transform: scale, que no agranda el área de
+// scroll) para que el contenedor padre con overflow-auto pueda desplazarse.
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 2.5;
+const ZOOM_STEP = 0.25;
+
+function useZoom() {
+  const [zoom, setZoom] = useState(ZOOM_MIN);
+  return {
+    zoom,
+    canZoomIn: zoom < ZOOM_MAX,
+    canZoomOut: zoom > ZOOM_MIN,
+    zoomIn: () => setZoom((z) => Math.min(ZOOM_MAX, Math.round((z + ZOOM_STEP) * 100) / 100)),
+    zoomOut: () => setZoom((z) => Math.max(ZOOM_MIN, Math.round((z - ZOOM_STEP) * 100) / 100)),
+    reset: () => setZoom(ZOOM_MIN),
+  };
+}
+
+function ZoomControls({
+  zoom,
+  canZoomIn,
+  canZoomOut,
+  onZoomIn,
+  onZoomOut,
+  onReset,
+}: {
+  zoom: number;
+  canZoomIn: boolean;
+  canZoomOut: boolean;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-slate-200/70 p-0.5">
+      <button
+        type="button"
+        title="Alejar"
+        aria-label="Alejar"
+        onClick={onZoomOut}
+        disabled={!canZoomOut}
+        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <MinusIcon className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        title="Restablecer zoom"
+        onClick={onReset}
+        disabled={zoom === ZOOM_MIN}
+        className="w-10 text-center text-[11px] font-medium text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed"
+      >
+        {Math.round(zoom * 100)}%
+      </button>
+      <button
+        type="button"
+        title="Acercar"
+        aria-label="Acercar"
+        onClick={onZoomIn}
+        disabled={!canZoomIn}
+        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <PlusIcon className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function DrawToolbar({
   tool,
   onToolChange,
@@ -333,12 +420,33 @@ function useDrawing(
   // prestación nueva — vuelve la herramienta a "puntero" para que un círculo/
   // lápiz que quedó seleccionado no tape el clic con el que se elige la zona
   // (el overlay de dibujo intercepta todo el click salvo con "puntero").
-  resetSignal?: number
+  resetSignal?: number,
+  // Vista "todas" (FacialMap): las tres fotos comparten una sola selección de
+  // herramienta (un solo DrawToolbar en vez de uno por foto) — si se pasa, se
+  // usa este estado en vez de uno interno propio. El resto (trazos, deshacer)
+  // sigue siendo independiente por foto.
+  sharedTool?: [DrawTool, (tool: DrawTool) => void]
 ) {
-  const [tool, setTool] = useState<DrawTool>('puntero');
+  const [internalTool, setInternalTool] = useState<DrawTool>('puntero');
+  const tool = sharedTool ? sharedTool[0] : internalTool;
+  const setTool = sharedTool ? sharedTool[1] : setInternalTool;
   const [draft, setDraft] = useState<FacialStroke | null>(null);
   const [redoStack, setRedoStack] = useState<FacialStroke[]>([]);
   const eraserThreshold = Math.max(viewBoxW, viewBoxH) * 0.025;
+  // Se mantiene en true mientras el puntero está presionado con el borrador
+  // activo, para poder borrar de forma continua al arrastrar (antes solo
+  // borraba el trazo que estuviera justo bajo el punto del clic inicial).
+  const isErasingRef = useRef(false);
+
+  function eraseAt(p: FacialPoint) {
+    for (let i = strokes.length - 1; i >= 0; i--) {
+      if (strokeHit(strokes[i], p, eraserThreshold)) {
+        onStrokesChange(strokes.slice(0, i).concat(strokes.slice(i + 1)));
+        setRedoStack([]);
+        return;
+      }
+    }
+  }
 
   useEffect(() => {
     if (resetSignal !== undefined) setTool('puntero');
@@ -357,13 +465,9 @@ function useDrawing(
     if (tool === 'puntero') return;
     const p = toPoint(e);
     if (tool === 'borrador') {
-      for (let i = strokes.length - 1; i >= 0; i--) {
-        if (strokeHit(strokes[i], p, eraserThreshold)) {
-          onStrokesChange(strokes.slice(0, i).concat(strokes.slice(i + 1)));
-          setRedoStack([]);
-          return;
-        }
-      }
+      isErasingRef.current = true;
+      eraseAt(p);
+      e.currentTarget.setPointerCapture(e.pointerId);
       return;
     }
     const id = `stroke-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -374,6 +478,10 @@ function useDrawing(
   }
 
   function handlePointerMove(e: React.PointerEvent<SVGSVGElement>) {
+    if (tool === 'borrador') {
+      if (isErasingRef.current) eraseAt(toPoint(e));
+      return;
+    }
     if (!draft) return;
     const p = toPoint(e);
     setDraft((prev) => {
@@ -385,6 +493,7 @@ function useDrawing(
   }
 
   function handlePointerUp() {
+    isErasingRef.current = false;
     if (!draft) return;
     onStrokesChange([...strokes, draft]);
     setRedoStack([]);
@@ -416,6 +525,8 @@ function useDrawing(
     handleRedo,
   };
 }
+
+type DrawingState = ReturnType<typeof useDrawing>;
 
 // ---------------------------------------------------------------------------
 // Vistas de perfil: se define UNA silueta (perfil derecho, nariz apuntando
@@ -626,6 +737,7 @@ function ProfilePanel({
   disabled,
   restrictedZones,
   readOnly = false,
+  showZones,
   onToggle,
   strokes,
   onStrokesChange,
@@ -637,6 +749,7 @@ function ProfilePanel({
   disabled: boolean;
   restrictedZones: Set<string> | null;
   readOnly?: boolean;
+  showZones: boolean;
   onToggle: (zone: string) => void;
   strokes: FacialStroke[];
   onStrokesChange: (strokes: FacialStroke[]) => void;
@@ -650,14 +763,16 @@ function ProfilePanel({
   return (
     <div className="flex flex-col items-center gap-2">
       {!readOnly && (
-        <DrawToolbar
-          tool={drawing.tool}
-          onToolChange={drawing.setTool}
-          canUndo={drawing.canUndo}
-          canRedo={drawing.canRedo}
-          onUndo={drawing.handleUndo}
-          onRedo={drawing.handleRedo}
-        />
+        <div className="w-full max-w-[260px]">
+          <DrawToolbar
+            tool={drawing.tool}
+            onToolChange={drawing.setTool}
+            canUndo={drawing.canUndo}
+            canRedo={drawing.canRedo}
+            onUndo={drawing.handleUndo}
+            onRedo={drawing.handleRedo}
+          />
+        </div>
       )}
       <svg
         ref={svgRef}
@@ -683,26 +798,27 @@ function ProfilePanel({
         />
         <path d={buildHeadPath(flip)} fill="#fffaf7" stroke="currentColor" strokeWidth={2.5} className="text-slate-400" />
 
-        {PROFILE_ZONES.map((zone) => {
-          const x = flip ? flipProfileX(zone.x) : zone.x;
-          const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone.key));
-          return (
-            <ZoneDot
-              key={zone.key}
-              x={x}
-              y={zone.y}
-              labelX={labelX}
-              labelY={zone.labelY}
-              textAnchor={textAnchor}
-              label={FACIAL_ZONE_LABELS[zone.key]}
-              isSelected={selectedZones.has(zone.key)}
-              isMarked={markedZones.has(zone.key)}
-              disabled={zoneDisabled}
-              readOnly={readOnly}
-              onToggle={() => onToggle(zone.key)}
-            />
-          );
-        })}
+        {showZones &&
+          PROFILE_ZONES.map((zone) => {
+            const x = flip ? flipProfileX(zone.x) : zone.x;
+            const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone.key));
+            return (
+              <ZoneDot
+                key={zone.key}
+                x={x}
+                y={zone.y}
+                labelX={labelX}
+                labelY={zone.labelY}
+                textAnchor={textAnchor}
+                label={FACIAL_ZONE_LABELS[zone.key]}
+                isSelected={selectedZones.has(zone.key)}
+                isMarked={markedZones.has(zone.key)}
+                disabled={zoneDisabled}
+                readOnly={readOnly}
+                onToggle={() => onToggle(zone.key)}
+              />
+            );
+          })}
 
         {strokes.map((s) => (
           <StrokeShape key={s.id} stroke={s} />
@@ -721,10 +837,12 @@ function ProfilePhotoPanel({
   disabled,
   restrictedZones,
   readOnly,
+  showZones,
   onToggle,
   strokes,
   onStrokesChange,
   resetToolTrigger,
+  sharedDrawing,
 }: {
   gender: FacialGender;
   side: ProfileSide;
@@ -733,134 +851,168 @@ function ProfilePhotoPanel({
   disabled: boolean;
   restrictedZones: Set<string> | null;
   readOnly: boolean;
+  showZones: boolean;
   onToggle: (zone: string) => void;
   strokes: FacialStroke[];
   onStrokesChange: (strokes: FacialStroke[]) => void;
   resetToolTrigger?: number;
+  // Vista "todas": ver FacialPhotoView, mismo mecanismo de barra compartida.
+  sharedDrawing?: { containerRef: RefObject<HTMLDivElement | null>; drawing: DrawingState };
 }) {
   const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
-  const containerRef = useRef<HTMLDivElement>(null);
+  const ownContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = sharedDrawing?.containerRef ?? ownContainerRef;
   const photos = PROFILE_PHOTOS[gender]![side];
-  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange, resetToolTrigger);
+  const ownDrawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange, resetToolTrigger);
+  const drawing = sharedDrawing?.drawing ?? ownDrawing;
+  const zoomState = useZoom();
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
-        {(
-          [
-            { key: 'piel', label: 'Piel' },
-            { key: 'musculos', label: 'Músculos' },
-          ] as const
-        ).map(({ key: l, label }) => (
-          <button
-            key={l}
-            type="button"
-            onClick={() => setLayer(l)}
-            className={`rounded-md px-2.5 py-1 transition-colors ${
-              layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="flex w-full max-w-[260px] items-center justify-between gap-2">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+          {(
+            [
+              { key: 'piel', label: 'Piel' },
+              { key: 'musculos', label: 'Músculos' },
+            ] as const
+          ).map(({ key: l, label }) => {
+            const isMuscleDisabled = l === 'musculos' && !MUSCLE_LAYER_ENABLED;
+            return (
+              <button
+                key={l}
+                type="button"
+                disabled={isMuscleDisabled}
+                title={isMuscleDisabled ? 'Vista de músculos no disponible por ahora' : undefined}
+                onClick={() => setLayer(l)}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                } ${isMuscleDisabled ? 'cursor-not-allowed opacity-40' : ''}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <ZoomControls
+          zoom={zoomState.zoom}
+          canZoomIn={zoomState.canZoomIn}
+          canZoomOut={zoomState.canZoomOut}
+          onZoomIn={zoomState.zoomIn}
+          onZoomOut={zoomState.zoomOut}
+          onReset={zoomState.reset}
+        />
       </div>
 
-      {!readOnly && (
-        <DrawToolbar
-          tool={drawing.tool}
-          onToolChange={drawing.setTool}
-          canUndo={drawing.canUndo}
-          canRedo={drawing.canRedo}
-          onUndo={drawing.handleUndo}
-          onRedo={drawing.handleRedo}
-        />
-      )}
-
-      <div
-        ref={containerRef}
-        className="relative mx-auto aspect-square w-full max-w-[260px] overflow-hidden rounded-xl bg-white ring-1 ring-slate-200"
-      >
-        <img
-          src={photos.muscleSrc}
-          alt={`Musculatura facial, perfil ${side}`}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'musculos' ? 'opacity-100' : 'opacity-0'}`}
-        />
-        <img
-          src={photos.skinSrc}
-          alt={`Piel del rostro, perfil ${side}`}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'piel' ? 'opacity-100' : 'opacity-0'}`}
-        />
-
-        {PROFILE_ZONE_KEYS.map((zone) => {
-          const pos = photos.zones[zone];
-          const shape = PROFILE_ZONE_SHAPE[zone];
-          const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
-          const isSelected = selectedZones.has(zone);
-          const isMarked = markedZones.has(zone);
-          const zoneColor = isSelected
-            ? 'border-brand-600 bg-brand-500/25'
-            : isMarked
-              ? 'border-brand-400 bg-brand-300/20'
-              : 'border-white/80 bg-white/5 hover:border-brand-300 hover:bg-brand-200/15';
-          return (
-            <button
-              key={zone}
-              type="button"
-              title={FACIAL_ZONE_LABELS[zone]}
-              aria-label={FACIAL_ZONE_LABELS[zone]}
-              aria-pressed={readOnly ? undefined : isSelected}
-              disabled={readOnly || zoneDisabled}
-              onClick={() => onToggle(zone)}
-              style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${shape.w}%`, height: `${shape.h}%` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-dashed shadow-sm transition-colors ${zoneColor} ${
-                readOnly ? 'cursor-default' : zoneDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
-              }`}
-            />
-          );
-        })}
-
-        {!readOnly && (
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full"
-            style={{ pointerEvents: drawing.tool === 'puntero' ? 'none' : 'auto', touchAction: 'none' }}
-            onPointerDown={drawing.handlePointerDown}
-            onPointerMove={drawing.handlePointerMove}
-            onPointerUp={drawing.handlePointerUp}
-          >
-            {strokes.map((s) => (
-              <StrokeShape key={s.id} stroke={s} />
-            ))}
-            {drawing.draft && <StrokeShape stroke={drawing.draft} />}
-          </svg>
+      {/* Fila siempre presente (aunque quede vacía) con la misma altura que
+          ocuparía el DrawToolbar — si no, esta foto queda con una fila menos
+          que FacialPhotoView y las tres se desalinean verticalmente. */}
+      <div className="h-8 w-full max-w-[260px]">
+        {!readOnly && !sharedDrawing && (
+          <DrawToolbar
+            tool={drawing.tool}
+            onToolChange={drawing.setTool}
+            canUndo={drawing.canUndo}
+            canRedo={drawing.canRedo}
+            onUndo={drawing.handleUndo}
+            onRedo={drawing.handleRedo}
+          />
         )}
       </div>
 
-      <div className="flex max-w-[260px] flex-wrap justify-center gap-1.5">
-        {PROFILE_ZONE_KEYS.map((zone) => {
-          const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
-          const isSelected = selectedZones.has(zone);
-          const isMarked = markedZones.has(zone);
-          return (
-            <button
-              key={zone}
-              type="button"
-              disabled={readOnly || zoneDisabled}
-              onClick={() => onToggle(zone)}
-              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                isSelected
-                  ? 'bg-brand-600 text-white ring-brand-600'
-                  : isMarked
-                    ? 'bg-brand-50 text-brand-700 ring-brand-200'
-                    : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50'
-              }`}
+      <div className="mx-auto aspect-square w-full max-w-[260px] overflow-auto rounded-xl ring-1 ring-slate-200">
+        <div
+          ref={containerRef}
+          style={{ width: `${zoomState.zoom * 100}%`, height: `${zoomState.zoom * 100}%` }}
+          className="relative bg-white"
+        >
+          <img
+            src={photos.muscleSrc}
+            alt={`Musculatura facial, perfil ${side}`}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'musculos' ? 'opacity-100' : 'opacity-0'}`}
+          />
+          <img
+            src={photos.skinSrc}
+            alt={`Piel del rostro, perfil ${side}`}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'piel' ? 'opacity-100' : 'opacity-0'}`}
+          />
+
+          {showZones &&
+            PROFILE_ZONE_KEYS.map((zone) => {
+              const pos = photos.zones[zone];
+              const shape = PROFILE_ZONE_SHAPE[zone];
+              const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
+              const isSelected = selectedZones.has(zone);
+              const isMarked = markedZones.has(zone);
+              const zoneColor = isSelected
+                ? 'border-brand-600 bg-brand-500/25'
+                : isMarked
+                  ? 'border-brand-400 bg-brand-300/20'
+                  : 'border-white/80 bg-white/5 hover:border-brand-300 hover:bg-brand-200/15';
+              return (
+                <button
+                  key={zone}
+                  type="button"
+                  title={FACIAL_ZONE_LABELS[zone]}
+                  aria-label={FACIAL_ZONE_LABELS[zone]}
+                  aria-pressed={readOnly ? undefined : isSelected}
+                  disabled={readOnly || zoneDisabled}
+                  onClick={() => onToggle(zone)}
+                  style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${shape.w}%`, height: `${shape.h}%` }}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-dashed shadow-sm transition-colors ${zoneColor} ${
+                    readOnly ? 'cursor-default' : zoneDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
+                  }`}
+                />
+              );
+            })}
+
+          {!readOnly && (
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="absolute inset-0 h-full w-full"
+              style={{ pointerEvents: drawing.tool === 'puntero' ? 'none' : 'auto', touchAction: 'none' }}
+              onPointerDown={drawing.handlePointerDown}
+              onPointerMove={drawing.handlePointerMove}
+              onPointerUp={drawing.handlePointerUp}
             >
-              {FACIAL_ZONE_LABELS[zone]}
-            </button>
-          );
-        })}
+              {strokes.map((s) => (
+                <StrokeShape key={s.id} stroke={s} />
+              ))}
+              {drawing.draft && <StrokeShape stroke={drawing.draft} />}
+            </svg>
+          )}
+        </div>
       </div>
+
+      {showZones ? (
+        <div className="flex max-w-[260px] flex-wrap justify-center gap-1.5">
+          {PROFILE_ZONE_KEYS.map((zone) => {
+            const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
+            const isSelected = selectedZones.has(zone);
+            const isMarked = markedZones.has(zone);
+            return (
+              <button
+                key={zone}
+                type="button"
+                disabled={readOnly || zoneDisabled}
+                onClick={() => onToggle(zone)}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isSelected
+                    ? 'bg-brand-600 text-white ring-brand-600'
+                    : isMarked
+                      ? 'bg-brand-50 text-brand-700 ring-brand-200'
+                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50'
+                }`}
+              >
+                {FACIAL_ZONE_LABELS[zone]}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-xs text-slate-400">Selecciona una prestación para marcar las zonas a tratar.</p>
+      )}
     </div>
   );
 }
@@ -879,6 +1031,8 @@ function FacialPhotoView({
   strokes,
   onStrokesChange,
   resetToolTrigger,
+  compact,
+  sharedDrawing,
 }: {
   gender: FacialGender;
   onGenderChange: (gender: FacialGender) => void;
@@ -893,33 +1047,51 @@ function FacialPhotoView({
   strokes: FacialStroke[];
   onStrokesChange: (strokes: FacialStroke[]) => void;
   resetToolTrigger?: number;
+  // Vista "todas": el frontal queda al centro entre los dos perfiles — se
+  // reduce un poco su ancho (420 -> 300) para que las tres fotos entren en
+  // una sola fila sin que el frontal, más ancho, la haga desbordar.
+  compact?: boolean;
+  // Vista "todas": el dibujo lo maneja FacialMap (una sola barra de
+  // herramientas para las tres fotos) en vez de que esta vista cree la suya —
+  // si se pasa, se usa este en vez de crear uno propio y se oculta el propio
+  // DrawToolbar (ver FacialMap, sección "todas").
+  sharedDrawing?: { containerRef: RefObject<HTMLDivElement | null>; drawing: DrawingState };
 }) {
   const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
-  const containerRef = useRef<HTMLDivElement>(null);
+  const ownContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = sharedDrawing?.containerRef ?? ownContainerRef;
   const photos = FRONT_PHOTOS[gender];
-  const drawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange, resetToolTrigger);
+  const ownDrawing = useDrawing(containerRef, 100, 100, strokes, onStrokesChange, resetToolTrigger);
+  const drawing = sharedDrawing?.drawing ?? ownDrawing;
+  const zoomState = useZoom();
+  const widthClass = compact ? 'max-w-[300px]' : 'max-w-[420px]';
 
   return (
-    <div className="flex flex-col items-center gap-3">
-      <div className="flex w-full max-w-[420px] items-center justify-between gap-2">
+    <div className="flex flex-col items-center gap-2">
+      <div className={`flex w-full ${widthClass} items-center justify-between gap-2`}>
         <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
           {(
             [
               { key: 'piel', label: 'Piel' },
               { key: 'musculos', label: 'Músculos' },
             ] as const
-          ).map(({ key: l, label }) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setLayer(l)}
-              className={`rounded-md px-2.5 py-1 transition-colors ${
-                layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          ).map(({ key: l, label }) => {
+            const isMuscleDisabled = l === 'musculos' && !MUSCLE_LAYER_ENABLED;
+            return (
+              <button
+                key={l}
+                type="button"
+                disabled={isMuscleDisabled}
+                title={isMuscleDisabled ? 'Vista de músculos no disponible por ahora' : undefined}
+                onClick={() => setLayer(l)}
+                className={`rounded-md px-2.5 py-1 transition-colors ${
+                  layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                } ${isMuscleDisabled ? 'cursor-not-allowed opacity-40' : ''}`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
@@ -945,77 +1117,92 @@ function FacialPhotoView({
         </div>
       </div>
 
-      {!readOnly && (
-        <DrawToolbar
-          tool={drawing.tool}
-          onToolChange={drawing.setTool}
-          canUndo={drawing.canUndo}
-          canRedo={drawing.canRedo}
-          onUndo={drawing.handleUndo}
-          onRedo={drawing.handleRedo}
-        />
-      )}
-
-      <div
-        ref={containerRef}
-        className="relative mx-auto aspect-square w-full max-w-[420px] overflow-hidden rounded-xl bg-white ring-1 ring-slate-200"
-      >
-        <img
-          src={photos.muscleSrc}
-          alt="Musculatura facial"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'musculos' ? 'opacity-100' : 'opacity-0'}`}
-        />
-        <img
-          src={photos.skinSrc}
-          alt="Piel del rostro"
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'piel' ? 'opacity-100' : 'opacity-0'}`}
-        />
-
-        {showZones &&
-          FACIAL_ZONES.map((zone) => {
-            const pos = photos.zones[zone];
-            const shape = ZONE_SHAPE[zone];
-            const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
-            const isSelected = selectedZones.has(zone);
-            const isMarked = markedZones.has(zone);
-            const zoneColor = isSelected
-              ? 'border-brand-600 bg-brand-500/25'
-              : isMarked
-                ? 'border-brand-400 bg-brand-300/20'
-                : 'border-white/80 bg-white/5 hover:border-brand-300 hover:bg-brand-200/15';
-            return (
-              <button
-                key={zone}
-                type="button"
-                title={FACIAL_ZONE_LABELS[zone]}
-                aria-label={FACIAL_ZONE_LABELS[zone]}
-                aria-pressed={readOnly ? undefined : isSelected}
-                disabled={readOnly || zoneDisabled}
-                onClick={() => onToggle(zone)}
-                style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${shape.w}%`, height: `${shape.h}%` }}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-dashed shadow-sm transition-colors ${zoneColor} ${
-                  readOnly ? 'cursor-default' : zoneDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
-                }`}
-              />
-            );
-          })}
-
-        {!readOnly && (
-          <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 h-full w-full"
-            style={{ pointerEvents: drawing.tool === 'puntero' ? 'none' : 'auto', touchAction: 'none' }}
-            onPointerDown={drawing.handlePointerDown}
-            onPointerMove={drawing.handlePointerMove}
-            onPointerUp={drawing.handlePointerUp}
-          >
-            {strokes.map((s) => (
-              <StrokeShape key={s.id} stroke={s} />
-            ))}
-            {drawing.draft && <StrokeShape stroke={drawing.draft} />}
-          </svg>
+      <div className={`flex w-full ${widthClass} items-center justify-between gap-2`}>
+        {!readOnly && !sharedDrawing ? (
+          <DrawToolbar
+            tool={drawing.tool}
+            onToolChange={drawing.setTool}
+            canUndo={drawing.canUndo}
+            canRedo={drawing.canRedo}
+            onUndo={drawing.handleUndo}
+            onRedo={drawing.handleRedo}
+          />
+        ) : (
+          <div />
         )}
+        <ZoomControls
+          zoom={zoomState.zoom}
+          canZoomIn={zoomState.canZoomIn}
+          canZoomOut={zoomState.canZoomOut}
+          onZoomIn={zoomState.zoomIn}
+          onZoomOut={zoomState.zoomOut}
+          onReset={zoomState.reset}
+        />
+      </div>
+
+      <div className={`mx-auto aspect-square w-full ${widthClass} overflow-auto rounded-xl ring-1 ring-slate-200`}>
+        <div
+          ref={containerRef}
+          style={{ width: `${zoomState.zoom * 100}%`, height: `${zoomState.zoom * 100}%` }}
+          className="relative bg-white"
+        >
+          <img
+            src={photos.muscleSrc}
+            alt="Musculatura facial"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'musculos' ? 'opacity-100' : 'opacity-0'}`}
+          />
+          <img
+            src={photos.skinSrc}
+            alt="Piel del rostro"
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${layer === 'piel' ? 'opacity-100' : 'opacity-0'}`}
+          />
+
+          {showZones &&
+            FACIAL_ZONES.map((zone) => {
+              const pos = photos.zones[zone];
+              const shape = ZONE_SHAPE[zone];
+              const zoneDisabled = disabled || (restrictedZones !== null && !restrictedZones.has(zone));
+              const isSelected = selectedZones.has(zone);
+              const isMarked = markedZones.has(zone);
+              const zoneColor = isSelected
+                ? 'border-brand-600 bg-brand-500/25'
+                : isMarked
+                  ? 'border-brand-400 bg-brand-300/20'
+                  : 'border-white/80 bg-white/5 hover:border-brand-300 hover:bg-brand-200/15';
+              return (
+                <button
+                  key={zone}
+                  type="button"
+                  title={FACIAL_ZONE_LABELS[zone]}
+                  aria-label={FACIAL_ZONE_LABELS[zone]}
+                  aria-pressed={readOnly ? undefined : isSelected}
+                  disabled={readOnly || zoneDisabled}
+                  onClick={() => onToggle(zone)}
+                  style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${shape.w}%`, height: `${shape.h}%` }}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-[50%] border-2 border-dashed shadow-sm transition-colors ${zoneColor} ${
+                    readOnly ? 'cursor-default' : zoneDisabled ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'
+                  }`}
+                />
+              );
+            })}
+
+          {!readOnly && (
+            <svg
+              viewBox="0 0 100 100"
+              preserveAspectRatio="none"
+              className="absolute inset-0 h-full w-full"
+              style={{ pointerEvents: drawing.tool === 'puntero' ? 'none' : 'auto', touchAction: 'none' }}
+              onPointerDown={drawing.handlePointerDown}
+              onPointerMove={drawing.handlePointerMove}
+              onPointerUp={drawing.handlePointerUp}
+            >
+              {strokes.map((s) => (
+                <StrokeShape key={s.id} stroke={s} />
+              ))}
+              {drawing.draft && <StrokeShape stroke={drawing.draft} />}
+            </svg>
+          )}
+        </div>
       </div>
 
       {showZones ? (
@@ -1127,7 +1314,7 @@ export function FacialZonesHighlight({
   annotations?: FacialAnnotations | null;
   className?: string;
 }) {
-  const [view, setView] = useState<'frontal' | 'perfil'>('frontal');
+  const [view, setView] = useState<'frontal' | 'perfil' | 'todas'>('frontal');
   const [layer, setLayer] = useState<'piel' | 'musculos'>('piel');
   const treated = new Set(zones);
   const frontZones = FACIAL_ZONES.filter((zone) => treated.has(zone));
@@ -1153,22 +1340,27 @@ export function FacialZonesHighlight({
               { key: 'piel', label: 'Piel' },
               { key: 'musculos', label: 'Músculos' },
             ] as const
-          ).map(({ key: l, label }) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setLayer(l)}
-              className={`rounded-md px-2 py-0.5 transition-colors ${
-                layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          ).map(({ key: l, label }) => {
+            const isMuscleDisabled = l === 'musculos' && !MUSCLE_LAYER_ENABLED;
+            return (
+              <button
+                key={l}
+                type="button"
+                disabled={isMuscleDisabled}
+                title={isMuscleDisabled ? 'Vista de músculos no disponible por ahora' : undefined}
+                onClick={() => setLayer(l)}
+                className={`rounded-md px-2 py-0.5 transition-colors ${
+                  layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                } ${isMuscleDisabled ? 'cursor-not-allowed opacity-40' : ''}`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
         {showPerfilTab && (
           <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
-            {(['frontal', 'perfil'] as const).map((v) => (
+            {(['frontal', 'perfil', 'todas'] as const).map((v) => (
               <button
                 key={v}
                 type="button"
@@ -1184,7 +1376,49 @@ export function FacialZonesHighlight({
         )}
       </div>
 
-      {view === 'frontal' || !showPerfilTab ? (
+      {view === 'todas' && showPerfilTab ? (
+        <div className="flex w-full flex-wrap items-start justify-center gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <HighlightPhoto
+              muscleSrc={front.muscleSrc}
+              skinSrc={front.skinSrc}
+              layer={layer}
+              zonePositions={front.zones}
+              zoneShapes={ZONE_SHAPE}
+              visibleZones={frontZones}
+              strokes={frontStrokes}
+              className="w-44 sm:w-56"
+            />
+            <span className="text-[11px] font-medium text-slate-400">Frontal</span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <HighlightPhoto
+              muscleSrc={profile!.derecho.muscleSrc}
+              skinSrc={profile!.derecho.skinSrc}
+              layer={layer}
+              zonePositions={profile!.derecho.zones}
+              zoneShapes={PROFILE_ZONE_SHAPE}
+              visibleZones={profileZones}
+              strokes={derechoStrokes}
+              className="w-44 sm:w-56"
+            />
+            <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <HighlightPhoto
+              muscleSrc={profile!.izquierdo.muscleSrc}
+              skinSrc={profile!.izquierdo.skinSrc}
+              layer={layer}
+              zonePositions={profile!.izquierdo.zones}
+              zoneShapes={PROFILE_ZONE_SHAPE}
+              visibleZones={profileZones}
+              strokes={izquierdoStrokes}
+              className="w-44 sm:w-56"
+            />
+            <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+          </div>
+        </div>
+      ) : view === 'frontal' || !showPerfilTab ? (
         <HighlightPhoto
           muscleSrc={front.muscleSrc}
           skinSrc={front.skinSrc}
@@ -1244,7 +1478,9 @@ export function FacialMap({
   lockGender = false,
   resetToolTrigger,
 }: FacialMapProps) {
-  const [view, setView] = useState<'frontal' | 'perfil'>('frontal');
+  // "todas" muestra frontal + los dos perfiles a la vez (pedido para no tener
+  // que ir cambiando de vista una por una al revisar/marcar zonas).
+  const [view, setView] = useState<'frontal' | 'perfil' | 'todas'>('frontal');
   const [localGender, setLocalGender] = useState<FacialGender>('mujer');
   const currentGender = gender ?? localGender;
   const setGender = onGenderChange ?? setLocalGender;
@@ -1265,6 +1501,67 @@ export function FacialMap({
       onSelectionChange([...selection, { tooth: zone, surface: 'center' }]);
     }
   }
+
+  // Vista "todas": una sola herramienta de dibujo para las tres fotos (antes
+  // cada una tenía su propio DrawToolbar, ocupando espacio y desalineando el
+  // layout) — los trazos siguen siendo independientes por foto, pero
+  // deshacer/rehacer actúan sobre la última foto en la que se dibujó.
+  const [todasTool, setTodasTool] = useState<DrawTool>('puntero');
+  const [activeSide, setActiveSide] = useState<'frontal' | 'perfilDerecho' | 'perfilIzquierdo'>('frontal');
+  useEffect(() => {
+    if (resetToolTrigger !== undefined) setTodasTool('puntero');
+  }, [resetToolTrigger]);
+
+  const frontalContainerRef = useRef<HTMLDivElement>(null);
+  const perfilDerechoContainerRef = useRef<HTMLDivElement>(null);
+  const perfilIzquierdoContainerRef = useRef<HTMLDivElement>(null);
+  const frontalDrawing = useDrawing(
+    frontalContainerRef,
+    100,
+    100,
+    currentAnnotations.frontal,
+    (frontal) => setAnnotations({ ...currentAnnotations, frontal }),
+    resetToolTrigger,
+    [todasTool, setTodasTool]
+  );
+  const perfilDerechoDrawing = useDrawing(
+    perfilDerechoContainerRef,
+    100,
+    100,
+    currentAnnotations.perfilDerecho,
+    (perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho }),
+    resetToolTrigger,
+    [todasTool, setTodasTool]
+  );
+  const perfilIzquierdoDrawing = useDrawing(
+    perfilIzquierdoContainerRef,
+    100,
+    100,
+    currentAnnotations.perfilIzquierdo,
+    (perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo }),
+    resetToolTrigger,
+    [todasTool, setTodasTool]
+  );
+
+  // Marca qué foto es la "activa" para deshacer/rehacer en cuanto se empieza
+  // a dibujar en ella (cada foto mantiene su propio historial de trazos).
+  function withActiveSide(side: typeof activeSide, drawing: DrawingState): DrawingState {
+    return {
+      ...drawing,
+      handlePointerDown: (e: React.PointerEvent<SVGSVGElement>) => {
+        setActiveSide(side);
+        drawing.handlePointerDown(e);
+      },
+    };
+  }
+
+  const activeDrawing =
+    activeSide === 'frontal' ? frontalDrawing : activeSide === 'perfilDerecho' ? perfilDerechoDrawing : perfilIzquierdoDrawing;
+  // Solo se puede compartir una única barra entre las tres fotos cuando las
+  // tres son fotos reales (ProfilePhotoPanel) — si el género actual no tiene
+  // fotos de perfil configuradas, los perfiles caen a la silueta SVG
+  // (ProfilePanel), que mantiene su propia barra independiente.
+  const unifiedToolbar = Boolean(PROFILE_PHOTOS[currentGender]);
 
   // Un trazo dibujado a mano tiene sentido solo sobre el rostro en el que se
   // hizo — al cambiar de género la foto frontal completa cambia, así que se
@@ -1288,7 +1585,7 @@ export function FacialMap({
                 : 'Haz clic en un punto o en su nombre para marcar la zona a tratar.'}
         </p>
         <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
-          {(['frontal', 'perfil'] as const).map((v) => (
+          {(['frontal', 'perfil', 'todas'] as const).map((v) => (
             <button
               key={v}
               type="button"
@@ -1303,7 +1600,136 @@ export function FacialMap({
         </div>
       </div>
 
-      {view === 'frontal' ? (
+      {view === 'todas' ? (
+        // Los perfiles se ubican mirando hacia el frontal (el derecho, de
+        // nariz hacia la derecha, a la izquierda; el izquierdo a la derecha)
+        // para que las tres fotos se lean como un tríptico, con el frontal
+        // al centro — más chico (300 en vez de 420) para que las tres entren
+        // en una sola fila sin desbordar. Una sola barra de dibujo (abajo)
+        // controla la herramienta para las tres, en vez de una por foto.
+        <div className="flex flex-col items-center gap-3">
+          {!readOnly && unifiedToolbar && (
+            <DrawToolbar
+              tool={todasTool}
+              onToolChange={setTodasTool}
+              canUndo={activeDrawing.canUndo}
+              canRedo={activeDrawing.canRedo}
+              onUndo={activeDrawing.handleUndo}
+              onRedo={activeDrawing.handleRedo}
+            />
+          )}
+          {/* Sin flex-wrap a propósito: si el ancho disponible varía según la
+              pantalla/zoom del navegador, las tres fotos deben seguir en una
+              sola fila — si no entran, se desplaza horizontalmente en vez de
+              que la tercera caiga a una línea nueva. */}
+          <div className="flex flex-nowrap items-start justify-center gap-6 overflow-x-auto pb-1">
+            {PROFILE_PHOTOS[currentGender] ? (
+              <div className="flex shrink-0 flex-col items-center gap-1">
+                <ProfilePhotoPanel
+                  gender={currentGender}
+                  side="derecho"
+                  selectedZones={selectedZones}
+                  markedZones={markedZones}
+                  disabled={disabled}
+                  restrictedZones={restrictedZones}
+                  readOnly={readOnly}
+                  showZones={showZones}
+                  onToggle={toggleZone}
+                  strokes={currentAnnotations.perfilDerecho}
+                  onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
+                  resetToolTrigger={resetToolTrigger}
+                  sharedDrawing={{
+                    containerRef: perfilDerechoContainerRef,
+                    drawing: withActiveSide('perfilDerecho', perfilDerechoDrawing),
+                  }}
+                />
+                <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+              </div>
+            ) : (
+              <div className="flex shrink-0 flex-col items-center gap-1">
+                <ProfilePanel
+                  flip={false}
+                  selectedZones={selectedZones}
+                  markedZones={markedZones}
+                  disabled={disabled}
+                  restrictedZones={restrictedZones}
+                  readOnly={readOnly}
+                  showZones={showZones}
+                  onToggle={toggleZone}
+                  strokes={currentAnnotations.perfilDerecho}
+                  onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
+                />
+                <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+              </div>
+            )}
+
+            <div className="flex shrink-0 flex-col items-center gap-1">
+              <FacialPhotoView
+                gender={currentGender}
+                onGenderChange={handleGenderChange}
+                lockGender={lockGender}
+                selectedZones={selectedZones}
+                markedZones={markedZones}
+                disabled={disabled}
+                restrictedZones={restrictedZones}
+                readOnly={readOnly}
+                showZones={showZones}
+                onToggle={toggleZone}
+                strokes={currentAnnotations.frontal}
+                onStrokesChange={(frontal) => setAnnotations({ ...currentAnnotations, frontal })}
+                resetToolTrigger={resetToolTrigger}
+                compact
+                sharedDrawing={
+                  unifiedToolbar
+                    ? { containerRef: frontalContainerRef, drawing: withActiveSide('frontal', frontalDrawing) }
+                    : undefined
+                }
+              />
+              <span className="text-[11px] font-medium text-slate-400">Frontal</span>
+            </div>
+
+            {PROFILE_PHOTOS[currentGender] ? (
+              <div className="flex shrink-0 flex-col items-center gap-1">
+                <ProfilePhotoPanel
+                  gender={currentGender}
+                  side="izquierdo"
+                  selectedZones={selectedZones}
+                  markedZones={markedZones}
+                  disabled={disabled}
+                  restrictedZones={restrictedZones}
+                  readOnly={readOnly}
+                  showZones={showZones}
+                  onToggle={toggleZone}
+                  strokes={currentAnnotations.perfilIzquierdo}
+                  onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
+                  resetToolTrigger={resetToolTrigger}
+                  sharedDrawing={{
+                    containerRef: perfilIzquierdoContainerRef,
+                    drawing: withActiveSide('perfilIzquierdo', perfilIzquierdoDrawing),
+                  }}
+                />
+                <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+              </div>
+            ) : (
+              <div className="flex shrink-0 flex-col items-center gap-1">
+                <ProfilePanel
+                  flip
+                  selectedZones={selectedZones}
+                  markedZones={markedZones}
+                  disabled={disabled}
+                  restrictedZones={restrictedZones}
+                  readOnly={readOnly}
+                  showZones={showZones}
+                  onToggle={toggleZone}
+                  strokes={currentAnnotations.perfilIzquierdo}
+                  onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
+                />
+                <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : view === 'frontal' ? (
         <FacialPhotoView
           gender={currentGender}
           onGenderChange={handleGenderChange}
@@ -1330,6 +1756,7 @@ export function FacialMap({
               disabled={disabled}
               restrictedZones={restrictedZones}
               readOnly={readOnly}
+              showZones={showZones}
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilDerecho}
               onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
@@ -1346,6 +1773,7 @@ export function FacialMap({
               disabled={disabled}
               restrictedZones={restrictedZones}
               readOnly={readOnly}
+              showZones={showZones}
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilIzquierdo}
               onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
@@ -1364,6 +1792,7 @@ export function FacialMap({
               disabled={disabled}
               restrictedZones={restrictedZones}
               readOnly={readOnly}
+              showZones={showZones}
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilDerecho}
               onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
@@ -1379,6 +1808,7 @@ export function FacialMap({
               disabled={disabled}
               restrictedZones={restrictedZones}
               readOnly={readOnly}
+              showZones={showZones}
               onToggle={toggleZone}
               strokes={currentAnnotations.perfilIzquierdo}
               onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}

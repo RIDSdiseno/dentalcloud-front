@@ -3,13 +3,13 @@ import {
   fetchTreatmentPlans,
   deleteTreatmentPlan,
   addTreatmentItem,
+  addTreatmentPlanEdit,
   updateTreatmentItem,
   deleteTreatmentItem,
   updateTreatmentPlan,
-  uploadTreatmentItemPhoto,
-  deleteTreatmentItemPhoto,
   uploadTreatmentPlanPhoto,
   deleteTreatmentPlanPhoto,
+  downloadTreatmentPlanReport,
   type TreatmentItem,
   type TreatmentPlan,
   type TreatmentStatus,
@@ -18,36 +18,48 @@ import type { Patient } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
 import { TREATMENT_STATUS_LABELS, TREATMENT_STATUS_CLASSES, formatCLP } from '../../utils/treatmentStatus';
 import {
+  ActivityIcon,
   CalendarIcon,
   ChevronDownIcon,
   ClipboardIcon,
+  DownloadIcon,
+  EditIcon,
+  FileIcon,
   PlusIcon,
   TrashIcon,
-  UploadIcon,
   UsersIcon,
 } from '../../components/icons';
 import { Modal } from '../../components/Modal';
+import { ReasonModal } from '../../components/ReasonModal';
 import { TreatmentPlanFormModal } from './TreatmentPlanFormModal';
 import { PhotoEditorModal } from './PhotoEditorModal';
 import { FacialZonesHighlight } from './FacialMap';
 import { FACIAL_ZONES, FACIAL_ZONE_LABELS, parseTreatedZones, type FacialZoneKey } from './facialZoneConfig';
 import { useAuth } from '../../context/AuthContext';
 
-// Etiquetas de foto por procedimiento: "Antes"/"Después" para registro clínico,
-// "Sticker ficha"/"Sticker paciente" para trazabilidad de producto (ej. las dos
-// etiquetas físicas con lote que trae el Ácido Hialurónico — una se pega en la
-// ficha, la otra se entrega al paciente).
-const PHOTO_LABELS = ['Antes', 'Después', 'Sticker ficha', 'Sticker paciente'] as const;
-type PhotoLabel = (typeof PHOTO_LABELS)[number];
+// Estado de vencimiento del producto usado en un ítem — trazabilidad de
+// lote/vencimiento (ver reunión). `daysUntil` negativo = ya venció.
+function productExpiryStatus(item: TreatmentItem): { status: 'expired' | 'soon'; expiresAt: Date; daysUntil: number } | null {
+  if (!item.productExpiresAt) return null;
+  const expiresAt = new Date(item.productExpiresAt);
+  const daysUntil = Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (daysUntil < 0) return { status: 'expired', expiresAt, daysUntil };
+  if (daysUntil <= 30) return { status: 'soon', expiresAt, daysUntil };
+  return null;
+}
 
 function PlantillaFotografica({
   plan,
   onUpdated,
   onError,
+  readOnly = false,
 }: {
   plan: TreatmentPlan;
   onUpdated: (plan: TreatmentPlan) => void;
   onError: (message: string) => void;
+  // Presupuesto "de alta" — se puede seguir viendo la plantilla, pero no
+  // subir ni borrar fotos (ver PlanCard, `isAlta`).
+  readOnly?: boolean;
 }) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingMoment, setPendingMoment] = useState<'Antes' | 'Después'>('Antes');
@@ -92,33 +104,35 @@ function PlantillaFotografica({
     <div onClick={(e) => e.stopPropagation()}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">Plantilla fotográfica</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={pendingZone}
-            onChange={(e) => setPendingZone(e.target.value as FacialZoneKey)}
-            className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500"
-          >
-            {FACIAL_ZONES.map((zone) => (
-              <option key={zone} value={zone}>
-                {FACIAL_ZONE_LABELS[zone]}
-              </option>
-            ))}
-          </select>
-          <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
-            {(['Antes', 'Después'] as const).map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => setPendingMoment(l)}
-                className={`rounded-md px-2 py-0.5 transition-colors ${
-                  pendingMoment === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
+        {!readOnly && (
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={pendingZone}
+              onChange={(e) => setPendingZone(e.target.value as FacialZoneKey)}
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500"
+            >
+              {FACIAL_ZONES.map((zone) => (
+                <option key={zone} value={zone}>
+                  {FACIAL_ZONE_LABELS[zone]}
+                </option>
+              ))}
+            </select>
+            <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+              {(['Antes', 'Después'] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setPendingMoment(l)}
+                  className={`rounded-md px-2 py-0.5 transition-colors ${
+                    pendingMoment === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
         {plan.photos.map((photo) => (
@@ -131,28 +145,34 @@ function PlantillaFotografica({
                 {photo.label}
               </span>
             )}
-            <button
-              type="button"
-              onClick={() => handleDelete(photo.id, photo.label)}
-              aria-label="Eliminar foto"
-              className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-            >
-              <TrashIcon className="h-3.5 w-3.5" />
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={() => handleDelete(photo.id, photo.label)}
+                aria-label="Eliminar foto"
+                className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+              >
+                <TrashIcon className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         ))}
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePick} />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600 disabled:opacity-60"
-        >
-          <PlusIcon className="h-5 w-5" />
-          <span className="text-[11px] font-medium">
-            {isUploading ? 'Subiendo...' : `Agregar (${FACIAL_ZONE_LABELS[pendingZone]})`}
-          </span>
-        </button>
+        {!readOnly && (
+          <>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePick} />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600 disabled:opacity-60"
+            >
+              <PlusIcon className="h-5 w-5" />
+              <span className="text-[11px] font-medium">
+                {isUploading ? 'Subiendo...' : `Agregar (${FACIAL_ZONE_LABELS[pendingZone]})`}
+              </span>
+            </button>
+          </>
+        )}
       </div>
 
       {pendingFile && (
@@ -164,92 +184,21 @@ function PlantillaFotografica({
 
 const STATUS_OPTIONS: TreatmentStatus[] = ['sin_iniciar', 'en_tratamiento', 'terminado', 'alta'];
 
-function ItemDetailsPanel({
-  item,
-  onUpdated,
-  onError,
-}: {
-  item: TreatmentItem;
-  onUpdated: (plan: TreatmentPlan) => void;
-  onError: (message: string) => void;
-}) {
-  const [notes, setNotes] = useState(item.notes ?? '');
-  const [productName, setProductName] = useState(item.productName ?? '');
-  const [productLot, setProductLot] = useState(item.productLot ?? '');
-  const [productExpiresAt, setProductExpiresAt] = useState(item.productExpiresAt?.slice(0, 10) ?? '');
-  const [productQuantity, setProductQuantity] = useState(item.productQuantity ?? '');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [pendingLabel, setPendingLabel] = useState<PhotoLabel>('Antes');
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const dirty =
-    notes !== (item.notes ?? '') ||
-    productName !== (item.productName ?? '') ||
-    productLot !== (item.productLot ?? '') ||
-    productExpiresAt !== (item.productExpiresAt?.slice(0, 10) ?? '') ||
-    productQuantity !== (item.productQuantity ?? '');
-
-  // Si la prestación exige trazabilidad (ver Catálogo) pero el ítem nunca
-  // registró el producto (ej. se creó antes de que existiera este control, o
-  // se agregó como personalizada), es un vacío más grave que fotos faltantes.
+function ItemDetailsPanel({ item }: { item: TreatmentItem }) {
+  // Producto/lote, notas y fotos ahora se registran únicamente al Evolucionar
+  // el presupuesto (ver EvolucionesTab.tsx, se documenta desde esa pestaña) —
+  // este panel solo muestra lo ya grabado, no permite editarlo directamente
+  // desde Tratamiento.
   const requiresProduct = item.prestacion?.requiresProductTracking ?? false;
   const missingProduct = requiresProduct && !item.productName?.trim();
 
-  // Si el procedimiento registra un producto (ej. Ácido Hialurónico), se
-  // esperan las 2 fotos de sticker del lote (ficha + paciente) — se avisa
-  // contra `item.photos` (ya guardado), no contra el estado local sin guardar.
   const missingStickers: string[] = [];
   if (item.productName?.trim()) {
     if (!item.photos.some((p) => p.label === 'Sticker ficha')) missingStickers.push('la ficha');
     if (!item.photos.some((p) => p.label === 'Sticker paciente')) missingStickers.push('el paciente');
   }
 
-  async function handleSave() {
-    setIsSaving(true);
-    try {
-      const plan = await updateTreatmentItem(item.id, {
-        notes: notes.trim() || null,
-        productName: productName.trim() || null,
-        productLot: productLot.trim() || null,
-        productExpiresAt: productExpiresAt || null,
-        productQuantity: productQuantity.trim() || null,
-      });
-      onUpdated(plan);
-    } catch (err) {
-      onError(getErrorMessage(err, 'No se pudo guardar la información del procedimiento'));
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  async function handleUploadPhoto() {
-    const file = fileInputRef.current?.files?.[0];
-    if (!file) return;
-    setIsUploading(true);
-    try {
-      const plan = await uploadTreatmentItemPhoto(item.id, file, pendingLabel);
-      onUpdated(plan);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    } catch (err) {
-      onError(getErrorMessage(err, 'No se pudo subir la foto'));
-    } finally {
-      setIsUploading(false);
-    }
-  }
-
-  async function handleDeletePhoto(photoId: string, label: string | null) {
-    const confirmed = window.confirm(
-      label ? `¿Eliminar la foto "${label}"? Esta acción no se puede deshacer.` : '¿Eliminar esta foto? Esta acción no se puede deshacer.'
-    );
-    if (!confirmed) return;
-    try {
-      const plan = await deleteTreatmentItemPhoto(photoId);
-      onUpdated(plan);
-    } catch (err) {
-      onError(getErrorMessage(err, 'No se pudo eliminar la foto'));
-    }
-  }
+  const expiry = productExpiryStatus(item);
 
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-white/70 p-2.5" onClick={(e) => e.stopPropagation()}>
@@ -259,115 +208,69 @@ function ItemDetailsPanel({
           {item.treatedAt && ` · ${new Date(item.treatedAt).toLocaleDateString('es-CL')}`}
         </p>
       )}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <input
-          value={productName}
-          onChange={(e) => setProductName(e.target.value)}
-          placeholder="Producto (ej. Ácido Hialurónico)"
-          className="rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-        />
-        <input
-          value={productLot}
-          onChange={(e) => setProductLot(e.target.value)}
-          placeholder="N° de lote"
-          className="rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-        />
-        <input
-          type="date"
-          value={productExpiresAt}
-          onChange={(e) => setProductExpiresAt(e.target.value)}
-          title="Fecha de vencimiento"
-          className="rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-        />
-        <input
-          value={productQuantity}
-          onChange={(e) => setProductQuantity(e.target.value)}
-          placeholder="Cantidad (ej. 1 jeringa 1ml)"
-          className="rounded-lg border border-slate-200 px-2 py-1 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-        />
-      </div>
 
-      <div className="flex items-start gap-2">
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={1}
-          placeholder="Notas clínicas (ej. reacción del paciente)..."
-          className="flex-1 resize-none rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-600 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15"
-        />
-        {dirty && (
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="shrink-0 rounded-lg bg-brand-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isSaving ? 'Guardando...' : 'Guardar'}
-          </button>
-        )}
-      </div>
+      {(item.productName || item.productLot || item.productExpiresAt || item.productQuantity) && (
+        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-4">
+          <p><span className="text-slate-400">Producto:</span> {item.productName || '—'}</p>
+          <p><span className="text-slate-400">Lote:</span> {item.productLot || '—'}</p>
+          <p>
+            <span className="text-slate-400">Vence:</span>{' '}
+            {item.productExpiresAt ? new Date(item.productExpiresAt).toLocaleDateString('es-CL') : '—'}
+          </p>
+          <p><span className="text-slate-400">Cantidad:</span> {item.productQuantity || '—'}</p>
+        </div>
+      )}
+
+      {item.notes && <p className="text-xs text-slate-600">{item.notes}</p>}
 
       {missingProduct && (
         <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">
-          Esta prestación requiere registrar el producto y su lote — complétalo arriba.
+          Esta prestación requiere registrar el producto y su lote — se completa al Evolucionar.
+        </p>
+      )}
+
+      {expiry?.status === 'expired' && (
+        <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">
+          El producto usado venció el {expiry.expiresAt.toLocaleDateString('es-CL')} — revisa el lote antes de
+          continuar.
+        </p>
+      )}
+      {expiry?.status === 'soon' && (
+        <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700">
+          El producto usado vence el {expiry.expiresAt.toLocaleDateString('es-CL')} ({expiry.daysUntil} día
+          {expiry.daysUntil === 1 ? '' : 's'}).
         </p>
       )}
 
       {missingStickers.length > 0 && (
         <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700">
-          Falta subir el sticker del producto para {missingStickers.join(' y ')}.
+          Falta subir el sticker del producto para {missingStickers.join(' y ')} (se sube al Evolucionar).
         </p>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="text-[11px] font-medium text-slate-400">Fotos del procedimiento</span>
-        <div className="flex flex-wrap shrink-0 gap-1 rounded-lg bg-slate-100 p-0.5 text-[11px] font-medium">
-          {PHOTO_LABELS.map((l) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => setPendingLabel(l)}
-              className={`rounded-md px-2 py-0.5 transition-colors ${
-                pendingLabel === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {item.photos.map((photo) => (
-          <div key={photo.id} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200">
-            <a href={photo.url} target="_blank" rel="noreferrer">
-              <img src={photo.url} alt={photo.label ?? 'Foto del procedimiento'} className="h-full w-full object-cover" />
-            </a>
-            {photo.label && (
-              <span className="absolute bottom-0.5 left-0.5 rounded bg-slate-900/60 px-1 py-0.5 text-[9px] font-medium text-white">
-                {photo.label}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={() => handleDeletePhoto(photo.id, photo.label)}
-              aria-label="Eliminar foto"
-              className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-            >
-              <TrashIcon className="h-3 w-3" />
-            </button>
+      {item.photos.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <span className="text-[11px] font-medium text-slate-400">Fotos del procedimiento</span>
+          <div className="flex flex-wrap items-center gap-2">
+            {item.photos.map((photo) => (
+              <a
+                key={photo.id}
+                href={photo.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200"
+              >
+                <img src={photo.url} alt={photo.label ?? 'Foto del procedimiento'} className="h-full w-full object-cover" />
+                {photo.label && (
+                  <span className="absolute bottom-0.5 left-0.5 rounded bg-slate-900/60 px-1 py-0.5 text-[9px] font-medium text-white">
+                    {photo.label}
+                  </span>
+                )}
+              </a>
+            ))}
           </div>
-        ))}
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleUploadPhoto} />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600 disabled:opacity-60"
-        >
-          <UploadIcon className="h-4 w-4" />
-          <span className="text-[10px] font-medium">{isUploading ? '...' : 'Foto'}</span>
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -399,22 +302,140 @@ function Donut({ percent }: { percent: number }) {
   );
 }
 
+// DOCX (a diferencia del PDF, que se abre "inline" en una pestaña nueva) no
+// lo puede previsualizar el navegador — se fuerza la descarga con un enlace
+// temporal, el mismo truco de siempre para descargar un blob como archivo.
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// Modal chico para elegir el formato del informe — solo aparece con el
+// presupuesto de alta (ver botón "Generar informe" en PlanCard).
+function ReportFormatModal({ plan, onClose, onError }: { plan: TreatmentPlan; onClose: () => void; onError: (message: string) => void }) {
+  const [isDownloading, setIsDownloading] = useState<'pdf' | 'docx' | null>(null);
+
+  async function handleDownload(format: 'pdf' | 'docx') {
+  setIsDownloading(format);
+  try {
+    const blob = await downloadTreatmentPlanReport(plan.id, format);
+    
+    // Crear URL del blob
+    const url = URL.createObjectURL(blob);
+    
+    // Crear un enlace temporal y hacer clic en él
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `informe-presupuesto-${plan.number}.${format === 'pdf' ? 'pdf' : 'docx'}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Limpiar la URL después de un tiempo
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    
+    onClose();
+  } catch (err) {
+    onError(getErrorMessage(err, 'No se pudo generar el informe'));
+  } finally {
+    setIsDownloading(null);
+  }
+}
+
+  return (
+    <Modal title="Generar informe" onClose={onClose} maxWidth="max-w-sm">
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-slate-600">
+          Informe del presupuesto N° {plan.number}, con las prestaciones realizadas y las fotos registradas.
+        </p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => handleDownload('pdf')}
+            disabled={isDownloading !== null}
+            className="flex flex-1 flex-col items-center gap-1.5 rounded-lg border border-slate-200 py-4 text-sm font-semibold text-slate-700 hover:border-brand-300 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FileIcon className="h-6 w-6 text-brand-600" />
+            {isDownloading === 'pdf' ? 'Generando...' : 'PDF'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDownload('docx')}
+            disabled={isDownloading !== null}
+            className="flex flex-1 flex-col items-center gap-1.5 rounded-lg border border-slate-200 py-4 text-sm font-semibold text-slate-700 hover:border-brand-300 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FileIcon className="h-6 w-6 text-brand-600" />
+            {isDownloading === 'docx' ? 'Generando...' : 'Word (.docx)'}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 function PlanCard({
   plan,
   onUpdated,
   onDeleted,
   onError,
+  onEvolucionar,
+  onEdit,
 }: {
   plan: TreatmentPlan;
   onUpdated: (plan: TreatmentPlan) => void;
   onDeleted: (id: string) => void;
   onError: (message: string) => void;
+  onEvolucionar: (treatmentItemId: string | null) => void;
+  onEdit: (plan: TreatmentPlan) => void;
 }) {
   const isEstetica = plan.diagramType === 'estetica';
+  // Un presupuesto "de alta" queda congelado — solo se puede ver el detalle,
+  // ninguna acción de edición (estado, modificar, evolucionar, ítems, fotos)
+  // queda disponible (pedido explícito del usuario).
+  const isAlta = plan.status === 'alta';
   const [expanded, setExpanded] = useState(false);
   const [newDescription, setNewDescription] = useState('');
   const [newCost, setNewCost] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+
+  // Pide confirmar antes de pasar a Evolución — es la acción que marca el
+  // procedimiento como realizado, así que conviene un paso intermedio en vez
+  // de saltar directo a la pestaña Evoluciones al primer clic. Si el
+  // presupuesto tiene un solo procedimiento pendiente, se preselecciona ahí;
+  // con varios, el usuario elige desde el propio desplegable de Evoluciones.
+  function handleClickEvolucionar() {
+    const confirmed = window.confirm('¿Estás seguro de continuar con el tratamiento de este presupuesto?');
+    if (!confirmed) return;
+    const pending = plan.items.filter((i) => !i.completed);
+    onEvolucionar(pending.length === 1 ? pending[0].id : null);
+  }
+
+  // Un presupuesto "en tratamiento" ya se empezó a tratar — modificarlo (ej.
+  // agregar una prestación que no se había considerado) exige dejar por qué,
+  // a diferencia de uno que aún no arrancó (ahí se edita libremente).
+  function handleClickModificar() {
+    if (plan.status === 'en_tratamiento') {
+      setShowReasonModal(true);
+    } else {
+      onEdit(plan);
+    }
+  }
+
+  async function handleReasonAccepted(reason: string) {
+    try {
+      await addTreatmentPlanEdit(plan.id, reason);
+      setShowReasonModal(false);
+      onEdit(plan);
+    } catch (err) {
+      onError(getErrorMessage(err, 'No se pudo registrar el motivo de la modificación'));
+    }
+  }
 
   // El viaje al servidor toma varios segundos (recalcula el plan completo),
   // así que el check debe reflejarse al instante en cada click sin bloquear
@@ -557,7 +578,9 @@ function PlanCard({
         <select
           value={plan.status}
           onChange={(e) => handleStatusChange(e.target.value as TreatmentStatus)}
-          className={`rounded-full border-0 px-2.5 py-1 text-xs font-semibold outline-none ${TREATMENT_STATUS_CLASSES[plan.status]}`}
+          disabled={isAlta}
+          title={isAlta ? 'Presupuesto de alta — ya no se puede modificar' : undefined}
+          className={`rounded-full border-0 px-2.5 py-1 text-xs font-semibold outline-none disabled:cursor-not-allowed disabled:opacity-70 ${TREATMENT_STATUS_CLASSES[plan.status]}`}
         >
           {STATUS_OPTIONS.map((status) => (
             <option key={status} value={status}>
@@ -603,14 +626,49 @@ function PlanCard({
           {completedCount}/{plan.items.length} · {Math.round(percent)}%
         </span>
 
-        <button
-          type="button"
-          onClick={handleDeletePlan}
-          aria-label="Eliminar presupuesto"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-        >
-          <TrashIcon className="h-4 w-4" />
-        </button>
+        {!isAlta && (
+          <button
+            type="button"
+            onClick={handleClickModificar}
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            <EditIcon className="h-3.5 w-3.5" />
+            Modificar
+          </button>
+        )}
+
+        {plan.items.length > 0 && !isAlta && (
+          <button
+            type="button"
+            onClick={handleClickEvolucionar}
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-brand-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+          >
+            <ActivityIcon className="h-3.5 w-3.5" />
+            Evolucionar
+          </button>
+        )}
+
+        {!isAlta && (
+          <button
+            type="button"
+            onClick={handleDeletePlan}
+            aria-label="Eliminar presupuesto"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </button>
+        )}
+
+        {isAlta && (
+          <button
+            type="button"
+            onClick={() => setShowReportModal(true)}
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-brand-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+          >
+            <DownloadIcon className="h-3.5 w-3.5" />
+            Generar informe
+          </button>
+        )}
 
         <button
           type="button"
@@ -648,7 +706,8 @@ function PlanCard({
                     type="checkbox"
                     checked={item.completed}
                     onChange={(e) => handleToggleItem(item.id, e.target.checked)}
-                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    disabled={isAlta}
+                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
                   />
                   <span
                     className={`flex-1 text-sm ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}
@@ -659,60 +718,95 @@ function PlanCard({
                         ({isEstetica ? 'Zona' : 'Pieza'}: {item.toothNumber})
                       </span>
                     )}
+                    {(() => {
+                      const expiry = productExpiryStatus(item);
+                      if (!expiry) return null;
+                      return (
+                        <span
+                          title={
+                            expiry.status === 'expired'
+                              ? `Producto vencido el ${expiry.expiresAt.toLocaleDateString('es-CL')}`
+                              : `Producto vence el ${expiry.expiresAt.toLocaleDateString('es-CL')}`
+                          }
+                          className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                            expiry.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                          }`}
+                        >
+                          {expiry.status === 'expired' ? 'Producto vencido' : 'Producto por vencer'}
+                        </span>
+                      );
+                    })()}
                   </span>
                   <span className="text-sm text-slate-500">{formatCLP(item.cost)}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteItem(item.id, item.description)}
-                    aria-label="Eliminar procedimiento"
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
-                  >
-                    <TrashIcon className="h-3.5 w-3.5" />
-                  </button>
+                  {!isAlta && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteItem(item.id, item.description)}
+                      aria-label="Eliminar procedimiento"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
-                <ItemDetailsPanel item={item} onUpdated={applyServerPlan} onError={onError} />
+                <ItemDetailsPanel item={item} />
               </div>
             ))}
           </div>
 
           {isEstetica && (
             <div className="mt-4 border-t border-slate-100 pt-4">
-              <PlantillaFotografica plan={plan} onUpdated={applyServerPlan} onError={onError} />
+              <PlantillaFotografica plan={plan} onUpdated={applyServerPlan} onError={onError} readOnly={isAlta} />
             </div>
           )}
 
-          <div className="mt-3 flex items-center gap-2">
-            <input
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Nuevo procedimiento..."
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            />
-            <input
-              type="number"
-              min={0}
-              value={newCost}
-              onChange={(e) => setNewCost(e.target.value)}
-              placeholder="Costo"
-              className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            />
-            <button
-              type="button"
-              onClick={handleAddItem}
-              disabled={isAdding || !newDescription.trim()}
-              className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <PlusIcon className="h-3.5 w-3.5" />
-              Agregar
-            </button>
-          </div>
+          {!isAlta && (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Nuevo procedimiento..."
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+              <input
+                type="number"
+                min={0}
+                value={newCost}
+                onChange={(e) => setNewCost(e.target.value)}
+                placeholder="Costo"
+                className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+              <button
+                type="button"
+                onClick={handleAddItem}
+                disabled={isAdding || !newDescription.trim()}
+                className="flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <PlusIcon className="h-3.5 w-3.5" />
+                Agregar
+              </button>
+            </div>
+          )}
 
           {plan.notes && <p className="mt-3 text-sm text-slate-500">{plan.notes}</p>}
         </div>
       )}
+
+      {showReasonModal && (
+        <ReasonModal
+          title="Modificar presupuesto en tratamiento"
+          description="Este presupuesto ya está en tratamiento. Indica el motivo por el que lo vas a modificar antes de continuar."
+          placeholder="Ej: se agrega una zona adicional pedida por la paciente en la sesión de hoy."
+          onClose={() => setShowReasonModal(false)}
+          onAccept={handleReasonAccepted}
+        />
+      )}
+
+      {showReportModal && <ReportFormatModal plan={plan} onClose={() => setShowReportModal(false)} onError={onError} />}
     </div>
   );
 }
+
 
 // Foto "antes" de un procedimiento: primero se busca en las fotos del propio
 // item (etiquetadas solo "Antes"/"Después"); si no tiene, se busca en la
@@ -956,7 +1050,58 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
   );
 }
 
-export function TreatmentPlanTab({ patient }: { patient: Patient }) {
+// Lista completa de presupuestos del paciente (no solo los con zonas) — el
+// resumen inline de "Historial de zonas tratadas" solo alcanza a mostrar el
+// más reciente sin abrumar la pantalla; acá se puede llegar a cualquiera.
+function PlanHistoryModal({ plans, onClose }: { plans: TreatmentPlan[]; onClose: () => void }) {
+  const [detailPlan, setDetailPlan] = useState<TreatmentPlan | null>(null);
+
+  return (
+    <Modal title="Historial de presupuestos" onClose={onClose} maxWidth="max-w-2xl">
+      <div className="flex max-h-[28rem] flex-col gap-2 overflow-y-auto">
+        {plans.length === 0 && <p className="py-6 text-center text-sm text-slate-400">Aún no hay presupuestos para este paciente.</p>}
+        {plans.map((plan) => (
+          <div key={plan.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-slate-700">
+                N° {plan.number} · {new Date(plan.createdAt).toLocaleDateString('es-CL')}
+                {plan.name && <span className="text-slate-400"> · {plan.name}</span>}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${TREATMENT_STATUS_CLASSES[plan.status]}`}>
+                  {TREATMENT_STATUS_LABELS[plan.status]}
+                </span>
+                {formatCLP(plan.amount)}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDetailPlan(plan)}
+              className="shrink-0 text-xs font-semibold text-brand-600 hover:text-brand-700"
+            >
+              Ver detalle
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {detailPlan && <PlanDetailModal plan={detailPlan} onClose={() => setDetailPlan(null)} />}
+    </Modal>
+  );
+}
+
+export function TreatmentPlanTab({
+  patient,
+  onEvolucionar,
+}: {
+  patient: Patient;
+  // Al presionar "Evolucionar" en un presupuesto, se documenta desde la
+  // pestaña Evoluciones (no en un modal aparte) — este callback lleva al
+  // padre (FichaPaciente) el id del único procedimiento pendiente si el
+  // presupuesto tiene uno solo (para preseleccionarlo ahí), o `null` si tiene
+  // varios (el usuario elige desde el propio desplegable de Evoluciones).
+  onEvolucionar: (treatmentItemId: string | null) => void;
+}) {
   const patientId = patient.id;
   const { user } = useAuth();
   // Clínicas "ambas" mezclan presupuestos dental/estética — la sección de
@@ -967,7 +1112,10 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<TreatmentPlan | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | 'all'>('all');
+  const [planSearch, setPlanSearch] = useState('');
+  const [showPlanHistory, setShowPlanHistory] = useState(false);
 
   useEffect(() => {
     fetchTreatmentPlans(patientId)
@@ -995,6 +1143,17 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
   // ítems de presupuestos con odontograma (clínicas "ambas") produciría
   // zonas inválidas.
   const plansWithZones = plans.filter((p) => p.diagramType === 'estetica' && p.items.some((i) => i.toothNumber));
+
+  const filteredPlans = (() => {
+    const q = planSearch.trim().toLowerCase();
+    if (!q) return plans;
+    return plans.filter(
+      (p) =>
+        String(p.number).includes(q) ||
+        (p.name ?? '').toLowerCase().includes(q) ||
+        p.items.some((i) => i.description.toLowerCase().includes(q))
+    );
+  })();
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -1045,14 +1204,25 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
 
         {isEstetica && (
           <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h3 className="mb-3 text-sm font-semibold text-slate-800">Historial de zonas tratadas</h3>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-slate-800">Historial de zonas tratadas</h3>
+              {plans.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPlanHistory(true)}
+                  className="shrink-0 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  Ver historial
+                </button>
+              )}
+            </div>
             {plansWithZones.length === 0 ? (
               <p className="text-sm text-slate-400">Aún no hay zonas registradas para este paciente.</p>
             ) : (
               <div className="flex flex-col gap-4">
-                {plansWithZones.map((plan) => (
-                  <PlanZonesHistoryCard key={plan.id} plan={plan} />
-                ))}
+                {/* Solo el más reciente a modo de vistazo rápido — el resto (y
+                    los presupuestos sin zonas) se ven en "Ver historial". */}
+                <PlanZonesHistoryCard plan={plansWithZones[0]} />
               </div>
             )}
           </div>
@@ -1065,44 +1235,67 @@ export function TreatmentPlanTab({ patient }: { patient: Patient }) {
             <ClipboardIcon className="h-5 w-5 text-brand-500" />
             Presupuestos
           </h2>
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Nuevo presupuesto
-          </button>
+          {user?.permissions?.crearPresupuestos !== false && (
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Nuevo presupuesto
+            </button>
+          )}
         </div>
 
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+
+        {plans.length > 3 && (
+          <input
+            value={planSearch}
+            onChange={(e) => setPlanSearch(e.target.value)}
+            placeholder="Buscar por N°, nombre o procedimiento..."
+            className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          />
+        )}
 
         {!isLoading && plans.length === 0 && (
           <p className="py-8 text-center text-sm text-slate-400">
             Este paciente aún no tiene presupuestos registrados.
           </p>
         )}
+        {!isLoading && plans.length > 0 && filteredPlans.length === 0 && (
+          <p className="py-8 text-center text-sm text-slate-400">Ningún presupuesto coincide con "{planSearch}".</p>
+        )}
 
         <div className="flex flex-col gap-3">
-          {plans.map((plan) => (
+          {filteredPlans.map((plan) => (
             <PlanCard
               key={plan.id}
               plan={plan}
               onUpdated={handleUpdated}
               onDeleted={handleDeleted}
               onError={setError}
+              onEvolucionar={onEvolucionar}
+              onEdit={setEditingPlan}
             />
           ))}
         </div>
       </div>
 
-      {showForm && (
+      {showPlanHistory && <PlanHistoryModal plans={plans} onClose={() => setShowPlanHistory(false)} />}
+
+      {(showForm || editingPlan) && (
         <TreatmentPlanFormModal
           patient={patient}
-          onClose={() => setShowForm(false)}
-          onCreated={(plan) => {
-            setPlans((prev) => [plan, ...prev]);
+          editingPlan={editingPlan}
+          onClose={() => {
             setShowForm(false);
+            setEditingPlan(null);
+          }}
+          onSaved={(plan) => {
+            setPlans((prev) => (editingPlan ? prev.map((p) => (p.id === plan.id ? plan : p)) : [plan, ...prev]));
+            setShowForm(false);
+            setEditingPlan(null);
           }}
         />
       )}

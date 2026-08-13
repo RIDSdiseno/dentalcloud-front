@@ -18,6 +18,12 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
   const [unrestricted, setUnrestricted] = useState((prestacion?.allowedZones.length ?? 0) === 0);
   const [selectedZones, setSelectedZones] = useState<Set<string>>(new Set(prestacion?.allowedZones ?? []));
   const [requiresProductTracking, setRequiresProductTracking] = useState(prestacion?.requiresProductTracking ?? false);
+  const [appliesToWholeFace, setAppliesToWholeFace] = useState(prestacion?.appliesToWholeFace ?? false);
+  const [zonesApplyTogether, setZonesApplyTogether] = useState(prestacion?.zonesApplyTogether ?? false);
+  const [usePerZonePrice, setUsePerZonePrice] = useState(prestacion?.zonePrices != null);
+  const [zonePriceInputs, setZonePriceInputs] = useState<Record<string, string>>(
+    Object.fromEntries(Object.entries(prestacion?.zonePrices ?? {}).map(([zone, price]) => [zone, String(price)]))
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -28,6 +34,9 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
       else next.add(zone);
       return next;
     });
+    // Al recién marcar una zona, parte con el precio base como sugerencia —
+    // el usuario lo ajusta si esta zona cuesta distinto.
+    setZonePriceInputs((prev) => (prev[zone] !== undefined ? prev : { ...prev, [zone]: basePrice }));
   }
 
   async function handleSubmit() {
@@ -41,12 +50,44 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
       setError('Ingresa un precio válido');
       return;
     }
+    const usingZonePrices = !unrestricted && selectedZones.size > 1 && usePerZonePrice;
+    if (usingZonePrices) {
+      const invalidZone = Array.from(selectedZones).find((zone) => {
+        const value = Number(zonePriceInputs[zone]);
+        return !Number.isFinite(value) || value < 0;
+      });
+      if (invalidZone) {
+        setError(`Ingresa un precio válido para "${FACIAL_ZONE_LABELS[invalidZone as keyof typeof FACIAL_ZONE_LABELS] ?? invalidZone}"`);
+        return;
+      }
+    }
     setIsSaving(true);
     try {
       const allowedZones = unrestricted ? [] : Array.from(selectedZones);
+      const zonePrices = usingZonePrices
+        ? Object.fromEntries(allowedZones.map((zone) => [zone, Math.round(Number(zonePriceInputs[zone]))]))
+        : null;
       const saved = prestacion
-        ? await updatePrestacion(prestacion.id, { name, code: code || null, basePrice: price, allowedZones, requiresProductTracking })
-        : await createPrestacion({ name, code: code || undefined, basePrice: price, allowedZones, requiresProductTracking });
+        ? await updatePrestacion(prestacion.id, {
+            name,
+            code: code || null,
+            basePrice: price,
+            allowedZones,
+            requiresProductTracking,
+            appliesToWholeFace,
+            zonesApplyTogether,
+            zonePrices,
+          })
+        : await createPrestacion({
+            name,
+            code: code || undefined,
+            basePrice: price,
+            allowedZones,
+            requiresProductTracking,
+            appliesToWholeFace,
+            zonesApplyTogether,
+            zonePrices,
+          });
       onSaved(saved);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo guardar la prestación'));
@@ -115,21 +156,51 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
 
         {isEstetica && (
           <div>
-            <label className="text-sm font-medium text-slate-700">Zonas donde puede aplicarse</label>
-            <p className="mt-0.5 text-xs text-slate-400">
-              Un mismo implemento (ej. una jeringa) puede aplicarse en varias zonas en una misma sesión. Restringe
-              solo si este tratamiento es específico de una o más zonas puntuales.
-            </p>
-
-            <label className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-slate-600">
               <input
                 type="checkbox"
-                checked={unrestricted}
-                onChange={(e) => setUnrestricted(e.target.checked)}
+                checked={appliesToWholeFace}
+                onChange={(e) => setAppliesToWholeFace(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
               />
-              Sin restricción (aplica a cualquier zona)
+              Aplica siempre a todo el rostro (ej. limpieza facial)
             </label>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Si se marca, al agregar esta prestación a un presupuesto no hará falta marcar ninguna zona en el mapa
+              facial — se aplica directo. No tiene sentido combinarlo con zonas restringidas, así que se ignoran.
+            </p>
+          </div>
+        )}
+
+        {isEstetica && !appliesToWholeFace && (
+          <div>
+            <label className="text-sm font-medium text-slate-700">Zonas donde puede aplicarse</label>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Elige "Sin restricción" si un mismo implemento (ej. una jeringa) puede aplicarse en cualquier zona según
+              el caso. Elige "Zonas específicas" si este tratamiento va sí o sí en una o más zonas puntuales (ej.
+              Rinoplastía → solo Nariz) — esas zonas se preseleccionan solas al usarlo en un presupuesto.
+            </p>
+
+            <div className="mt-2 flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+              <button
+                type="button"
+                onClick={() => setUnrestricted(true)}
+                className={`rounded-md px-3 py-1.5 transition-colors ${
+                  unrestricted ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Sin restricción
+              </button>
+              <button
+                type="button"
+                onClick={() => setUnrestricted(false)}
+                className={`rounded-md px-3 py-1.5 transition-colors ${
+                  !unrestricted ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Zonas específicas
+              </button>
+            </div>
 
             {!unrestricted && (
               <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-lg bg-slate-50 p-3 sm:grid-cols-3">
@@ -148,8 +219,78 @@ export function PrestacionFormModal({ prestacion, isEstetica, onClose, onSaved }
             )}
             {!unrestricted && selectedZones.size === 0 && (
               <p className="mt-1 text-xs font-medium text-amber-600">
-                Selecciona al menos una zona, o marca "Sin restricción" arriba.
+                Selecciona al menos una zona, o vuelve a "Sin restricción" arriba.
               </p>
+            )}
+
+            {!unrestricted && selectedZones.size > 1 && (
+              <div className="mt-3 rounded-lg bg-slate-50 p-3">
+                <p className="text-xs font-medium text-slate-500">Al usar esta prestación en un presupuesto...</p>
+                <div className="mt-1.5 flex w-fit gap-1 rounded-lg bg-slate-200/70 p-1 text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setZonesApplyTogether(false)}
+                    className={`rounded-md px-3 py-1.5 text-left transition-colors ${
+                      !zonesApplyTogether ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    El profesional elige cuáles aplican
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZonesApplyTogether(true)}
+                    className={`rounded-md px-3 py-1.5 text-left transition-colors ${
+                      zonesApplyTogether ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Se aplican todas juntas, sin elegir
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!unrestricted && selectedZones.size > 1 && (
+              <div className="mt-3 rounded-lg bg-slate-50 p-3">
+                <p className="text-xs font-medium text-slate-500">Precio</p>
+                <div className="mt-1.5 flex w-fit gap-1 rounded-lg bg-slate-200/70 p-1 text-sm font-medium">
+                  <button
+                    type="button"
+                    onClick={() => setUsePerZonePrice(false)}
+                    className={`rounded-md px-3 py-1.5 transition-colors ${
+                      !usePerZonePrice ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Mismo precio para todas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUsePerZonePrice(true)}
+                    className={`rounded-md px-3 py-1.5 transition-colors ${
+                      usePerZonePrice ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    Precio distinto por zona
+                  </button>
+                </div>
+
+                {usePerZonePrice && (
+                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {Array.from(selectedZones).map((zone) => (
+                      <div key={zone}>
+                        <label className="text-xs text-slate-500">{FACIAL_ZONE_LABELS[zone as keyof typeof FACIAL_ZONE_LABELS] ?? zone}</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={zonePriceInputs[zone] ?? ''}
+                          onChange={(e) => setZonePriceInputs((prev) => ({ ...prev, [zone]: e.target.value }))}
+                          placeholder={basePrice || '0'}
+                          className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
