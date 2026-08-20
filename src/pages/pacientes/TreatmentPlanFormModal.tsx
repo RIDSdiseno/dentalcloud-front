@@ -84,11 +84,6 @@ const MODE_INSTRUCTIONS_ESTETICA: Partial<Record<OdontogramMode, string>> = {
   tooth: 'Selecciona una o más zonas del rostro donde se aplicará el procedimiento.',
 };
 
-const CUSTOM_MODE_OPTIONS_ESTETICA: { value: OdontogramMode; label: string }[] = [
-  { value: 'session', label: 'Todo el rostro' },
-  { value: 'tooth', label: 'Zona(s)' },
-];
-
 type ItemRow = {
   key: string;
   prestacionId?: string;
@@ -120,16 +115,6 @@ const MODE_INSTRUCTIONS: Record<OdontogramMode, string> = {
   sextante: 'Haz clic en cualquier pieza del sextante para marcarlo completo.',
   arcada: 'Haz clic en cualquier pieza de la arcada para marcarla completa.',
 };
-
-const CUSTOM_MODE_OPTIONS: { value: OdontogramMode; label: string }[] = [
-  { value: 'session', label: 'Sesión' },
-  { value: 'tooth', label: 'Pieza completa' },
-  { value: 'surface', label: 'Cara' },
-  { value: 'extraction', label: 'Extracción' },
-  { value: 'cuadrante', label: 'Cuadrante' },
-  { value: 'sextante', label: 'Sextante' },
-  { value: 'arcada', label: 'Arcada' },
-];
 
 function createMarksFromItem(item: ItemRow): OdontogramMark[] {
   if (item.odontogramMode === 'session') return [];
@@ -318,10 +303,10 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     () => editingPlan?.items.map((i) => existingItemToRow(i, editingPlan.diagramType === 'estetica')) ?? []
   );
   const [lastAddedKeys, setLastAddedKeys] = useState<string[]>([]);
-  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [, setShowCustomItem] = useState(false);
   const [customDescription, setCustomDescription] = useState('');
   const [customCost, setCustomCost] = useState('');
-  const [customMode, setCustomMode] = useState<OdontogramMode>('tooth');
+  const [, setCustomMode] = useState<OdontogramMode>('tooth');
 
   const [name, setName] = useState(editingPlan?.name ?? '');
   const [paymentMethod, setPaymentMethod] = useState(editingPlan?.paymentMethod ?? PAYMENT_METHODS[0]);
@@ -404,24 +389,6 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     setToolResetTrigger((t) => t + 1);
   }
 
-  function openCustomItem() {
-    setShowCustomItem(true);
-    setActivePrestacion(null);
-    setIsCustomActive(true);
-    setActiveMode(customMode);
-    setDraftSelection([]);
-    setActiveColor(undefined);
-    setToolResetTrigger((t) => t + 1);
-    setDraftError(null);
-    setConflictingAllergies([]);
-  }
-
-  function closeCustomItem() {
-    setShowCustomItem(false);
-    setCustomDescription('');
-    setCustomCost('');
-    resetActive();
-  }
 
   function handleCustomModeChange(mode: OdontogramMode) {
     setCustomMode(mode);
@@ -1058,70 +1025,6 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                 />
               )}
 
-              <div>
-                {showCustomItem ? (
-                  <div className="flex flex-col gap-2 rounded-lg bg-slate-50 p-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        value={customDescription}
-                        onChange={(e) => setCustomDescription(e.target.value)}
-                        placeholder="Descripción del procedimiento"
-                        className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                      />
-                      <input
-                        type="number"
-                        min={0}
-                        value={customCost}
-                        onChange={(e) => setCustomCost(e.target.value)}
-                        placeholder="Costo"
-                        className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                      />
-                      <select
-                        value={customMode}
-                        onChange={(e) => handleCustomModeChange(e.target.value as OdontogramMode)}
-                        className="rounded-lg border border-slate-300 px-2 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                      >
-                        {(isEstetica ? CUSTOM_MODE_OPTIONS_ESTETICA : CUSTOM_MODE_OPTIONS).map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {customMode !== 'session' && draftSelection.length > 0 && (
-                      <p className="text-xs font-medium text-slate-500">
-                        {selectionLabel(isEstetica, customMode, draftSelection)}
-                      </p>
-                    )}
-                    {draftError && <p className="text-xs font-medium text-red-600">{draftError}</p>}
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleConfirmActive}
-                        className="rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-700"
-                      >
-                        Agregar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={closeCustomItem}
-                        className="text-sm text-slate-400 hover:text-slate-600"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={openCustomItem}
-                    className="flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700"
-                  >
-                    <PlusIcon className="h-3.5 w-3.5" />
-                    Prestación fuera de catálogo
-                  </button>
-                )}
-              </div>
                 </>
               )}
             </div>

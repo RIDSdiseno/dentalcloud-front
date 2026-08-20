@@ -478,14 +478,6 @@ function PlanCard({
     setNewCost(String(Math.round(prestacion.basePrice * (1 - discount / 100))));
   }
 
-  function openCustomItem() {
-    setPickedPrestacion(null);
-    setEntryMode('custom');
-    setDraftMode('tooth');
-    setDraftSelection([]);
-    setDraftError(null);
-  }
-
   // El viaje al servidor toma varios segundos (recalcula el plan completo),
   // así que el check debe reflejarse al instante en cada click sin bloquear
   // el checkbox (bloquearlo se sentía como si la casilla tuviera delay). En
@@ -890,15 +882,7 @@ function PlanCard({
                 </div>
               )}
 
-              {entryMode === null ? (
-                <button
-                  type="button"
-                  onClick={openCustomItem}
-                  className="self-start bg-none text-xs font-semibold text-brand-600 hover:text-brand-700"
-                >
-                  + Prestación fuera de catálogo
-                </button>
-              ) : (
+              {entryMode !== null && (
                 <>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-500">

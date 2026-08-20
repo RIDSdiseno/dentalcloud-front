@@ -9,6 +9,7 @@ export type StaffUser = {
   role: string;
   rut: string | null;
   createdAt: string;
+  signatureUrl: string | null;
 };
 
 export type CreateUserInput = {
@@ -17,6 +18,9 @@ export type CreateUserInput = {
   password: string;
   role: 'admin' | 'odontologo' | 'radiologo' | 'operador';
   rut?: string;
+  // Firma dibujada por el profesional al crear su cuenta (canvas → PNG data
+  // URL) — opcional, se puede agregar después desde su perfil.
+  signatureDataUrl?: string | null;
 };
 
 // Cuando el profesional (odontólogo/radiólogo) se sincroniza con RIDS RX y esa

@@ -3,6 +3,7 @@ import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createUser, type StaffUser } from '../../api/users';
 import { formatRutInput, isValidRut } from '../../utils/rut';
+import { SignaturePad } from '../../components/SignaturePad';
 
 type ProfessionalFormModalProps = {
   onClose: () => void;
@@ -16,6 +17,7 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
   const [role, setRole] = useState<'odontologo' | 'admin' | 'radiologo' | 'operador'>('odontologo');
   const [rut, setRut] = useState('');
   const [rutTouched, setRutTouched] = useState(false);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,6 +39,7 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
         password,
         role,
         rut: rut.trim() || undefined,
+        signatureDataUrl,
       });
       onCreated(user, dimageGeneratedPassword);
     } catch (err) {
@@ -133,6 +136,17 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
               sincronizado con RIDS RX de inmediato.
             </p>
           )}
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-slate-700">Firma</label>
+          <p className="mt-0.5 text-xs text-slate-400">
+            Opcional — se usa para identificar al profesional en informes y documentos que genere. Puedes dejarla en
+            blanco y agregarla después desde su perfil.
+          </p>
+          <div className="mt-1">
+            <SignaturePad onChange={setSignatureDataUrl} height={120} />
+          </div>
         </div>
 
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
