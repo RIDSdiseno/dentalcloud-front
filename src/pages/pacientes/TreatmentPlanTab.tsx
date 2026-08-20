@@ -394,6 +394,21 @@ function PlanCard({
   const [isAdding, setIsAdding] = useState(false);
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
+  // Cualquier cambio al contenido de un presupuesto ya "en tratamiento"
+  // (modificarlo, agregar o quitar un procedimiento) exige dejar un motivo
+  // primero — a diferencia de uno que aún no arrancó, ahí se edita libremente.
+  // Marcar un procedimiento como realizado NO pasa por acá: eso es ejecutar
+  // el tratamiento, no modificarlo.
+  function requireReasonIfInTreatment(action: () => void) {
+    if (plan.status === 'en_tratamiento') {
+      pendingActionRef.current = action;
+      setShowReasonModal(true);
+    } else {
+      action();
+    }
+  }
 
   // Pide confirmar antes de pasar a Evolución — es la acción que marca el
   // procedimiento como realizado, así que conviene un paso intermedio en vez
@@ -411,18 +426,16 @@ function PlanCard({
   // agregar una prestación que no se había considerado) exige dejar por qué,
   // a diferencia de uno que aún no arrancó (ahí se edita libremente).
   function handleClickModificar() {
-    if (plan.status === 'en_tratamiento') {
-      setShowReasonModal(true);
-    } else {
-      onEdit(plan);
-    }
+    requireReasonIfInTreatment(() => onEdit(plan));
   }
 
   async function handleReasonAccepted(reason: string) {
     try {
       await addTreatmentPlanEdit(plan.id, reason);
       setShowReasonModal(false);
-      onEdit(plan);
+      const action = pendingActionRef.current;
+      pendingActionRef.current = null;
+      action?.();
     } catch (err) {
       onError(getErrorMessage(err, 'No se pudo registrar el motivo de la modificación'));
     }
@@ -564,9 +577,13 @@ function PlanCard({
     pendingToggles.current.set(itemId, { token, timer, previousCompleted });
   }
 
-  async function handleDeleteItem(itemId: string, description: string) {
+  function handleDeleteItem(itemId: string, description: string) {
     const confirmed = window.confirm(`¿Eliminar el procedimiento "${description}"? Se perderá su registro de producto/lote y fotos asociadas.`);
     if (!confirmed) return;
+    requireReasonIfInTreatment(() => performDeleteItem(itemId));
+  }
+
+  async function performDeleteItem(itemId: string) {
     try {
       const updated = await deleteTreatmentItem(itemId);
       applyServerPlan(updated);
@@ -575,12 +592,16 @@ function PlanCard({
     }
   }
 
-  async function handleAddItem() {
+  function handleAddItem() {
     if (!newDescription.trim()) return;
     if (entryMode !== null && draftMode && draftMode !== 'session' && draftSelection.length === 0) {
       setDraftError(draftMode === 'surface' ? 'Selecciona al menos una cara.' : 'Selecciona al menos una pieza.');
       return;
     }
+    requireReasonIfInTreatment(performAddItem);
+  }
+
+  async function performAddItem() {
     setIsAdding(true);
     try {
       const discount = plan.convenio?.discountPercent ?? 0;
