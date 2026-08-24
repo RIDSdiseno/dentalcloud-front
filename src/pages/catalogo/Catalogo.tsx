@@ -10,6 +10,7 @@ import { PrestacionFormModal } from './PrestacionFormModal';
 import { ConveniosTab } from './ConveniosTab';
 import { PrevisionesTab } from './PrevisionesTab';
 import { ClinicasTab } from './ClinicasTab';
+import { InventarioTab } from './InventarioTab';
 
 function zonesSummary(allowedZones: string[]): string {
   if (allowedZones.length === 0) return 'Todas las zonas';
@@ -21,6 +22,7 @@ const TABS = [
   { key: 'convenios', label: 'Convenios' },
   { key: 'previsiones', label: 'Previsiones' },
   { key: 'clinicas', label: 'Clínicas' },
+  { key: 'inventario', label: 'Inventario' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -109,6 +111,7 @@ export default function Catalogo() {
       {tab === 'convenios' && <ConveniosTab />}
       {tab === 'previsiones' && <PrevisionesTab />}
       {tab === 'clinicas' && <ClinicasTab />}
+      {tab === 'inventario' && <InventarioTab />}
 
       {tab === 'prestaciones' && (
         <>

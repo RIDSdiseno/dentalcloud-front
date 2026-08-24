@@ -10,8 +10,8 @@ import {
   type TreatmentItemInput,
 } from '../../api/treatmentPlans';
 import { fetchUsers, type StaffUser } from '../../api/users';
-import { fetchSucursales, fetchPrevisiones, fetchConvenios, fetchPrestaciones } from '../../api/catalogs';
-import type { Sucursal, Prevision, Convenio, Prestacion } from '../../api/catalogs';
+import { fetchSucursales, fetchPrevisiones, fetchConvenios, fetchPrestaciones, searchProductLots } from '../../api/catalogs';
+import type { Sucursal, Prevision, Convenio, Prestacion, ProductLot } from '../../api/catalogs';
 import type { Patient } from '../../api/patients';
 import { ALLERGY_LABEL, type AllergyKey } from '../../data/allergies';
 import { useAuth } from '../../context/AuthContext';
@@ -273,6 +273,16 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
   const [draftProductLot, setDraftProductLot] = useState('');
   const [draftProductExpiresAt, setDraftProductExpiresAt] = useState('');
   const [draftProductQuantity, setDraftProductQuantity] = useState('');
+  // Lote real de inventario elegido en el buscador (ver lotSearchQuery) — null
+  // significa que todavía no se eligió ninguno, o que el usuario volvió a
+  // escribir después de elegir uno (se invalida la selección anterior, ver
+  // el onChange del buscador). No se puede escribir el lote a mano: se exige
+  // seleccionar uno real de Dental-Demo-Back para prestaciones con trazabilidad.
+  const [selectedLot, setSelectedLot] = useState<ProductLot | null>(null);
+  const [lotSearchQuery, setLotSearchQuery] = useState('');
+  const [lotResults, setLotResults] = useState<ProductLot[]>([]);
+  const [lotSearchLoading, setLotSearchLoading] = useState(false);
+  const [lotFederationAvailable, setLotFederationAvailable] = useState(true);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [conflictingAllergies, setConflictingAllergies] = useState<AllergyKey[]>([]);
   const [facialAnnotations, setFacialAnnotations] = useState<FacialAnnotations>(
@@ -328,6 +338,49 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     return prestaciones.filter((p) => p.name.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q)).slice(0, 8);
   }, [prestacionSearch, prestaciones]);
 
+  // Busca lotes reales en Dental-Demo-Back (vía federación) a medida que se
+  // escribe — con debounce porque, a diferencia de fetchPrestaciones (catálogo
+  // chico, se trae completo una vez), esto es una consulta en vivo a otro
+  // sistema por cada tecleo.
+  useEffect(() => {
+    const q = lotSearchQuery.trim();
+    if (q.length < 2) {
+      setLotResults([]);
+      setLotSearchLoading(false);
+      return;
+    }
+    setLotSearchLoading(true);
+    const handle = setTimeout(() => {
+      searchProductLots(q)
+        .then(({ lots, federationAvailable }) => {
+          setLotResults(lots);
+          setLotFederationAvailable(federationAvailable);
+        })
+        .catch(() => {
+          setLotResults([]);
+          setLotFederationAvailable(false);
+        })
+        .finally(() => setLotSearchLoading(false));
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [lotSearchQuery]);
+
+  function pickLot(lot: ProductLot) {
+    setSelectedLot(lot);
+    setDraftProductName(lot.productName ?? '');
+    setDraftProductLot(lot.lotNumber);
+    setDraftProductExpiresAt(lot.expiresAt ? lot.expiresAt.slice(0, 10) : '');
+    setLotSearchQuery('');
+    setLotResults([]);
+  }
+
+  function clearSelectedLot() {
+    setSelectedLot(null);
+    setDraftProductName('');
+    setDraftProductLot('');
+    setDraftProductExpiresAt('');
+  }
+
   const total = items.reduce((sum, i) => sum + i.cost, 0);
 
   // Las marcas persistentes del odontograma se derivan de las prestaciones ya
@@ -336,6 +389,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
   const odontogramMarks = useMemo(() => items.flatMap(createMarksFromItem), [items]);
 
   function resetActive() {
+    setPrestacionSearch('');
     setActivePrestacion(null);
     setIsCustomActive(false);
     setActiveMode(null);
@@ -346,13 +400,16 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     setDraftProductLot('');
     setDraftProductExpiresAt('');
     setDraftProductQuantity('');
+    setSelectedLot(null);
+    setLotSearchQuery('');
+    setLotResults([]);
     setDraftError(null);
     setConflictingAllergies([]);
     setToolResetTrigger((t) => t + 1);
   }
 
   function handlePickPrestacion(prestacion: Prestacion) {
-    setPrestacionSearch('');
+    setPrestacionSearch(prestacion.name);
     const config = pickConfig(isEstetica, prestacion);
     const selection = selectionFromDefaults(config.defaultTeeth, config.defaultSurfaces);
     const detected = detectAllergensInPrestacion(prestacion.name);
@@ -384,6 +441,9 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     setDraftProductLot('');
     setDraftProductExpiresAt('');
     setDraftProductQuantity('');
+    setSelectedLot(null);
+    setLotSearchQuery(prestacion.requiresProductTracking ? prestacion.name : '');
+    setLotResults([]);
     setDraftError(null);
     setConflictingAllergies(allergyConflicts);
     setToolResetTrigger((t) => t + 1);
@@ -410,9 +470,19 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
       return;
     }
 
-    if (!isCustomActive && activePrestacion?.requiresProductTracking && !draftProductName.trim()) {
-      setDraftError('Esta prestación requiere registrar el producto y su lote antes de agregarla.');
-      return;
+    if (!isCustomActive && activePrestacion?.requiresProductTracking) {
+      if (!selectedLot) {
+        setDraftError(
+          lotFederationAvailable
+            ? 'Selecciona un lote real del inventario antes de agregar la prestación (no se puede escribir a mano).'
+            : 'No se pudo conectar con el inventario para verificar el lote. Intenta nuevamente en unos minutos.'
+        );
+        return;
+      }
+      if (selectedLot.stock <= 0) {
+        setDraftError('El lote seleccionado ya no tiene stock disponible. Elige otro lote.');
+        return;
+      }
     }
 
     const discount = selectedConvenio?.discountPercent ?? 0;
@@ -510,7 +580,20 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
 
   function goToStep3() {
     if (items.length === 0) {
-      setError('Agrega al menos una prestación');
+      // Distinto del genérico "Agrega al menos una prestación": si ya hay
+      // algo configurado en el banner amarillo (elegida del catálogo o fuera
+      // de catálogo), lo más probable es que al usuario se le haya olvidado
+      // el clic en "Agregar prestación", no que no haya elegido nada todavía.
+      if (activePrestacion) {
+        setError(`Tienes "${activePrestacion.name}" seleccionada sin agregar — haz clic en "Agregar prestación" primero.`);
+      } else if (isCustomActive) {
+        const label = customDescription.trim();
+        setError(
+          `Tienes una prestación fuera de catálogo${label ? ` ("${label}")` : ''} sin agregar — haz clic en "Agregar prestación" primero.`
+        );
+      } else {
+        setError('Agrega al menos una prestación');
+      }
       return;
     }
     setError(null);
@@ -900,7 +983,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     Plantillas
                   </button>
                 </div>
-                {filteredPrestaciones.length > 0 && (
+                {filteredPrestaciones.length > 0 && prestacionSearch !== activePrestacion?.name && (
                   <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
                     {filteredPrestaciones.map((p) => (
                       <button
@@ -937,39 +1020,79 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     <p className="mt-1 font-medium">{selectionLabel(isEstetica, activeMode, draftSelection)}</p>
                   )}
                   {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
-                  {activePrestacion.requiresProductTracking && !draftProductName.trim() && (
+                  {activePrestacion.requiresProductTracking && !selectedLot && (
                     <p className="mt-1 flex items-center gap-1 font-semibold text-red-600">
                       <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
-                      Esta prestación requiere registrar el producto y su lote (trazabilidad).
+                      Esta prestación requiere seleccionar un lote real del inventario (trazabilidad).
                     </p>
                   )}
-                  <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                    <input
-                      value={draftProductName}
-                      onChange={(e) => setDraftProductName(e.target.value)}
-                      placeholder="Producto (ej. Ácido Hialurónico)"
-                      className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
-                        activePrestacion.requiresProductTracking && !draftProductName.trim() ? 'border-red-300' : 'border-amber-200'
-                      }`}
-                    />
-                    <input
-                      value={draftProductLot}
-                      onChange={(e) => setDraftProductLot(e.target.value)}
-                      placeholder="N° de lote"
-                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                    />
-                    <input
-                      type="date"
-                      value={draftProductExpiresAt}
-                      onChange={(e) => setDraftProductExpiresAt(e.target.value)}
-                      title="Fecha de vencimiento"
-                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-                    />
+                  <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                    {selectedLot ? (
+                      <div className="col-span-full flex items-center justify-between gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-xs text-emerald-800">
+                        <span>
+                          <span className="font-semibold">{selectedLot.productName ?? 'Producto sin nombre'}</span>
+                          {' — Lote '}
+                          <span className="font-semibold">{selectedLot.lotNumber}</span>
+                          {' · Stock: '}
+                          <span className="font-semibold">{selectedLot.stock}</span>
+                          {selectedLot.expiresAt && (
+                            <>
+                              {' · Vence: '}
+                              <span className="font-semibold">{selectedLot.expiresAt.slice(0, 10)}</span>
+                            </>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearSelectedLot}
+                          className="shrink-0 rounded px-1.5 py-0.5 text-emerald-700 underline hover:bg-emerald-100"
+                        >
+                          Cambiar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative col-span-full">
+                        <input
+                          value={lotSearchQuery}
+                          onChange={(e) => setLotSearchQuery(e.target.value)}
+                          placeholder="Buscar lote real por producto o N° de lote (ej. Ácido Hialurónico, L-2451)..."
+                          className="w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                        />
+                        {lotSearchLoading && <p className="mt-1 text-slate-500">Buscando lotes en el inventario...</p>}
+                        {!lotSearchLoading && lotSearchQuery.trim().length >= 2 && lotResults.length === 0 && (
+                          <p className="mt-1 text-slate-500">
+                            {lotFederationAvailable
+                              ? 'No se encontraron lotes con stock para esa búsqueda.'
+                              : 'No se pudo conectar con el inventario (Dental-Demo-Back) ahora mismo.'}
+                          </p>
+                        )}
+                        {lotResults.length > 0 && (
+                          <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-700 shadow-lg">
+                            {lotResults.map((lot) => (
+                              <button
+                                key={lot.id}
+                                type="button"
+                                onClick={() => pickLot(lot)}
+                                className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-brand-50"
+                              >
+                                <span>
+                                  {lot.productName ?? 'Producto sin nombre'} — Lote {lot.lotNumber}
+                                </span>
+                                <span className="text-slate-500">
+                                  Stock: {lot.stock}
+                                  {lot.expiresAt ? ` · Vence: ${lot.expiresAt.slice(0, 10)}` : ''}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <input
                       value={draftProductQuantity}
                       onChange={(e) => setDraftProductQuantity(e.target.value)}
-                      placeholder="Cantidad (ej. 1 jeringa 1ml)"
-                      className="rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      placeholder="Cantidad aplicada (ej. 1 jeringa 1ml)"
+                      className="col-span-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 sm:col-span-1"
                     />
                   </div>
                   <textarea

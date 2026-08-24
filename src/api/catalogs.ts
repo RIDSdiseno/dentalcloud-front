@@ -52,6 +52,17 @@ export type Prestacion = {
   defaultSurfaces?: ('top' | 'right' | 'bottom' | 'left' | 'center')[];
   default_surfaces?: ('top' | 'right' | 'bottom' | 'left' | 'center')[];
 };
+// Lote real de inventario en Dental-Demo-Back (la app administrativa),
+// traído en vivo por federación — ver ProductLotField/searchProductLots.
+export type ProductLot = {
+  id: string;
+  supplyId: string;
+  productName: string | null;
+  lotNumber: string;
+  expiresAt: string | null;
+  stock: number;
+};
+
 export type EvolutionTemplate = {
   id: string;
   name: string;
@@ -87,6 +98,15 @@ export async function fetchAllPrestaciones() {
     params: { all: 'true' },
   });
   return data.prestaciones;
+}
+
+// Requiere 2+ caracteres del lado del backend; con menos, siempre devuelve
+// una lista vacía sin llegar a llamar a Dental-Demo-Back.
+export async function searchProductLots(search: string) {
+  const { data } = await api.get<{ lots: ProductLot[]; federationAvailable: boolean }>('/catalogs/product-lots', {
+    params: { q: search },
+  });
+  return data;
 }
 
 export async function createPrestacion(input: {

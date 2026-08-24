@@ -556,6 +556,18 @@ export function UndoIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function BoxIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path
+        d="M3.5 8 12 3.5 20.5 8 12 12.5 3.5 8Z M3.5 8v8.5L12 21l8.5-4.5V8M12 12.5V21"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function RedoIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
