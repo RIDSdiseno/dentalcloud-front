@@ -12,12 +12,26 @@ export type Patient = {
   email: string | null;
   birthDate: string | null;
   address: string | null;
+  gender: string | null;
+  nationality: string | null;
+  maritalStatus: string | null;
+  occupation: string | null;
   heightCm: number | null;
   weightKg: number | null;
   allergies: AllergyKey[];
   allergyNotes: string | null;
   medicalConditions: string | null;
   currentMedications: string | null;
+  chronicDiseases: string | null;
+  dentalHistory: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  emergencyContactRelationship: string | null;
+  healthInsurance: string | null;
+  healthInsuranceDetail: string | null;
+  bloodType: string | null;
+  tags: string[];
+  photoUrl: string | null;
   createdAt: string;
   updatedAt: string;
   // Snapshot del consentimiento de protección de datos, derivado de la nueva
@@ -42,12 +56,25 @@ export type PatientInput = {
   email?: string;
   birthDate?: string;
   address?: string;
+  gender?: string;
+  nationality?: string;
+  maritalStatus?: string;
+  occupation?: string;
   heightCm?: number | null;
   weightKg?: number | null;
   allergies?: AllergyKey[];
   allergyNotes?: string;
   medicalConditions?: string;
   currentMedications?: string;
+  chronicDiseases?: string;
+  dentalHistory?: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
+  emergencyContactRelationship?: string;
+  healthInsurance?: string;
+  healthInsuranceDetail?: string;
+  bloodType?: string;
+  tags?: string[];
 };
 
 export async function fetchPatients(search?: string) {
@@ -69,5 +96,14 @@ export async function createPatient(input: PatientInput) {
 
 export async function updatePatient(id: string, input: Partial<PatientInput>) {
   const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}`, input);
+  return data.patient;
+}
+
+export async function uploadPatientPhoto(id: string, photo: File) {
+  const formData = new FormData();
+  formData.append('photo', photo);
+  const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}/photo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return data.patient;
 }

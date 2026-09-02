@@ -14,6 +14,9 @@ export type ClinicaModules = Record<ClinicaModuleKey, boolean>;
 
 export type ConsentStats = { pendiente: number; firmado: number; rechazado: number };
 
+export type FederationSyncKey = 'patients' | 'appointments' | 'treatmentPlans' | 'users' | 'sucursales' | 'catalog';
+export type FederationSyncSettings = Record<FederationSyncKey, boolean>;
+
 export type Clinica = {
   id: string;
   name: string;
@@ -24,6 +27,10 @@ export type Clinica = {
   logoUrl: string | null;
   rxEnabled: boolean;
   modules: ClinicaModules;
+  federatedClinicId: string | null;
+  federationCatalogOnly: boolean;
+  federationPaused: boolean;
+  federationSyncSettings: FederationSyncSettings;
   createdAt: string;
   patientsCount: number;
   usersCount: number;
@@ -165,9 +172,22 @@ export async function updateClinica(
     pais?: string;
     rxEnabled?: boolean;
     modules?: Partial<ClinicaModules>;
+    federationCatalogOnly?: boolean;
+    federationPaused?: boolean;
+    federationSyncSettings?: Partial<FederationSyncSettings>;
   }
 ) {
   const { data } = await api.patch<{ clinica: Clinica }>(`/clinicas/${id}`, patch);
+  return data.clinica;
+}
+
+export async function connectClinicaFederation(id: string) {
+  const { data } = await api.post<{ clinica: Clinica }>(`/clinicas/${id}/federation/connect`);
+  return data.clinica;
+}
+
+export async function disconnectClinicaFederation(id: string) {
+  const { data } = await api.post<{ clinica: Clinica }>(`/clinicas/${id}/federation/disconnect`);
   return data.clinica;
 }
 

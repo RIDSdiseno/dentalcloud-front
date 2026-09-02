@@ -1,6 +1,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchClinicas, updateClinica, updateClinicaLogo, type Clinica, type ClinicaModuleKey } from '../../api/clinicas';
+import {
+  connectClinicaFederation,
+  disconnectClinicaFederation,
+  fetchClinicas,
+  updateClinica,
+  updateClinicaLogo,
+  type Clinica,
+  type ClinicaModuleKey,
+  type FederationSyncKey,
+} from '../../api/clinicas';
+
+const FEDERATION_SYNC_ITEMS: { key: FederationSyncKey; label: string; description: string }[] = [
+  { key: 'patients', label: 'Pacientes', description: 'Fichas de pacientes y sus antecedentes.' },
+  { key: 'appointments', label: 'Citas', description: 'Agenda y horas reservadas.' },
+  { key: 'treatmentPlans', label: 'Presupuestos y tratamientos', description: 'Planes de tratamiento e ítems.' },
+  { key: 'users', label: 'Profesionales', description: 'Cuentas del equipo clínico.' },
+  { key: 'sucursales', label: 'Sucursales', description: 'Sedes/consultorios de la clínica.' },
+  { key: 'catalog', label: 'Catálogo', description: 'Convenios, prestaciones y previsiones.' },
+];
 import { getErrorMessage } from '../../api/client';
 import { formatCLP } from '../../utils/treatmentStatus';
 import { formatRut, formatRutInput, isValidRut } from '../../utils/rut';
@@ -84,6 +102,26 @@ export default function ClinicaDetail() {
       setError(getErrorMessage(err, 'No se pudo actualizar el logo'));
     } finally {
       setIsUploadingLogo(false);
+    }
+  }
+
+  async function handleFederationToggle(value: boolean) {
+    if (!clinica) return;
+    const confirmed = value
+      ? true
+      : window.confirm(
+          `¿Desconectar ${clinica.name} de Dental-Demo? Se detiene toda la sincronización. El registro del otro lado no se borra — al reconectar se re-vincula al mismo, pero "Solo catálogo" y "Conexión activa" vuelven a sus valores por defecto.`
+        );
+    if (!confirmed) return;
+
+    setBusyField('federationConnection');
+    setError(null);
+    try {
+      setClinica(value ? await connectClinicaFederation(clinica.id) : await disconnectClinicaFederation(clinica.id));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo cambiar la conexión con Dental-Demo'));
+    } finally {
+      setBusyField(null);
     }
   }
 
@@ -190,6 +228,97 @@ export default function ClinicaDetail() {
           Los usuarios de este holding no podrán iniciar sesión mientras esté desactivado.
         </p>
       )}
+
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-800">Federación con Dental-Demo</h2>
+            <p className="mt-0.5 text-xs text-slate-500">
+              Sincronización de pacientes, citas y presupuestos con la plataforma de administración.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
+                clinica.federatedClinicId
+                  ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                  : 'bg-slate-100 text-slate-500 ring-slate-200'
+              }`}
+            >
+              {clinica.federatedClinicId ? 'Conectada' : 'No conectada'}
+            </span>
+            <Toggle
+              checked={Boolean(clinica.federatedClinicId)}
+              onChange={handleFederationToggle}
+              label={`Conexión de ${clinica.name} con Dental-Demo`}
+              disabled={busyField === 'federationConnection'}
+            />
+          </div>
+        </div>
+
+        {clinica.federatedClinicId ? (
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+            <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-1">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Conexión activa</p>
+                <p className="text-xs text-slate-500">Pausa toda la sincronización sin perder el emparejamiento.</p>
+              </div>
+              <Toggle
+                checked={!clinica.federationPaused}
+                onChange={(value) => applyUpdate({ federationPaused: !value }, 'federationPaused')}
+                label={`Conexión federada de ${clinica.name} activa`}
+                disabled={busyField === 'federationPaused'}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-1">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Solo catálogo</p>
+                <p className="text-xs text-slate-500">Si está activo, nunca comparte pacientes/citas/presupuestos reales.</p>
+              </div>
+              <Toggle
+                checked={clinica.federationCatalogOnly}
+                onChange={(value) => applyUpdate({ federationCatalogOnly: value }, 'federationCatalogOnly')}
+                label={`Solo catálogo para ${clinica.name}`}
+                disabled={busyField === 'federationCatalogOnly'}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {clinica.federatedClinicId && (
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <p className="mb-3 text-sm font-medium text-slate-700">Conexiones individuales</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {FEDERATION_SYNC_ITEMS.map((item) => (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-700">{item.label}</p>
+                    <p className="text-xs text-slate-500">{item.description}</p>
+                  </div>
+                  <Toggle
+                    checked={clinica.federationSyncSettings[item.key]}
+                    onChange={(value) =>
+                      applyUpdate({ federationSyncSettings: { [item.key]: value } }, `federationSyncSettings.${item.key}`)
+                    }
+                    label={`${item.label} de ${clinica.name}`}
+                    disabled={busyField === `federationSyncSettings.${item.key}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!clinica.federatedClinicId && (
+          <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            Esta clínica no está emparejada con Dental-Demo. Activa el switch de arriba para conectarla — arrancará en modo "Solo catálogo" por seguridad.
+          </p>
+        )}
+      </div>
+
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
