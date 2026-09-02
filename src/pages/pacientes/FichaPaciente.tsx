@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { fetchPatient, type Patient } from '../../api/patients';
+import { fetchPatient, uploadPatientPhoto, type Patient } from '../../api/patients';
 import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
 import { fetchPatientBalance } from '../../api/ledger';
 import { getErrorMessage } from '../../api/client';
@@ -40,6 +40,27 @@ import { DocumentosClinicosTab } from './DocumentosClinicosTab';
 import { RxTab } from './RxTab';
 import { ConsentimientosTab } from './ConsentimientosTab';
 import { DebtNotificationModal } from './DebtNotificationModal';
+
+const GENDER_LABEL: Record<string, string> = {
+  femenino: 'Femenino',
+  masculino: 'Masculino',
+  otro: 'Otro',
+};
+
+const MARITAL_STATUS_LABEL: Record<string, string> = {
+  soltero: 'Soltero/a',
+  casado: 'Casado/a',
+  conviviente_civil: 'Conviviente civil',
+  divorciado: 'Divorciado/a',
+  viudo: 'Viudo/a',
+};
+
+const HEALTH_INSURANCE_LABEL: Record<string, string> = {
+  fonasa: 'Fonasa',
+  isapre: 'Isapre',
+  particular: 'Particular',
+  otro: 'Otro',
+};
 
 const TABS = [
   { key: 'datos', label: 'Datos paciente', icon: IdBadgeIcon },
@@ -157,6 +178,21 @@ export default function FichaPaciente() {
   // procedimiento pendiente, queda preseleccionado en el desplegable de esa
   // pestaña para no tener que buscarlo de nuevo.
   const [preselectTreatmentItemId, setPreselectTreatmentItemId] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  async function handlePhotoChange(file: File | null) {
+    if (!file || !patient) return;
+    setIsUploadingPhoto(true);
+    try {
+      const updated = await uploadPatientPhoto(patient.id, file);
+      setPatient(updated);
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo subir la foto del paciente'));
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
 
   function handleEvolucionar(treatmentItemId: string | null) {
     setPreselectTreatmentItemId(treatmentItemId);
@@ -251,10 +287,37 @@ export default function FichaPaciente() {
 
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div className="flex items-center gap-4">
-          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-500 text-xl font-bold text-white">
-            {patient.firstName[0]}
-            {patient.lastName[0]}
-          </span>
+          <div className="group relative h-16 w-16 shrink-0">
+            {patient.photoUrl ? (
+              <img
+                src={patient.photoUrl}
+                alt={`${patient.firstName} ${patient.lastName}`}
+                className="h-16 w-16 rounded-2xl object-cover"
+              />
+            ) : (
+              <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-500 text-xl font-bold text-white">
+                {patient.firstName[0]}
+                {patient.lastName[0]}
+              </span>
+            )}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handlePhotoChange(e.target.files?.[0] ?? null)}
+            />
+            <button
+              type="button"
+              onClick={() => photoInputRef.current?.click()}
+              disabled={isUploadingPhoto}
+              aria-label="Cambiar foto del paciente"
+              title="Cambiar foto (opcional)"
+              className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/0 text-transparent opacity-0 transition-opacity group-hover:bg-black/40 group-hover:text-white group-hover:opacity-100"
+            >
+              <EditIcon className="h-5 w-5" />
+            </button>
+          </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">
               {patient.firstName} {patient.lastName}
@@ -263,12 +326,22 @@ export default function FichaPaciente() {
               {formatRut(patient.rut)}
               {age !== null && ` · ${age} años`}
             </p>
-            {patient.allergies.length > 0 && (
-              <span className="mt-2 flex w-fit items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
-                <AlertTriangleIcon className="h-3.5 w-3.5" />
-                Alergias: {patient.allergies.map((a) => ALLERGY_LABEL[a]).join(', ')}
-              </span>
-            )}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {patient.allergies.length > 0 && (
+                <span className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+                  <AlertTriangleIcon className="h-3.5 w-3.5" />
+                  Alergias: {patient.allergies.map((a) => ALLERGY_LABEL[a]).join(', ')}
+                </span>
+              )}
+              {patient.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -350,25 +423,114 @@ export default function FichaPaciente() {
           </div>
 
           <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+            <h2 className="mb-4 text-sm font-semibold text-slate-800">Datos personales</h2>
+            <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Género</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.gender ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {GENDER_LABEL[patient.gender ?? ''] ?? 'No especificado'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado civil</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.maritalStatus ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {MARITAL_STATUS_LABEL[patient.maritalStatus ?? ''] ?? 'No especificado'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nacionalidad</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.nationality ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.nationality || 'No especificada'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ocupación</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.occupation ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.occupation || 'No especificada'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Previsión de salud</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.healthInsurance ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {HEALTH_INSURANCE_LABEL[patient.healthInsurance ?? ''] ?? 'No especificada'}
+                  {patient.healthInsuranceDetail && ` · ${patient.healthInsuranceDetail}`}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+            <h2 className="mb-4 text-sm font-semibold text-slate-800">Contacto de emergencia</h2>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactName ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.emergencyContactName || 'No registrado'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Teléfono</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactPhone ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.emergencyContactPhone || 'No registrado'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Relación</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactRelationship ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.emergencyContactRelationship || 'No registrada'}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <ClockIcon className="h-4 w-4 text-brand-500" />
+              Seguimiento clínico
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <GlanceCard
+                title="Próxima cita"
+                icon={ClockIcon}
+                appointment={nextAppointment}
+                emptyLabel="Sin próxima cita agendada."
+              />
+              <GlanceCard
+                title="Última cita atendida"
+                icon={CalendarIcon}
+                appointment={lastAttended}
+                emptyLabel="Sin citas anteriores."
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
               <AlertTriangleIcon className="h-4 w-4 text-brand-500" />
               Antecedentes médicos
             </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex gap-6 text-sm">
-                <div>
-                  <p className="text-slate-500">Altura</p>
-                  <p className="font-medium text-slate-700">{patient.heightCm ? `${patient.heightCm} cm` : 'No registrada'}</p>
-                </div>
-                <div>
-                  <p className="text-slate-500">Peso</p>
-                  <p className="font-medium text-slate-700">{patient.weightKg ? `${patient.weightKg} kg` : 'No registrado'}</p>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <div className="rounded-xl bg-slate-50 p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Medidas</p>
+                <div className="flex gap-6 text-sm">
+                  <div>
+                    <p className="text-slate-500">Altura</p>
+                    <p className="font-medium text-slate-700">{patient.heightCm ? `${patient.heightCm} cm` : 'No registrada'}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Peso</p>
+                    <p className="font-medium text-slate-700">{patient.weightKg ? `${patient.weightKg} kg` : 'No registrado'}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">Grupo sanguíneo</p>
+                    <p className="font-medium text-slate-700">{patient.bloodType || 'Desconocido'}</p>
+                  </div>
                 </div>
               </div>
-              <div className="text-sm">
-                <p className="text-slate-500">Alergias</p>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Alergias</p>
                 {patient.allergies.length > 0 ? (
-                  <div className="mt-1 flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5">
                     {patient.allergies.map((a) => (
                       <span
                         key={a}
@@ -383,16 +545,28 @@ export default function FichaPaciente() {
                 )}
                 {patient.allergyNotes && <p className="mt-1.5 text-xs text-slate-500">{patient.allergyNotes}</p>}
               </div>
-              <div className="text-sm">
-                <p className="text-slate-500">Condiciones médicas relevantes</p>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Condiciones médicas relevantes</p>
                 <p className={`font-medium ${patient.medicalConditions ? 'text-slate-700' : 'text-slate-400'}`}>
                   {patient.medicalConditions ?? 'No registradas'}
                 </p>
               </div>
-              <div className="text-sm">
-                <p className="text-slate-500">Medicamentos actuales</p>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Medicamentos actuales</p>
                 <p className={`font-medium ${patient.currentMedications ? 'text-slate-700' : 'text-slate-400'}`}>
                   {patient.currentMedications ?? 'No registrados'}
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Enfermedades crónicas</p>
+                <p className={`font-medium ${patient.chronicDiseases ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.chronicDiseases ?? 'No registradas'}
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Antecedentes dentales</p>
+                <p className={`font-medium ${patient.dentalHistory ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {patient.dentalHistory ?? 'No registrados'}
                 </p>
               </div>
             </div>
