@@ -84,12 +84,6 @@ export default function Login() {
     doLogin(email, password);
   }
 
-  function handleQuickLogin(quickEmail: string, quickPassword: string) {
-    setEmail(quickEmail);
-    setPassword(quickPassword);
-    doLogin(quickEmail, quickPassword);
-  }
-
   return (
     <div className="relative flex min-h-screen items-center justify-center p-6">
       <img
@@ -172,45 +166,6 @@ export default function Login() {
             {isSubmitting ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
-
-        {/* TODO: quitar este acceso rápido antes de salir a producción */}
-        <div className="mt-4 rounded-2xl bg-white/95 p-4 text-xs shadow-xl shadow-slate-900/25 ring-1 ring-black/5 backdrop-blur-sm">
-          <p className="mb-2 font-semibold text-slate-500">Acceso rápido (dev)</p>
-          <div className="flex flex-col gap-1.5">
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleQuickLogin('superadmin@rids.cl', 'SuperAdmin123!')}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Super Admin RIDS
-            </button>
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleQuickLogin('admin@dentalcloud.local', 'Admin123!')}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Administrador RIDS
-            </button>
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleQuickLogin('admin@clinicademo.local', 'Admin123!')}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Administrador Holding Demo
-            </button>
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => handleQuickLogin('admin@esteticademo.local', 'Admin123!')}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-left font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Administrador Holding Estética Demo
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

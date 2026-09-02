@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal } from '../../components/Modal';
+import { ReasonModal } from '../../components/ReasonModal';
 import { getErrorMessage } from '../../api/client';
 import {
   createTreatmentPlan,
   addTreatmentItem,
+  addTreatmentPlanEdit,
+  deleteTreatmentItem,
   uploadTreatmentPlanPhoto,
   type TreatmentPlan,
   type TreatmentItem,
@@ -17,7 +20,7 @@ import { ALLERGY_LABEL, type AllergyKey } from '../../data/allergies';
 import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatCLP } from '../../utils/treatmentStatus';
-import { AlertTriangleIcon, CheckIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
+import { AlertTriangleIcon, CheckIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
 import { Odontogram, type OdontogramMark, type OdontogramMode, type ToothSelection, type ToothSurface } from './Odontogram';
 import {
   areaLabel,
@@ -42,6 +45,7 @@ import {
   type FacialZoneKey,
 } from './facialZoneConfig';
 import { detectAllergensInPrestacion } from './allergenDetection';
+import { EditItemModal } from './EditItemModal';
 
 // A partir de aquí, "tooth"/"pieza" siempre puede ser una zona facial cuando la
 // clínica es de tipo "estetica" — ver TreatmentPlanFormModal({ isEstetica }).
@@ -141,10 +145,15 @@ type TreatmentPlanFormModalProps = {
   onClose: () => void;
   onSaved: (plan: TreatmentPlan) => void;
   // Si se pasa, el modal abre directo en "Prestaciones" para agregar
-  // prestaciones NUEVAS a este presupuesto ya existente — no permite tocar
-  // sucursal/convenio/previsión ni modificar/quitar lo ya agregado (pedido
-  // explícito: un presupuesto "en tratamiento" solo se amplía, no se reescribe).
+  // prestaciones nuevas a este presupuesto ya existente — sucursal/convenio/
+  // previsión quedan fijos, pero las prestaciones ya agregadas SÍ se pueden
+  // editar (lápiz) o quitar (basurero) en su lugar, con el mismo motivo
+  // requerido que el resto de ediciones si el presupuesto está en tratamiento.
   editingPlan?: TreatmentPlan | null;
+  // Edición/borrado de un ítem existente pega directo a la API (no espera al
+  // "Guardar cambios" del final) — este callback mantiene sincronizada la
+  // lista de presupuestos del padre sin cerrar el modal.
+  onPlanRefreshed?: (plan: TreatmentPlan) => void;
 };
 
 // Reconstruye la fila de "Prestaciones agregadas" para un ítem que YA existe
@@ -232,7 +241,7 @@ function buildCatalogRow(
   };
 }
 
-export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan = null }: TreatmentPlanFormModalProps) {
+export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan = null, onPlanRefreshed }: TreatmentPlanFormModalProps) {
   const patientId = patient.id;
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -248,6 +257,56 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
   const [step, setStep] = useState<1 | 2 | 3>(editingPlan ? 2 : 1);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Editar/quitar una prestación YA agregada a `editingPlan` — a diferencia de
+  // agregar una nueva (que se manda recién al "Guardar cambios"), esto pega
+  // directo a la API porque el ítem ya existe en el servidor. Si el
+  // presupuesto está en tratamiento, exige motivo primero (mismo criterio que
+  // el resto de ediciones, ver TreatmentPlanTab.tsx).
+  const [editingExistingItem, setEditingExistingItem] = useState<TreatmentItem | null>(null);
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const pendingExistingItemActionRef = useRef<(() => void) | null>(null);
+
+  function requireReasonIfInTreatment(action: () => void) {
+    if (editingPlan?.status === 'en_tratamiento') {
+      pendingExistingItemActionRef.current = action;
+      setShowReasonModal(true);
+    } else {
+      action();
+    }
+  }
+
+  async function handleReasonAccepted(reason: string) {
+    if (!editingPlan) return;
+    try {
+      await addTreatmentPlanEdit(editingPlan.id, reason);
+      setShowReasonModal(false);
+      const action = pendingExistingItemActionRef.current;
+      pendingExistingItemActionRef.current = null;
+      action?.();
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo registrar el motivo de la modificación'));
+    }
+  }
+
+  function handleEditExistingItem(key: string) {
+    const original = editingPlan?.items.find((i) => i.id === key);
+    if (!original) return;
+    requireReasonIfInTreatment(() => setEditingExistingItem(original));
+  }
+
+  async function handleDeleteExistingItem(key: string) {
+    if (!window.confirm('¿Quitar esta prestación del presupuesto?')) return;
+    requireReasonIfInTreatment(async () => {
+      try {
+        const plan = await deleteTreatmentItem(key);
+        setItems((prev) => prev.filter((i) => i.key !== key));
+        onPlanRefreshed?.(plan);
+      } catch (err) {
+        setError(getErrorMessage(err, 'No se pudo quitar la prestación'));
+      }
+    });
+  }
 
   const [professionals, setProfessionals] = useState<StaffUser[]>([]);
   const [professionalId, setProfessionalId] = useState(editingPlan?.professionalId ?? '');
@@ -686,7 +745,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
 
   const showActiveBanner = !isCustomActive && activePrestacion !== null && activeMode !== null;
 
-  return (
+  const modalBody = (
     <Modal
       title={editingPlan ? `Modificar presupuesto Nº${editingPlan.number}` : 'Nuevo presupuesto'}
       onClose={onClose}
@@ -1198,19 +1257,33 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                           </p>
                           <p className="mt-0.5 break-words text-xs text-slate-400">{detailLabel(item, isEstetica)}</p>
                         </div>
-                        {!item.existing && (
+                        <div className="flex shrink-0 items-center gap-1">
+                          {item.existing && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditExistingItem(item.key);
+                              }}
+                              aria-label="Editar"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                            >
+                              <EditIcon className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              removeItem(item.key);
+                              if (item.existing) handleDeleteExistingItem(item.key);
+                              else removeItem(item.key);
                             }}
                             aria-label="Quitar"
-                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
                           >
                             <TrashIcon className="h-3.5 w-3.5" />
                           </button>
-                        )}
+                        </div>
                       </div>
                       <input
                         type="number"
@@ -1377,5 +1450,41 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
         </div>
       </div>
     </Modal>
+  );
+
+  return (
+    <>
+      {modalBody}
+      {editingExistingItem && (
+        <EditItemModal
+          item={editingExistingItem}
+          isEstetica={isEstetica}
+          facialGender={facialGender}
+          onClose={() => setEditingExistingItem(null)}
+          onSaved={(plan) => {
+            const updatedItem = plan.items.find((i) => i.id === editingExistingItem.id);
+            if (updatedItem) {
+              setItems((prev) =>
+                prev.map((i) =>
+                  i.key === updatedItem.id
+                    ? { ...i, description: updatedItem.description, toothNumber: updatedItem.toothNumber }
+                    : i
+                )
+              );
+            }
+            onPlanRefreshed?.(plan);
+          }}
+        />
+      )}
+      {showReasonModal && (
+        <ReasonModal
+          title="Modificar presupuesto en tratamiento"
+          description="Este presupuesto ya está en tratamiento. Indica el motivo por el que lo vas a modificar antes de continuar."
+          placeholder="Ej: se corrige la zona registrada por error en la sesión de hoy."
+          onClose={() => setShowReasonModal(false)}
+          onAccept={handleReasonAccepted}
+        />
+      )}
+    </>
   );
 }

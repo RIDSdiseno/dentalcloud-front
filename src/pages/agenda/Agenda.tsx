@@ -4,13 +4,15 @@ import { ChairAgendaGrid } from './ChairAgendaGrid';
 import { AppointmentFormModal } from './AppointmentFormModal';
 import { NewAppointmentModal } from './NewAppointmentModal';
 import { ChairFormModal } from './ChairFormModal';
+import { AppointmentActionModal } from './AppointmentActionModal';
+import { UrgencyAppointmentModal } from './UrgencyAppointmentModal';
 import { SlotDurationControl } from './SlotDurationControl';
 import { formatLongDate, isSameDay, toDateParam } from './dateUtils';
 import { fetchChairs, deleteChair, type Chair } from '../../api/chairs';
-import { fetchAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
+import { fetchAppointments, type Appointment } from '../../api/appointments';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import { PlusIcon } from '../../components/icons';
+import { AlertTriangleIcon, PlusIcon } from '../../components/icons';
 
 export default function Agenda() {
   const { user } = useAuth();
@@ -22,6 +24,8 @@ export default function Agenda() {
   const [pendingSlot, setPendingSlot] = useState<{ chair: Chair; startAt: Date } | null>(null);
   const [showChairForm, setShowChairForm] = useState(false);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
+  const [showUrgencyForm, setShowUrgencyForm] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const isToday = isSameDay(selectedDate, new Date());
 
@@ -57,20 +61,6 @@ export default function Agenda() {
     }
   }
 
-  async function handleCancelAppointment(appointment: Appointment) {
-    const confirmed = window.confirm(
-      `¿Cancelar la cita de ${appointment.patient.firstName} ${appointment.patient.lastName}?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await deleteAppointment(appointment.id);
-      setAppointments((prev) => prev.filter((a) => a.id !== appointment.id));
-    } catch (err) {
-      setError(getErrorMessage(err, 'No se pudo cancelar la cita'));
-    }
-  }
-
   const nextChairNumber = chairs.length > 0 ? Math.max(...chairs.map((c) => c.number)) + 1 : 101;
 
   return (
@@ -94,6 +84,14 @@ export default function Agenda() {
           >
             <PlusIcon className="h-4 w-4" />
             Nueva cita
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowUrgencyForm(true)}
+            className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-600/25 hover:bg-red-700"
+          >
+            <AlertTriangleIcon className="h-4 w-4" />
+            Atender urgencia
           </button>
           <button
             type="button"
@@ -134,10 +132,25 @@ export default function Agenda() {
           appointments={appointments}
           stepMinutes={stepMinutes}
           onSlotClick={(chair, startAt) => setPendingSlot({ chair, startAt })}
-          onAppointmentClick={handleCancelAppointment}
+          onAppointmentClick={setSelectedAppointment}
           onRemoveChair={handleRemoveChair}
         />
       </div>
+
+      {selectedAppointment && (
+        <AppointmentActionModal
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onUpdated={(updated) => {
+            setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+            setSelectedAppointment(updated);
+          }}
+          onCancelled={(cancelled) => {
+            setAppointments((prev) => prev.filter((a) => a.id !== cancelled.id));
+            setSelectedAppointment(null);
+          }}
+        />
+      )}
 
       {pendingSlot && (
         <AppointmentFormModal
@@ -160,6 +173,20 @@ export default function Agenda() {
               setAppointments((prev) => [...prev, appointment]);
             }
             setShowNewAppointment(false);
+          }}
+        />
+      )}
+
+      {showUrgencyForm && (
+        <UrgencyAppointmentModal
+          onClose={() => setShowUrgencyForm(false)}
+          onCreated={(appointment) => {
+            if (isSameDay(new Date(appointment.startAt), selectedDate)) {
+              setAppointments((prev) => [...prev, appointment]);
+            } else {
+              setSelectedDate(new Date(appointment.startAt));
+            }
+            setShowUrgencyForm(false);
           }}
         />
       )}

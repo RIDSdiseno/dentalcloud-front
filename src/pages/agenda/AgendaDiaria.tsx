@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
+import { fetchAppointments, type Appointment } from '../../api/appointments';
 import { fetchChairs, type Chair } from '../../api/chairs';
 import { getErrorMessage } from '../../api/client';
 import { addDays, formatLongDate, formatTime, isSameDay, toDateParam } from './dateUtils';
 import { CalendarIcon, ChairIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon, UsersIcon } from '../../components/icons';
 import { NewAppointmentModal } from './NewAppointmentModal';
+import { AppointmentActionModal } from './AppointmentActionModal';
+import { STATUS_LABEL, STATUS_BADGE_CLASS } from './appointmentStatusStyles';
 
 export default function AgendaDiaria() {
   const { user } = useAuth();
@@ -16,6 +18,7 @@ export default function AgendaDiaria() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const isToday = isSameDay(selectedDate, new Date());
 
@@ -41,20 +44,6 @@ export default function AgendaDiaria() {
       });
     return () => controller.abort();
   }, [selectedDate]);
-
-  async function handleCancel(appointment: Appointment) {
-    const confirmed = window.confirm(
-      `¿Cancelar la cita de ${appointment.patient.firstName} ${appointment.patient.lastName}?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await deleteAppointment(appointment.id);
-      setAppointments((prev) => prev.filter((a) => a.id !== appointment.id));
-    } catch (err) {
-      setError(getErrorMessage(err, 'No se pudo cancelar la cita'));
-    }
-  }
 
   function chairLabel(chairId: string) {
     const chair = chairs.find((c) => c.id === chairId);
@@ -139,9 +128,11 @@ export default function AgendaDiaria() {
         )}
 
         {appointments.map((appointment) => (
-          <div
+          <button
+            type="button"
             key={appointment.id}
-            className="flex items-center justify-between gap-4 rounded-2xl border-l-4 border-brand-500 bg-white p-4 shadow-sm ring-1 ring-slate-200"
+            onClick={() => setSelectedAppointment(appointment)}
+            className="flex w-full items-center justify-between gap-4 rounded-2xl border-l-4 border-brand-500 bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50"
           >
             <div className="min-w-0">
               <p className="text-sm font-bold text-brand-700">
@@ -162,16 +153,31 @@ export default function AgendaDiaria() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => handleCancel(appointment)}
-              className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+            <span
+              className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                STATUS_BADGE_CLASS[appointment.status] ?? 'bg-slate-100 text-slate-600'
+              }`}
             >
-              Cancelar
-            </button>
-          </div>
+              {STATUS_LABEL[appointment.status] ?? appointment.status}
+            </span>
+          </button>
         ))}
       </div>
+
+      {selectedAppointment && (
+        <AppointmentActionModal
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onUpdated={(updated) => {
+            setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+            setSelectedAppointment(updated);
+          }}
+          onCancelled={(cancelled) => {
+            setAppointments((prev) => prev.filter((a) => a.id !== cancelled.id));
+            setSelectedAppointment(null);
+          }}
+        />
+      )}
 
       {showNewAppointment && (
         <NewAppointmentModal

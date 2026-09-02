@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { fetchPatient, type Patient } from '../../api/patients';
 import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
@@ -135,6 +135,7 @@ function GlanceCard({
 export default function FichaPaciente() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const visibleTabs = TABS.filter((tab) => {
     if (tab.key === 'rx') return user?.rxEnabled !== false && user?.permissions?.rx !== false;
@@ -149,7 +150,8 @@ export default function FichaPaciente() {
   const [isLoading, setIsLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabKey>('datos');
+  const initialTab = (location.state as { tab?: TabKey } | null)?.tab;
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab ?? 'datos');
   const [debtSaldo, setDebtSaldo] = useState<number | null>(null);
   const [showDebtNotification, setShowDebtNotification] = useState(false);
   // Al presionar "Evolucionar" en un presupuesto (Tratamientos), se salta a

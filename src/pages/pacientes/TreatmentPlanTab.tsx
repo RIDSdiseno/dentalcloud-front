@@ -36,6 +36,7 @@ import { TreatmentPlanFormModal } from './TreatmentPlanFormModal';
 import { PhotoEditorModal } from './PhotoEditorModal';
 import { FacialZonesHighlight } from './FacialMap';
 import { FACIAL_ZONES, FACIAL_ZONE_LABELS, parseTreatedZones, type FacialZoneKey } from './facialZoneConfig';
+import { EditItemModal } from './EditItemModal';
 import { useAuth } from '../../context/AuthContext';
 import { Odontogram, type OdontogramMode, type ToothSelection } from './Odontogram';
 import { getOdontogramConfig, selectionFromDefaults, splitSelectionByTooth, toothNumberForBackend } from './odontogramConfig';
@@ -394,6 +395,7 @@ function PlanCard({
   const [isAdding, setIsAdding] = useState(false);
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<TreatmentItem | null>(null);
   const pendingActionRef = useRef<(() => void) | null>(null);
 
   // Cualquier cambio al contenido de un presupuesto ya "en tratamiento"
@@ -575,6 +577,10 @@ function PlanCard({
     }, 400);
 
     pendingToggles.current.set(itemId, { token, timer, previousCompleted });
+  }
+
+  function handleEditItem(item: TreatmentItem) {
+    requireReasonIfInTreatment(() => setEditingItem(item));
   }
 
   function handleDeleteItem(itemId: string, description: string) {
@@ -827,6 +833,16 @@ function PlanCard({
                   {!isAlta && (
                     <button
                       type="button"
+                      onClick={() => handleEditItem(item)}
+                      aria-label="Editar procedimiento"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                    >
+                      <EditIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  {!isAlta && (
+                    <button
+                      type="button"
                       onClick={() => handleDeleteItem(item.id, item.description)}
                       aria-label="Eliminar procedimiento"
                       className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
@@ -972,6 +988,16 @@ function PlanCard({
       )}
 
       {showReportModal && <ReportFormatModal plan={plan} onClose={() => setShowReportModal(false)} onError={onError} />}
+
+      {editingItem && (
+        <EditItemModal
+          item={editingItem}
+          isEstetica={isEstetica}
+          facialGender={plan.facialGender ?? 'mujer'}
+          onClose={() => setEditingItem(null)}
+          onSaved={applyServerPlan}
+        />
+      )}
     </div>
   );
 }
@@ -1466,6 +1492,7 @@ export function TreatmentPlanTab({
             setShowForm(false);
             setEditingPlan(null);
           }}
+          onPlanRefreshed={(plan) => setPlans((prev) => prev.map((p) => (p.id === plan.id ? plan : p)))}
         />
       )}
     </div>

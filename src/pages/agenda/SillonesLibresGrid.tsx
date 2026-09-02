@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Appointment } from '../../api/appointments';
+import { STATUS_DOT_CLASS } from './appointmentStatusStyles';
 import {
   addDays,
   formatDayHeader,
@@ -124,7 +125,12 @@ export function SillonesLibresGrid({
                   className="m-0.5 flex flex-col justify-center overflow-hidden rounded-lg bg-brand-100 px-2.5 py-1.5 text-left transition-colors hover:bg-brand-200"
                   style={{ gridColumn: column, gridRow: `${row} / span ${spanRows}` }}
                 >
-                  <span className="truncate text-xs font-semibold text-brand-800">
+                  <span className="flex items-center gap-1.5 truncate text-xs font-semibold text-brand-800">
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                        STATUS_DOT_CLASS[covering.appt.status] ?? 'bg-slate-400'
+                      }`}
+                    />
                     {covering.appt.patient.firstName} {covering.appt.patient.lastName}
                   </span>
                   <span className="truncate text-[11px] text-brand-700">

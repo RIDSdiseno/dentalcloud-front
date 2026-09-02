@@ -3,10 +3,11 @@ import { ChairTabs } from './ChairTabs';
 import { SillonesLibresGrid } from './SillonesLibresGrid';
 import { AppointmentFormModal } from './AppointmentFormModal';
 import { ChairFormModal } from './ChairFormModal';
+import { AppointmentActionModal } from './AppointmentActionModal';
 import { SlotDurationControl } from './SlotDurationControl';
 import { addDays, formatWeekRange, startOfWeek, toDateParam } from './dateUtils';
 import { fetchChairs, type Chair } from '../../api/chairs';
-import { fetchAppointmentsRange, deleteAppointment, type Appointment } from '../../api/appointments';
+import { fetchAppointmentsRange, type Appointment } from '../../api/appointments';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '../../components/icons';
@@ -21,6 +22,7 @@ export default function SillonesLibres() {
   const [error, setError] = useState<string | null>(null);
   const [pendingSlot, setPendingSlot] = useState<Date | null>(null);
   const [showChairForm, setShowChairForm] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const nextChairNumber = chairs.length > 0 ? Math.max(...chairs.map((c) => c.number)) + 1 : 101;
 
@@ -46,20 +48,6 @@ export default function SillonesLibres() {
       });
     return () => controller.abort();
   }, [selectedChairId, weekStart]);
-
-  async function handleCancelAppointment(appointment: Appointment) {
-    const confirmed = window.confirm(
-      `¿Cancelar la cita de ${appointment.patient.firstName} ${appointment.patient.lastName}?`
-    );
-    if (!confirmed) return;
-
-    try {
-      await deleteAppointment(appointment.id);
-      setAppointments((prev) => prev.filter((a) => a.id !== appointment.id));
-    } catch (err) {
-      setError(getErrorMessage(err, 'No se pudo cancelar la cita'));
-    }
-  }
 
   const selectedChair = chairs.find((c) => c.id === selectedChairId) ?? null;
   const isCurrentWeek = isSameWeek(weekStart, startOfWeek(new Date()));
@@ -128,9 +116,24 @@ export default function SillonesLibres() {
           appointments={appointments}
           stepMinutes={stepMinutes}
           onSlotClick={setPendingSlot}
-          onAppointmentClick={handleCancelAppointment}
+          onAppointmentClick={setSelectedAppointment}
         />
       </div>
+
+      {selectedAppointment && (
+        <AppointmentActionModal
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onUpdated={(updated) => {
+            setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+            setSelectedAppointment(updated);
+          }}
+          onCancelled={(cancelled) => {
+            setAppointments((prev) => prev.filter((a) => a.id !== cancelled.id));
+            setSelectedAppointment(null);
+          }}
+        />
+      )}
 
       {pendingSlot && selectedChair && (
         <AppointmentFormModal

@@ -1,6 +1,8 @@
 import { api } from './client';
 import type { Patient } from './patients';
 
+export type AppointmentStatus = 'agendada' | 'llego' | 'en_atencion' | 'finalizada' | 'cancelada';
+
 export type Appointment = {
   id: string;
   chairId: string;
@@ -11,10 +13,17 @@ export type Appointment = {
   notes: string | null;
   status: string;
   type: string;
+  arrivedAt: string | null;
+  attentionStartedAt: string | null;
+  attentionEndedAt: string | null;
+  motivoUrgencia: string | null;
+  triageLevel: string | null;
+  receivedByUserId: string | null;
   createdAt: string;
   updatedAt: string;
   patient: Pick<Patient, 'id' | 'rut' | 'firstName' | 'lastName' | 'phone'>;
   professional: { id: string; name: string } | null;
+  receivedBy: { id: string; name: string } | null;
   chair: { id: string; number: number; name: string | null } | null;
 };
 
@@ -26,6 +35,16 @@ export type AppointmentInput = {
   endAt: string;
   notes?: string;
   type?: string;
+};
+
+export type TriageLevel = 'leve' | 'moderada' | 'grave';
+
+export type UrgencyAppointmentInput = {
+  patientId: string;
+  professionalId?: string;
+  motivoUrgencia: string;
+  triageLevel?: TriageLevel;
+  durationMinutes?: number;
 };
 
 export async function fetchAppointments(date: string, options?: { mine?: boolean }) {
@@ -54,6 +73,26 @@ export async function createAppointment(input: AppointmentInput) {
   return data.appointment;
 }
 
+export async function createUrgencyAppointment(input: UrgencyAppointmentInput) {
+  const { data } = await api.post<{ appointment: Appointment }>('/appointments/urgencia', input);
+  return data.appointment;
+}
+
 export async function deleteAppointment(id: string) {
   await api.delete(`/appointments/${id}`);
+}
+
+export async function markAppointmentArrival(id: string) {
+  const { data } = await api.patch<{ appointment: Appointment }>(`/appointments/${id}/arrival`);
+  return data.appointment;
+}
+
+export async function startAppointmentAttention(id: string) {
+  const { data } = await api.patch<{ appointment: Appointment }>(`/appointments/${id}/start-attention`);
+  return data.appointment;
+}
+
+export async function finishAppointmentAttention(id: string) {
+  const { data } = await api.patch<{ appointment: Appointment }>(`/appointments/${id}/finish`);
+  return data.appointment;
 }
