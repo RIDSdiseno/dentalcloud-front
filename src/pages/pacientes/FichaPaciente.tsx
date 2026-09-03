@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { fetchPatient, uploadPatientPhoto, type Patient } from '../../api/patients';
+import { fetchPatient, updatePatient, uploadPatientPhoto, uploadMotivoConsultaAudio, type Patient } from '../../api/patients';
 import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
 import { fetchPatientBalance } from '../../api/ledger';
+import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
 import { getErrorMessage } from '../../api/client';
 import { formatRut } from '../../utils/rut';
 import { formatLongDate, formatTime } from '../agenda/dateUtils';
@@ -22,8 +23,10 @@ import {
   EditIcon,
   FolderIcon,
   IdBadgeIcon,
+  LockIcon,
   MailIcon,
   MapPinIcon,
+  MicIcon,
   PhoneIcon,
   PlusIcon,
   ReceiptIcon,
@@ -149,6 +152,220 @@ function GlanceCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+const VOICE_RECORDING_CONSENT_CODE = 'grabacion_voz';
+
+function MotivoConsultaCard({
+  patient,
+  onUpdate,
+  onGoToConsents,
+}: {
+  patient: Patient;
+  onUpdate: (patient: Patient) => void;
+  onGoToConsents: () => void;
+}) {
+  const [draft, setDraft] = useState(patient.motivoConsulta ?? '');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentSigned, setConsentSigned] = useState(false);
+
+  const [recording, setRecording] = useState(false);
+  const [recordError, setRecordError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const timerRef = useRef<number | null>(null);
+  const startedAtRef = useRef(0);
+
+  useEffect(() => {
+    setDraft(patient.motivoConsulta ?? '');
+  }, [patient.id, patient.motivoConsulta]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkConsent() {
+      try {
+        const types = await fetchConsentTypes();
+        const voiceType = types.find((t) => t.code === VOICE_RECORDING_CONSENT_CODE);
+        if (!voiceType) {
+          if (!cancelled) setConsentSigned(false);
+          return;
+        }
+        const consents = await fetchPatientConsents(patient.id);
+        const signed = consents.some((c) => c.consentTypeId === voiceType.id && c.status === 'firmado');
+        if (!cancelled) setConsentSigned(signed);
+      } catch {
+        if (!cancelled) setConsentSigned(false);
+      } finally {
+        if (!cancelled) setConsentChecked(true);
+      }
+    }
+    checkConsent();
+    return () => {
+      cancelled = true;
+    };
+  }, [patient.id]);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) window.clearInterval(timerRef.current);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    };
+  }, []);
+
+  async function handleSaveMotivo() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const updated = await updatePatient(patient.id, { motivoConsulta: draft });
+      onUpdate(updated);
+    } catch (err) {
+      setSaveError(getErrorMessage(err, 'No se pudo guardar el motivo de consulta'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function formatElapsed(ms: number) {
+    const totalSec = Math.floor(ms / 1000);
+    const m = String(Math.floor(totalSec / 60)).padStart(2, '0');
+    const s = String(totalSec % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  async function handleRecordingStopped() {
+    const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+    if (blob.size === 0) return;
+    setUploading(true);
+    setRecordError(null);
+    try {
+      const updated = await uploadMotivoConsultaAudio(patient.id, blob);
+      onUpdate(updated);
+    } catch (err) {
+      setRecordError(getErrorMessage(err, 'No se pudo guardar la grabación'));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function startRecording() {
+    setRecordError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = handleRecordingStopped;
+      recorder.start();
+      setRecording(true);
+      startedAtRef.current = Date.now();
+      setElapsedMs(0);
+      timerRef.current = window.setInterval(() => {
+        setElapsedMs(Date.now() - startedAtRef.current);
+      }, 250);
+    } catch {
+      setRecordError('No se pudo acceder al micrófono. Revisa los permisos del navegador.');
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    if (timerRef.current) window.clearInterval(timerRef.current);
+    setRecording(false);
+  }
+
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <MicIcon className="h-4 w-4 text-brand-500" />
+        Motivo de consulta
+      </h2>
+      <p className="mb-4 text-xs text-slate-500">Debe completarlo el profesional durante la atención — no la secretaria.</p>
+
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        rows={3}
+        placeholder="Ej: paciente refiere querer un aumento leve de volumen labial..."
+        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+      />
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSaveMotivo}
+          disabled={saving || draft === (patient.motivoConsulta ?? '')}
+          className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
+        >
+          {saving ? 'Guardando...' : 'Guardar'}
+        </button>
+        {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+      </div>
+
+      <div className="mt-5 border-t border-slate-100 pt-5">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Grabación de respaldo</h3>
+
+        {!consentChecked ? (
+          <p className="text-xs text-slate-400">Verificando consentimiento...</p>
+        ) : !consentSigned ? (
+          <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+            <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="text-xs text-amber-800">
+              <p className="font-semibold">
+                El paciente debe firmar el consentimiento de grabación de voz antes de poder grabar.
+              </p>
+              <button type="button" onClick={onGoToConsents} className="mt-1.5 font-semibold underline">
+                Ir a Consentimientos
+              </button>
+            </div>
+          </div>
+        ) : patient.motivoConsultaAudioUrl ? (
+          <div className="flex flex-col gap-2">
+            <audio controls src={patient.motivoConsultaAudioUrl} className="h-9 w-full max-w-sm" />
+            <button
+              type="button"
+              onClick={startRecording}
+              disabled={uploading}
+              className="w-fit rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+            >
+              Grabar de nuevo
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={recording ? stopRecording : startRecording}
+              disabled={uploading}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40 ${
+                recording ? 'bg-red-600' : 'bg-red-500 hover:bg-red-600'
+              }`}
+              aria-label={recording ? 'Detener grabación' : 'Iniciar grabación'}
+            >
+              {recording ? <span className="h-3.5 w-3.5 rounded-sm bg-white" /> : <MicIcon className="h-5 w-5" />}
+            </button>
+            <div className="text-xs text-slate-500">
+              {uploading
+                ? 'Guardando grabación...'
+                : recording
+                  ? `Grabando... ${formatElapsed(elapsedMs)}`
+                  : 'Toca para grabar el motivo de consulta'}
+            </div>
+          </div>
+        )}
+        {recordError && <p className="mt-2 text-xs text-red-600">{recordError}</p>}
+      </div>
     </div>
   );
 }
@@ -505,6 +722,12 @@ export default function FichaPaciente() {
               />
             </div>
           </div>
+
+          <MotivoConsultaCard
+            patient={patient}
+            onUpdate={setPatient}
+            onGoToConsents={() => setActiveTab('consentimientos')}
+          />
 
           <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">

@@ -32,6 +32,8 @@ export type Patient = {
   bloodType: string | null;
   tags: string[];
   photoUrl: string | null;
+  motivoConsulta: string | null;
+  motivoConsultaAudioUrl: string | null;
   createdAt: string;
   updatedAt: string;
   // Snapshot del consentimiento de protección de datos, derivado de la nueva
@@ -75,6 +77,7 @@ export type PatientInput = {
   healthInsuranceDetail?: string;
   bloodType?: string;
   tags?: string[];
+  motivoConsulta?: string;
 };
 
 export async function fetchPatients(search?: string) {
@@ -103,6 +106,15 @@ export async function uploadPatientPhoto(id: string, photo: File) {
   const formData = new FormData();
   formData.append('photo', photo);
   const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}/photo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.patient;
+}
+
+export async function uploadMotivoConsultaAudio(id: string, audio: Blob) {
+  const formData = new FormData();
+  formData.append('audio', audio, 'motivo-consulta.webm');
+  const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}/motivo-consulta-audio`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data.patient;
