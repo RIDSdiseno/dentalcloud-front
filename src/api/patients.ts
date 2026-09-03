@@ -34,6 +34,20 @@ export type Patient = {
   photoUrl: string | null;
   motivoConsulta: string | null;
   motivoConsultaAudioUrl: string | null;
+  expectativasPaciente: string | null;
+  optimoTratamiento: string | null;
+  examSkinType: string | null;
+  examFitzpatrick: string | null;
+  examWrinkles: string | null;
+  examFlaccidity: string | null;
+  examVolume: string | null;
+  examAsymmetries: boolean | null;
+  examAsymmetryNotes: string | null;
+  examDiagnosis: string | null;
+  examPhotoFrontalUrl: string | null;
+  examPhotoPerfilDerechoUrl: string | null;
+  examPhoto45DerechaUrl: string | null;
+  examPhoto45IzquierdaUrl: string | null;
   createdAt: string;
   updatedAt: string;
   // Snapshot del consentimiento de protección de datos, derivado de la nueva
@@ -78,7 +92,19 @@ export type PatientInput = {
   bloodType?: string;
   tags?: string[];
   motivoConsulta?: string;
+  expectativasPaciente?: string;
+  optimoTratamiento?: string;
+  examSkinType?: string;
+  examFitzpatrick?: string;
+  examWrinkles?: string;
+  examFlaccidity?: string;
+  examVolume?: string;
+  examAsymmetries?: boolean | null;
+  examAsymmetryNotes?: string;
+  examDiagnosis?: string;
 };
+
+export type ExamPhotoSlot = 'frontal' | 'perfilDerecho' | '45derecha' | '45izquierda';
 
 export async function fetchPatients(search?: string) {
   const { data } = await api.get<{ patients: Patient[] }>('/patients', {
@@ -115,6 +141,15 @@ export async function uploadMotivoConsultaAudio(id: string, audio: Blob) {
   const formData = new FormData();
   formData.append('audio', audio, 'motivo-consulta.webm');
   const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}/motivo-consulta-audio`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.patient;
+}
+
+export async function uploadExamPhoto(id: string, slot: ExamPhotoSlot, photo: File) {
+  const formData = new FormData();
+  formData.append('photo', photo);
+  const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}/exam-photo/${slot}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data.patient;

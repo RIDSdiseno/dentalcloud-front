@@ -9,6 +9,7 @@ import Pacientes from './pages/pacientes/Pacientes';
 import FichaPaciente from './pages/pacientes/FichaPaciente';
 import Profesionales from './pages/profesionales/Profesionales';
 import Catalogo from './pages/catalogo/Catalogo';
+import Configuracion from './pages/configuracion/Configuracion';
 import ConsentimientoPublico from './pages/consentimiento/ConsentimientoPublico';
 import Clinicas from './pages/superadmin/Clinicas';
 import ClinicaDetail from './pages/superadmin/ClinicaDetail';
@@ -35,6 +36,7 @@ function App() {
           <Route element={<AdminRoute />}>
             <Route path="/profesionales" element={<Profesionales />} />
             <Route path="/catalogo" element={<Catalogo />} />
+            <Route path="/configuracion" element={<Configuracion />} />
           </Route>
           <Route element={<SuperAdminRoute />}>
             <Route path="/admin/clinicas" element={<Clinicas />} />

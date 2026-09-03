@@ -10,6 +10,7 @@ import {
   ClipboardIcon,
   CloseIcon,
   FolderIcon,
+  GearIcon,
   IdBadgeIcon,
   ReceiptIcon,
   ShieldIcon,
@@ -45,6 +46,7 @@ const NAV_ITEMS: (NavItem & { moduleKey?: NavModuleKey })[] = [
   { to: '/pacientes', label: 'Pacientes', icon: UsersIcon, moduleKey: 'pacientes' },
   { to: '/profesionales', label: 'Profesionales', icon: IdBadgeIcon, adminOnly: true },
   { to: '/catalogo', label: 'Catálogo', icon: ClipboardIcon, adminOnly: true },
+  { to: '/configuracion', label: 'Configuración', icon: GearIcon, adminOnly: true },
   { to: '/terminos', label: 'Términos y políticas', icon: ShieldIcon },
 ];
 

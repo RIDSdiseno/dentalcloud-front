@@ -146,6 +146,18 @@ export function LockIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function GearIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M12 4v2M12 18v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4 12h2M18 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function NewsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>

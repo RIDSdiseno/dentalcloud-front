@@ -54,6 +54,75 @@ function productExpiryStatus(item: TreatmentItem): { status: 'expired' | 'soon';
   return null;
 }
 
+type Tercio = 'superior' | 'medio' | 'inferior';
+const TERCIO_LABEL: Record<Tercio, string> = { superior: 'Tercio Superior', medio: 'Tercio Medio', inferior: 'Tercio Inferior' };
+const ZONE_TO_TERCIO: Record<FacialZoneKey, Tercio> = {
+  frente: 'superior',
+  entrecejo: 'superior',
+  sienes: 'superior',
+  parpados: 'superior',
+  patas_gallo: 'superior',
+  ojeras: 'medio',
+  pomulos: 'medio',
+  nariz: 'medio',
+  nasogenianos: 'medio',
+  codigo_barras: 'medio',
+  labios: 'inferior',
+  menton: 'inferior',
+  mandibula: 'inferior',
+  cuello: 'inferior',
+};
+
+const LABEL_TO_ZONE_KEY: Record<string, FacialZoneKey> = Object.fromEntries(
+  FACIAL_ZONES.map((zone) => [FACIAL_ZONE_LABELS[zone], zone])
+) as Record<string, FacialZoneKey>;
+
+// Vista de solo lectura que agrupa los ítems ya cargados (por su zona) en los
+// 3 tercios faciales clásicos — no cambia cómo se cargan los procedimientos,
+// solo los reordena para esta tabla de resumen (ver reunión demo 2/9).
+function PlanPorTerciosSummary({ items }: { items: TreatmentItem[] }) {
+  const groups: Record<Tercio, TreatmentItem[]> = { superior: [], medio: [], inferior: [] };
+  for (const item of items) {
+    if (!item.toothNumber) continue;
+    for (const label of item.toothNumber.split(',').map((l) => l.trim())) {
+      const zoneKey = LABEL_TO_ZONE_KEY[label];
+      const tercio = zoneKey ? ZONE_TO_TERCIO[zoneKey] : undefined;
+      if (tercio) groups[tercio].push(item);
+    }
+  }
+
+  const hasAny = groups.superior.length + groups.medio.length + groups.inferior.length > 0;
+  if (!hasAny) return null;
+
+  return (
+    <div className="mt-4 border-t border-slate-100 pt-4">
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Plan por tercios faciales</h4>
+      <div className="overflow-hidden rounded-lg border border-slate-200">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-slate-800 text-white">
+              <th className="px-3 py-2 text-left font-semibold">Zona</th>
+              <th className="px-3 py-2 text-left font-semibold">Productos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(['superior', 'medio', 'inferior'] as Tercio[]).map((tercio, idx) => (
+              <tr key={tercio} className={idx % 2 === 1 ? 'bg-slate-50' : undefined}>
+                <td className="px-3 py-2 align-top font-semibold text-slate-700">{TERCIO_LABEL[tercio]}</td>
+                <td className="px-3 py-2 text-slate-600">
+                  {groups[tercio].length > 0
+                    ? Array.from(new Set(groups[tercio].map((i) => i.description))).join(' · ')
+                    : 'Sin diagnóstico'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function PlantillaFotografica({
   plan,
   onUpdated,
@@ -855,6 +924,8 @@ function PlanCard({
               </div>
             ))}
           </div>
+
+          {isEstetica && <PlanPorTerciosSummary items={plan.items} />}
 
           {isEstetica && (
             <div className="mt-4 border-t border-slate-100 pt-4">
