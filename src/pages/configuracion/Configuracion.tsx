@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FormatosPanel } from './FormatosPanel';
+import { PagosPanel } from './PagosPanel';
 
 const SECTIONS = [
   { key: 'compania', label: 'Compañía' },
@@ -46,6 +47,8 @@ export default function Configuracion() {
         <div>
           {section === 'formatos' ? (
             <FormatosPanel />
+          ) : section === 'pagos' ? (
+            <PagosPanel />
           ) : (
             <StubSection label={SECTIONS.find((s) => s.key === section)!.label} />
           )}
