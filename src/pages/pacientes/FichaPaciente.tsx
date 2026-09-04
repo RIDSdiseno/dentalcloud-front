@@ -490,6 +490,7 @@ export default function FichaPaciente() {
   const { user } = useAuth();
   const visibleTabs = TABS.filter((tab) => {
     if (tab.key === 'rx') return user?.rxEnabled !== false && user?.permissions?.rx !== false;
+    if (tab.key === 'examen') return user?.clinicaTipo === 'estetica' || user?.clinicaTipo === 'ambas';
     const moduleKey = TAB_MODULE_KEYS[tab.key];
     if (!moduleKey) return true;
     return user?.clinicaModules?.[moduleKey] !== false && user?.permissions?.[moduleKey] !== false;
