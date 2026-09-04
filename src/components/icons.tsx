@@ -146,6 +146,16 @@ export function LockIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function CashIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <rect x="2" y="6" width="20" height="12" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 9v0M18 15v0" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function GearIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>

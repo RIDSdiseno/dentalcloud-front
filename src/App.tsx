@@ -10,6 +10,7 @@ import FichaPaciente from './pages/pacientes/FichaPaciente';
 import Profesionales from './pages/profesionales/Profesionales';
 import Catalogo from './pages/catalogo/Catalogo';
 import Configuracion from './pages/configuracion/Configuracion';
+import PagosConsulta from './pages/pagos/PagosConsulta';
 import ConsentimientoPublico from './pages/consentimiento/ConsentimientoPublico';
 import Clinicas from './pages/superadmin/Clinicas';
 import ClinicaDetail from './pages/superadmin/ClinicaDetail';
@@ -32,6 +33,7 @@ function App() {
           <Route path="/agenda/diaria" element={<AgendaDiaria />} />
           <Route path="/pacientes" element={<Pacientes />} />
           <Route path="/pacientes/:id" element={<FichaPaciente />} />
+          <Route path="/pagos-consulta" element={<PagosConsulta />} />
           <Route path="/terminos" element={<ComingSoon title="Términos y políticas" />} />
           <Route element={<AdminRoute />}>
             <Route path="/profesionales" element={<Profesionales />} />

@@ -5,6 +5,7 @@ import { COUNTRIES } from '../../data/countries';
 import { ALLERGY_OPTIONS, type AllergyKey } from '../../data/allergies';
 import { getErrorMessage } from '../../api/client';
 import { createPatient, updatePatient, uploadPatientPhoto, type Patient } from '../../api/patients';
+import { findConsultationPaymentByRut } from '../../api/consultationPayments';
 import { formatRut, formatRutInput, isValidRut } from '../../utils/rut';
 import { CameraIcon } from '../../components/icons';
 
@@ -63,6 +64,24 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const rutIsValid = rut.trim() === '' ? true : isValidRut(rut);
+
+  // Si el RUT ya pagó su consulta (apartado "Pagos de Consulta"), se
+  // autocompletan nombre y correo — solo al crear (no editar), y solo si
+  // esos campos siguen vacíos, para no pisar algo que ya se escribió.
+  async function handleRutBlur() {
+    setRutTouched(true);
+    if (isEditing || !isValidRut(rut) || (firstName.trim() && lastName.trim())) return;
+    try {
+      const payment = await findConsultationPaymentByRut(rut);
+      if (payment) {
+        if (!firstName.trim()) setFirstName(payment.firstName);
+        if (!lastName.trim()) setLastName(payment.lastName);
+        if (!email.trim() && payment.email) setEmail(payment.email);
+      }
+    } catch {
+      // Best-effort: si falla la búsqueda, el formulario sigue igual que antes.
+    }
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -181,7 +200,7 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
             id="rut"
             value={rut}
             onChange={(e) => setRut(formatRutInput(e.target.value))}
-            onBlur={() => setRutTouched(true)}
+            onBlur={handleRutBlur}
             placeholder="12.345.678-9"
             inputMode="text"
             maxLength={12}

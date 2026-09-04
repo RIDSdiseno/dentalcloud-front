@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   ActivityIcon,
   CalendarIcon,
+  CashIcon,
   ChatIcon,
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -44,6 +45,7 @@ const NAV_ITEMS: (NavItem & { moduleKey?: NavModuleKey })[] = [
     ],
   },
   { to: '/pacientes', label: 'Pacientes', icon: UsersIcon, moduleKey: 'pacientes' },
+  { to: '/pagos-consulta', label: 'Pagos de Consulta', icon: CashIcon },
   { to: '/profesionales', label: 'Profesionales', icon: IdBadgeIcon, adminOnly: true },
   { to: '/catalogo', label: 'Catálogo', icon: ClipboardIcon, adminOnly: true },
   { to: '/configuracion', label: 'Configuración', icon: GearIcon, adminOnly: true },
