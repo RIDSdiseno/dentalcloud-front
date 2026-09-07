@@ -424,6 +424,46 @@ export default function ClinicaDetail() {
       </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800">Sucursales</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Sedes creadas para este holding, y si cada una está conectada con Dental-Demo o solo vive en DentalCloud.
+        </p>
+        {clinica.sucursales.length === 0 ? (
+          <p className="text-sm text-slate-400">Esta clínica todavía no tiene ninguna sucursal registrada.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {clinica.sucursales.map((sucursal) => (
+              <div
+                key={sucursal.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-700">{sucursal.name}</p>
+                  {sucursal.address && <p className="truncate text-xs text-slate-400">{sucursal.address}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  {!sucursal.active && (
+                    <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-300">
+                      Inactiva
+                    </span>
+                  )}
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
+                      sucursal.connectedToDentalDemo
+                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                        : 'bg-slate-100 text-slate-500 ring-slate-200'
+                    }`}
+                  >
+                    {sucursal.connectedToDentalDemo ? 'Conectada con Dental-Demo' : 'Solo local'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 className="mb-4 text-sm font-semibold text-slate-800">Módulos habilitados</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {clinica.tipo !== 'estetica' && (

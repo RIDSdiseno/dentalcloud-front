@@ -2,7 +2,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createClinica, type Clinica } from '../../api/clinicas';
-import { CameraIcon } from '../../components/icons';
+import { CameraIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { formatRutInput, isValidRut } from '../../utils/rut';
 import { PAIS_OPTIONS, TIPO_LABELS, Toggle } from './clinicaShared';
 
@@ -24,8 +24,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
   const [adminPassword, setAdminPassword] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const [sucursalName, setSucursalName] = useState('');
-  const [syncSucursalWithFederation, setSyncSucursalWithFederation] = useState(false);
+  const [sucursales, setSucursales] = useState<{ name: string; sync: boolean }[]>([{ name: '', sync: false }]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,6 +40,16 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
   }
 
   const rutIsValid = rut.trim() === '' ? true : isValidRut(rut);
+
+  function updateSucursal(index: number, patch: Partial<{ name: string; sync: boolean }>) {
+    setSucursales((current) => current.map((s, i) => (i === index ? { ...s, ...patch } : s)));
+  }
+  function addSucursalRow() {
+    setSucursales((current) => [...current, { name: '', sync: false }]);
+  }
+  function removeSucursalRow(index: number) {
+    setSucursales((current) => current.filter((_, i) => i !== index));
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,8 +72,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
         adminEmail,
         adminPassword,
         logo,
-        sucursalName: sucursalName.trim() || undefined,
-        syncSucursalWithFederation: sucursalName.trim() ? syncSucursalWithFederation : undefined,
+        sucursales,
       });
       onCreated(clinica);
     } catch (err) {
@@ -175,42 +183,61 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
         </div>
 
         <div className="border-t border-slate-100 pt-4">
-          <p className="mb-3 text-sm font-semibold text-slate-700">Sucursal inicial (opcional)</p>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-700">Sucursales iniciales (opcional)</p>
+            <button
+              type="button"
+              onClick={addSucursalRow}
+              className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              Agregar sucursal
+            </button>
+          </div>
+          <p className="mb-3 -mt-2 text-xs text-slate-400">
+            Si no agregas ninguna, la clínica se crea sin sucursales — se pueden agregar después desde Catálogo.
+          </p>
 
           <div className="flex flex-col gap-3">
-            <div>
-              <label htmlFor="sucursal-name" className="text-sm font-medium text-slate-700">
-                Nombre de la sucursal
-              </label>
-              <input
-                id="sucursal-name"
-                value={sucursalName}
-                onChange={(e) => setSucursalName(e.target.value)}
-                placeholder="Ej: Sede Providencia"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-              />
-              <p className="mt-1 text-xs text-slate-400">
-                Si la dejas vacía, la clínica se crea sin ninguna sucursal — se puede agregar después desde Catálogo.
-              </p>
-            </div>
-
-            {sucursalName.trim() && (
-              <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Conectar esta sucursal con Dental-Demo</p>
-                  <p className="text-xs text-slate-400">
-                    {syncSucursalWithFederation
-                      ? 'Se va a crear también como sede en Dental-Demo, dentro de la clínica espejo.'
-                      : 'Se crea solo en DentalCloud, sin ninguna sede equivalente en Dental-Demo.'}
-                  </p>
+            {sucursales.map((sucursal, index) => (
+              <div key={index} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={sucursal.name}
+                    onChange={(e) => updateSucursal(index, { name: e.target.value })}
+                    placeholder="Ej: Sede Providencia"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  />
+                  {sucursales.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeSucursalRow(index)}
+                      title="Quitar esta sucursal"
+                      className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
-                <Toggle
-                  checked={syncSucursalWithFederation}
-                  onChange={setSyncSucursalWithFederation}
-                  label="Conectar sucursal con Dental-Demo"
-                />
+                {sucursal.name.trim() && (
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700">Conectar con Dental-Demo</p>
+                      <p className="text-xs text-slate-400">
+                        {sucursal.sync
+                          ? 'Se crea también como sede en Dental-Demo, dentro de la clínica espejo.'
+                          : 'Se crea solo en DentalCloud, sin sede equivalente en Dental-Demo.'}
+                      </p>
+                    </div>
+                    <Toggle
+                      checked={sucursal.sync}
+                      onChange={(value) => updateSucursal(index, { sync: value })}
+                      label={`Conectar sucursal ${sucursal.name} con Dental-Demo`}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
         </div>
 

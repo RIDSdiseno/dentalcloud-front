@@ -14,6 +14,14 @@ export type ClinicaModules = Record<ClinicaModuleKey, boolean>;
 
 export type ConsentStats = { pendiente: number; firmado: number; rechazado: number };
 
+export type Sucursal = {
+  id: string;
+  name: string;
+  address: string | null;
+  active: boolean;
+  connectedToDentalDemo: boolean;
+};
+
 export type FederationSyncKey = 'patients' | 'appointments' | 'treatmentPlans' | 'users' | 'sucursales' | 'catalog';
 export type FederationSyncSettings = Record<FederationSyncKey, boolean>;
 
@@ -31,6 +39,7 @@ export type Clinica = {
   federationCatalogOnly: boolean;
   federationPaused: boolean;
   federationSyncSettings: FederationSyncSettings;
+  sucursales: Sucursal[];
   createdAt: string;
   patientsCount: number;
   usersCount: number;
@@ -209,8 +218,7 @@ export async function createClinica(input: {
   adminEmail: string;
   adminPassword: string;
   logo?: File | null;
-  sucursalName?: string;
-  syncSucursalWithFederation?: boolean;
+  sucursales?: { name: string; sync: boolean }[];
 }) {
   const formData = new FormData();
   formData.append('name', input.name);
@@ -221,9 +229,9 @@ export async function createClinica(input: {
   formData.append('adminEmail', input.adminEmail);
   formData.append('adminPassword', input.adminPassword);
   if (input.logo) formData.append('logo', input.logo);
-  if (input.sucursalName?.trim()) {
-    formData.append('sucursalName', input.sucursalName.trim());
-    formData.append('syncSucursalWithFederation', String(Boolean(input.syncSucursalWithFederation)));
+  const sucursales = (input.sucursales ?? []).filter((s) => s.name.trim().length > 0);
+  if (sucursales.length > 0) {
+    formData.append('sucursales', JSON.stringify(sucursales.map((s) => ({ name: s.name.trim(), sync: s.sync }))));
   }
 
   const { data } = await api.post<{ clinica: Clinica }>('/clinicas', formData, {
