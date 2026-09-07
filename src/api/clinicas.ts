@@ -209,6 +209,8 @@ export async function createClinica(input: {
   adminEmail: string;
   adminPassword: string;
   logo?: File | null;
+  sucursalName?: string;
+  syncSucursalWithFederation?: boolean;
 }) {
   const formData = new FormData();
   formData.append('name', input.name);
@@ -219,6 +221,10 @@ export async function createClinica(input: {
   formData.append('adminEmail', input.adminEmail);
   formData.append('adminPassword', input.adminPassword);
   if (input.logo) formData.append('logo', input.logo);
+  if (input.sucursalName?.trim()) {
+    formData.append('sucursalName', input.sucursalName.trim());
+    formData.append('syncSucursalWithFederation', String(Boolean(input.syncSucursalWithFederation)));
+  }
 
   const { data } = await api.post<{ clinica: Clinica }>('/clinicas', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },

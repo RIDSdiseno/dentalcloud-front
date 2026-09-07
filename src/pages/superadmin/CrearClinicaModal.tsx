@@ -4,7 +4,7 @@ import { getErrorMessage } from '../../api/client';
 import { createClinica, type Clinica } from '../../api/clinicas';
 import { CameraIcon } from '../../components/icons';
 import { formatRutInput, isValidRut } from '../../utils/rut';
-import { PAIS_OPTIONS, TIPO_LABELS } from './clinicaShared';
+import { PAIS_OPTIONS, TIPO_LABELS, Toggle } from './clinicaShared';
 
 type CrearClinicaModalProps = {
   onClose: () => void;
@@ -24,6 +24,8 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
   const [adminPassword, setAdminPassword] = useState('');
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [sucursalName, setSucursalName] = useState('');
+  const [syncSucursalWithFederation, setSyncSucursalWithFederation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +63,8 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
         adminEmail,
         adminPassword,
         logo,
+        sucursalName: sucursalName.trim() || undefined,
+        syncSucursalWithFederation: sucursalName.trim() ? syncSucursalWithFederation : undefined,
       });
       onCreated(clinica);
     } catch (err) {
@@ -167,6 +171,46 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        <div className="border-t border-slate-100 pt-4">
+          <p className="mb-3 text-sm font-semibold text-slate-700">Sucursal inicial (opcional)</p>
+
+          <div className="flex flex-col gap-3">
+            <div>
+              <label htmlFor="sucursal-name" className="text-sm font-medium text-slate-700">
+                Nombre de la sucursal
+              </label>
+              <input
+                id="sucursal-name"
+                value={sucursalName}
+                onChange={(e) => setSucursalName(e.target.value)}
+                placeholder="Ej: Sede Providencia"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+              <p className="mt-1 text-xs text-slate-400">
+                Si la dejas vacía, la clínica se crea sin ninguna sucursal — se puede agregar después desde Catálogo.
+              </p>
+            </div>
+
+            {sucursalName.trim() && (
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Conectar esta sucursal con Dental-Demo</p>
+                  <p className="text-xs text-slate-400">
+                    {syncSucursalWithFederation
+                      ? 'Se va a crear también como sede en Dental-Demo, dentro de la clínica espejo.'
+                      : 'Se crea solo en DentalCloud, sin ninguna sede equivalente en Dental-Demo.'}
+                  </p>
+                </div>
+                <Toggle
+                  checked={syncSucursalWithFederation}
+                  onChange={setSyncSucursalWithFederation}
+                  label="Conectar sucursal con Dental-Demo"
+                />
+              </div>
+            )}
           </div>
         </div>
 
