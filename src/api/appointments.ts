@@ -27,15 +27,26 @@ export type Appointment = {
   chair: { id: string; number: number; name: string | null } | null;
 };
 
-export type AppointmentInput = {
-  chairId: string;
-  patientId: string;
-  professionalId?: string;
-  startAt: string;
-  endAt: string;
-  notes?: string;
-  type?: string;
-};
+export type AppointmentInput =
+  | {
+      chairId: string;
+      patientId: string;
+      professionalId?: string;
+      startAt: string;
+      endAt: string;
+      notes?: string;
+      type?: string;
+      openSlotId?: undefined;
+    }
+  | {
+      // Nace de tomar una hora publicada ("Agregar horas disponibles") — el
+      // sillón/profesional/horario los define el backend a partir de la hora
+      // publicada, no se mandan acá.
+      openSlotId: string;
+      patientId: string;
+      notes?: string;
+      type?: string;
+    };
 
 export type TriageLevel = 'leve' | 'moderada' | 'grave';
 

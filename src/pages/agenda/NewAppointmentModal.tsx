@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createAppointment, type Appointment } from '../../api/appointments';
+import { fetchOpenSlots, type OpenSlot } from '../../api/openSlots';
 import { fetchChairs, type Chair } from '../../api/chairs';
 import { fetchUsers, type StaffUser } from '../../api/users';
 import type { Patient } from '../../api/patients';
@@ -44,6 +45,15 @@ export function NewAppointmentModal({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // "Seleccionar cita ya postulada": en vez de elegir sillón/hora/duración a
+  // mano, se elige entre las horas que un profesional ya dejó publicadas
+  // ("Agregar horas disponibles") — el sillón/profesional/horario quedan
+  // fijos, tal como se publicaron.
+  const [useOpenSlot, setUseOpenSlot] = useState(false);
+  const [openSlots, setOpenSlots] = useState<OpenSlot[]>([]);
+  const [selectedOpenSlot, setSelectedOpenSlot] = useState<OpenSlot | null>(null);
+  const [isLoadingOpenSlots, setIsLoadingOpenSlots] = useState(false);
+
   useEffect(() => {
     fetchChairs().then((data) => {
       setChairs(data);
@@ -54,32 +64,50 @@ export function NewAppointmentModal({
     }
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (!useOpenSlot) return;
+    setIsLoadingOpenSlots(true);
+    setSelectedOpenSlot(null);
+    fetchOpenSlots(date, professionalId || undefined)
+      .then(setOpenSlots)
+      .catch(() => setOpenSlots([]))
+      .finally(() => setIsLoadingOpenSlots(false));
+  }, [useOpenSlot, date, professionalId]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!selectedPatient) {
       setError('Selecciona o crea un paciente para agendar la cita');
       return;
     }
-    if (!chairId) {
+    if (useOpenSlot && !selectedOpenSlot) {
+      setError('Elige una hora ya postulada de la lista');
+      return;
+    }
+    if (!useOpenSlot && !chairId) {
       setError('Selecciona un sillón');
       return;
     }
 
-    const startAt = new Date(`${date}T${time}:00`);
-    const endAt = new Date(startAt.getTime() + duration * 60_000);
-
     setError(null);
     setIsSubmitting(true);
     try {
-      const appointment = await createAppointment({
-        chairId,
-        patientId: selectedPatient.id,
-        professionalId: isAdmin && professionalId ? professionalId : undefined,
-        startAt: startAt.toISOString(),
-        endAt: endAt.toISOString(),
-        notes: notes || undefined,
-        type: appointmentType,
-      });
+      const appointment = useOpenSlot
+        ? await createAppointment({
+            openSlotId: selectedOpenSlot!.id,
+            patientId: selectedPatient.id,
+            notes: notes || undefined,
+            type: appointmentType,
+          })
+        : await createAppointment({
+            chairId,
+            patientId: selectedPatient.id,
+            professionalId: isAdmin && professionalId ? professionalId : undefined,
+            startAt: new Date(`${date}T${time}:00`).toISOString(),
+            endAt: new Date(new Date(`${date}T${time}:00`).getTime() + duration * 60_000).toISOString(),
+            notes: notes || undefined,
+            type: appointmentType,
+          });
       onCreated(appointment);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo agendar la cita'));
@@ -93,72 +121,127 @@ export function NewAppointmentModal({
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <PatientPicker value={selectedPatient} onChange={setSelectedPatient} />
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="new-appt-date" className="text-sm font-medium text-slate-700">
-              Fecha
-            </label>
-            <input
-              id="new-appt-date"
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            />
-          </div>
-          <div>
-            <label htmlFor="new-appt-time" className="text-sm font-medium text-slate-700">
-              Hora
-            </label>
-            <input
-              id="new-appt-time"
-              type="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            />
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={() => setUseOpenSlot((v) => !v)}
+          className="w-fit text-xs font-semibold text-brand-600 hover:underline"
+        >
+          {useOpenSlot ? '← Elegir sillón y hora a mano' : 'Seleccionar cita ya postulada →'}
+        </button>
 
-        <div className="grid grid-cols-2 gap-4">
+        {!useOpenSlot && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="new-appt-date" className="text-sm font-medium text-slate-700">
+                  Fecha
+                </label>
+                <input
+                  id="new-appt-date"
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                />
+              </div>
+              <div>
+                <label htmlFor="new-appt-time" className="text-sm font-medium text-slate-700">
+                  Hora
+                </label>
+                <input
+                  id="new-appt-time"
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  required
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="new-appt-chair" className="text-sm font-medium text-slate-700">
+                  Sillón
+                </label>
+                <select
+                  id="new-appt-chair"
+                  value={chairId}
+                  onChange={(e) => setChairId(e.target.value)}
+                  required
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                >
+                  {chairs.map((chair) => (
+                    <option key={chair.id} value={chair.id}>
+                      {chair.name || `Sillón ${chair.number}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="new-appt-duration" className="text-sm font-medium text-slate-700">
+                  Duración
+                </label>
+                <select
+                  id="new-appt-duration"
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                >
+                  {DURATION_OPTIONS.map((minutes) => (
+                    <option key={minutes} value={minutes}>
+                      {minutes} minutos
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+
+        {useOpenSlot && (
           <div>
-            <label htmlFor="new-appt-chair" className="text-sm font-medium text-slate-700">
-              Sillón
-            </label>
-            <select
-              id="new-appt-chair"
-              value={chairId}
-              onChange={(e) => setChairId(e.target.value)}
-              required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            >
-              {chairs.map((chair) => (
-                <option key={chair.id} value={chair.id}>
-                  {chair.name || `Sillón ${chair.number}`}
-                </option>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label htmlFor="new-appt-open-slot-date" className="text-sm font-medium text-slate-700">
+                Fecha a revisar
+              </label>
+              <input
+                id="new-appt-open-slot-date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              />
+            </div>
+
+            {isLoadingOpenSlots && <p className="text-sm text-slate-400">Buscando horas publicadas...</p>}
+            {!isLoadingOpenSlots && openSlots.length === 0 && (
+              <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-400">
+                No hay horas publicadas ese día. Prueba otra fecha, o publica una desde "Agregar horas disponibles".
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              {openSlots.map((slot) => (
+                <button
+                  key={slot.id}
+                  type="button"
+                  onClick={() => setSelectedOpenSlot(slot)}
+                  className={`rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                    selectedOpenSlot?.id === slot.id
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  <p className="font-semibold">
+                    {new Date(slot.startAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                  <p className="text-xs text-slate-400">{slot.professional.name}</p>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
-          <div>
-            <label htmlFor="new-appt-duration" className="text-sm font-medium text-slate-700">
-              Duración
-            </label>
-            <select
-              id="new-appt-duration"
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
-            >
-              {DURATION_OPTIONS.map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {minutes} minutos
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        )}
 
         {isAdmin && (
           <div>
