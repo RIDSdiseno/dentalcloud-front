@@ -11,6 +11,10 @@ import { ConveniosTab } from './ConveniosTab';
 import { PrevisionesTab } from './PrevisionesTab';
 import { ClinicasTab } from './ClinicasTab';
 import { InventarioTab } from './InventarioTab';
+import { exportPrestacionesExcel } from '../../utils/exportPrestacionesExcel';
+import { importPrestacionesExcel, type ImportSummary } from '../../utils/importPrestacionesExcel';
+import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
+import { ImportSummaryModal } from '../../components/ImportSummaryModal';
 
 function zonesSummary(allowedZones: string[]): string {
   if (allowedZones.length === 0) return 'Todas las zonas';
@@ -44,6 +48,9 @@ export default function Catalogo() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Prestacion | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   useEffect(() => {
     fetchAllPrestaciones()
@@ -71,6 +78,36 @@ export default function Catalogo() {
       setError(getErrorMessage(err, 'No se pudo actualizar la prestación'));
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function handleExport() {
+    setIsExporting(true);
+    setError(null);
+    try {
+      await exportPrestacionesExcel(prestaciones, user?.clinicaName ?? undefined);
+    } catch {
+      setError('No se pudo generar el Excel del catálogo');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setIsImporting(true);
+    setError(null);
+    try {
+      const summary = await importPrestacionesExcel(file);
+      setImportSummary(summary);
+      if (summary.created > 0) {
+        fetchAllPrestaciones()
+          .then(setPrestaciones)
+          .catch((err) => setError(getErrorMessage(err, 'No se pudo recargar el catálogo')));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo leer el archivo Excel');
+    } finally {
+      setIsImporting(false);
     }
   }
 
@@ -119,17 +156,25 @@ export default function Catalogo() {
         <p className="text-sm text-slate-500">
           {prestaciones.length} {prestaciones.length === 1 ? 'prestación' : 'prestaciones'}
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null);
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Nueva prestación
-        </button>
+        <div className="flex items-center gap-2">
+          <ExcelImportExportBar
+            isExporting={isExporting}
+            isImporting={isImporting}
+            onExport={handleExport}
+            onImportFile={handleImportFile}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null);
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Nueva prestación
+          </button>
+        </div>
       </div>
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
@@ -259,6 +304,8 @@ export default function Catalogo() {
           onSaved={handleSaved}
         />
       )}
+
+      {importSummary && <ImportSummaryModal summary={importSummary} onClose={() => setImportSummary(null)} />}
         </>
       )}
     </div>

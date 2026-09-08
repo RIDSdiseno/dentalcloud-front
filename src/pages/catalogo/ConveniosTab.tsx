@@ -7,9 +7,16 @@ import {
   type Convenio,
 } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { PlusIcon, TrashIcon } from '../../components/icons';
+import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
+import { ImportSummaryModal } from '../../components/ImportSummaryModal';
+import { exportConveniosExcel } from '../../utils/exportConveniosExcel';
+import { importConveniosExcel } from '../../utils/importConveniosExcel';
+import type { ImportSummary } from '../../utils/importPrestacionesExcel';
 
 export function ConveniosTab() {
+  const { user } = useAuth();
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +25,9 @@ export function ConveniosTab() {
   const [newName, setNewName] = useState('');
   const [newDiscount, setNewDiscount] = useState('0');
   const [isCreating, setIsCreating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   useEffect(() => {
     fetchAllConvenios()
@@ -25,6 +35,36 @@ export function ConveniosTab() {
       .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar los convenios')))
       .finally(() => setIsLoading(false));
   }, []);
+
+  async function handleExport() {
+    setIsExporting(true);
+    setError(null);
+    try {
+      await exportConveniosExcel(convenios, user?.clinicaName ?? undefined);
+    } catch {
+      setError('No se pudo generar el Excel de convenios');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setIsImporting(true);
+    setError(null);
+    try {
+      const summary = await importConveniosExcel(file);
+      setImportSummary(summary);
+      if (summary.created > 0) {
+        fetchAllConvenios()
+          .then(setConvenios)
+          .catch((err) => setError(getErrorMessage(err, 'No se pudieron recargar los convenios')));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo leer el archivo Excel');
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   async function handleCreate() {
     if (!newName.trim()) return;
@@ -71,9 +111,17 @@ export function ConveniosTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-slate-500">
-        Los convenios definen un descuento aplicado automáticamente al valor de las prestaciones en un presupuesto.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-slate-500">
+          Los convenios definen un descuento aplicado automáticamente al valor de las prestaciones en un presupuesto.
+        </p>
+        <ExcelImportExportBar
+          isExporting={isExporting}
+          isImporting={isImporting}
+          onExport={handleExport}
+          onImportFile={handleImportFile}
+        />
+      </div>
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
@@ -175,6 +223,8 @@ export function ConveniosTab() {
           </table>
         )}
       </div>
+
+      {importSummary && <ImportSummaryModal summary={importSummary} onClose={() => setImportSummary(null)} />}
     </div>
   );
 }

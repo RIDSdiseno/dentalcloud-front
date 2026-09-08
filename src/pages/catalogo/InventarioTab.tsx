@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchSucursales, type Sucursal } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import {
   fetchInsumos,
   fetchAlertas,
@@ -14,6 +15,11 @@ import { formatCLP } from '../../utils/treatmentStatus';
 import { BoxIcon, PlusIcon, EditIcon, TrashIcon } from '../../components/icons';
 import { InsumoFormModal } from './InsumoFormModal';
 import { LotesModal } from './LotesModal';
+import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
+import { ImportSummaryModal } from '../../components/ImportSummaryModal';
+import { exportInsumosExcel } from '../../utils/exportInsumosExcel';
+import { importInsumosExcel } from '../../utils/importInsumosExcel';
+import type { ImportSummary } from '../../utils/importPrestacionesExcel';
 
 const STATUS_OPTIONS: { value: InventorySupplyStatus | ''; label: string }[] = [
   { value: '', label: 'Todos' },
@@ -38,6 +44,7 @@ const STATUS_LABEL: Record<InventorySupplyStatus, string> = {
 };
 
 export function InventarioTab() {
+  const { user } = useAuth();
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [insumos, setInsumos] = useState<InventorySupply[]>([]);
   const [alerts, setAlerts] = useState<InventoryAlerts | null>(null);
@@ -55,6 +62,9 @@ export function InventarioTab() {
   const [editing, setEditing] = useState<InventorySupply | null>(null);
   const [lotesFor, setLotesFor] = useState<InventorySupply | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   useEffect(() => {
     fetchSucursales()
@@ -70,7 +80,7 @@ export function InventarioTab() {
     return () => clearTimeout(handle);
   }, [searchInput]);
 
-  useEffect(() => {
+  function loadInsumos() {
     setIsLoading(true);
     setError(null);
     const filters = {
@@ -80,14 +90,45 @@ export function InventarioTab() {
       status: status || undefined,
       sucursalId: sucursalId || undefined,
     };
-    Promise.all([fetchInsumos(filters), fetchAlertas(sucursalId || undefined)])
+    return Promise.all([fetchInsumos(filters), fetchAlertas(sucursalId || undefined)])
       .then(([items, alertsData]) => {
         setInsumos(items);
         setAlerts(alertsData);
       })
       .catch((err) => setError(getErrorMessage(err, 'No se pudo cargar el inventario')))
       .finally(() => setIsLoading(false));
+  }
+
+  useEffect(() => {
+    loadInsumos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, category, supplier, status, sucursalId]);
+
+  async function handleExport() {
+    setIsExporting(true);
+    setError(null);
+    try {
+      await exportInsumosExcel(insumos, user?.clinicaName ?? undefined);
+    } catch {
+      setError('No se pudo generar el Excel del inventario');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setIsImporting(true);
+    setError(null);
+    try {
+      const summary = await importInsumosExcel(file, sucursales);
+      setImportSummary(summary);
+      if (summary.created > 0) loadInsumos();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo leer el archivo Excel');
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   function handleSaved(saved: InventorySupply) {
     setInsumos((prev) => {
@@ -121,17 +162,25 @@ export function InventarioTab() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-slate-500">Insumos, lotes y stock — administrado en Dental-Demo-Back.</p>
-        <button
-          type="button"
-          onClick={() => {
-            setEditing(null);
-            setShowForm(true);
-          }}
-          className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
-        >
-          <PlusIcon className="h-4 w-4" />
-          Nuevo insumo
-        </button>
+        <div className="flex items-center gap-2">
+          <ExcelImportExportBar
+            isExporting={isExporting}
+            isImporting={isImporting}
+            onExport={handleExport}
+            onImportFile={handleImportFile}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null);
+              setShowForm(true);
+            }}
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Nuevo insumo
+          </button>
+        </div>
       </div>
 
       {alerts && (
@@ -303,6 +352,8 @@ export function InventarioTab() {
       )}
 
       {lotesFor && <LotesModal supply={lotesFor} onClose={() => setLotesFor(null)} onSupplyChanged={handleSupplyPatched} />}
+
+      {importSummary && <ImportSummaryModal summary={importSummary} onClose={() => setImportSummary(null)} />}
     </div>
   );
 }

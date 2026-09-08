@@ -7,9 +7,16 @@ import {
   type Sucursal,
 } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { PlusIcon, TrashIcon } from '../../components/icons';
+import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
+import { ImportSummaryModal } from '../../components/ImportSummaryModal';
+import { exportSucursalesExcel } from '../../utils/exportSucursalesExcel';
+import { importSucursalesExcel } from '../../utils/importSucursalesExcel';
+import type { ImportSummary } from '../../utils/importPrestacionesExcel';
 
 export function ClinicasTab() {
+  const { user } = useAuth();
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +25,9 @@ export function ClinicasTab() {
   const [newName, setNewName] = useState('');
   const [newAddress, setNewAddress] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   useEffect(() => {
     fetchAllSucursales()
@@ -25,6 +35,36 @@ export function ClinicasTab() {
       .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar las clínicas')))
       .finally(() => setIsLoading(false));
   }, []);
+
+  async function handleExport() {
+    setIsExporting(true);
+    setError(null);
+    try {
+      await exportSucursalesExcel(sucursales, user?.clinicaName ?? undefined);
+    } catch {
+      setError('No se pudo generar el Excel de clínicas');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setIsImporting(true);
+    setError(null);
+    try {
+      const summary = await importSucursalesExcel(file);
+      setImportSummary(summary);
+      if (summary.created > 0) {
+        fetchAllSucursales()
+          .then(setSucursales)
+          .catch((err) => setError(getErrorMessage(err, 'No se pudieron recargar las clínicas')));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo leer el archivo Excel');
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   async function handleCreate() {
     if (!newName.trim()) return;
@@ -85,9 +125,17 @@ export function ClinicasTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-slate-500">
-        Las clínicas son las sedes físicas dentro de este holding. Cada presupuesto se asocia a una de ellas.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-slate-500">
+          Las clínicas son las sedes físicas dentro de este holding. Cada presupuesto se asocia a una de ellas.
+        </p>
+        <ExcelImportExportBar
+          isExporting={isExporting}
+          isImporting={isImporting}
+          onExport={handleExport}
+          onImportFile={handleImportFile}
+        />
+      </div>
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
@@ -178,6 +226,8 @@ export function ClinicasTab() {
           </table>
         )}
       </div>
+
+      {importSummary && <ImportSummaryModal summary={importSummary} onClose={() => setImportSummary(null)} />}
     </div>
   );
 }

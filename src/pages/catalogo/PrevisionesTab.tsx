@@ -7,9 +7,16 @@ import {
   type Prevision,
 } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { PlusIcon, TrashIcon } from '../../components/icons';
+import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
+import { ImportSummaryModal } from '../../components/ImportSummaryModal';
+import { exportPrevisionesExcel } from '../../utils/exportPrevisionesExcel';
+import { importPrevisionesExcel } from '../../utils/importPrevisionesExcel';
+import type { ImportSummary } from '../../utils/importPrestacionesExcel';
 
 export function PrevisionesTab() {
+  const { user } = useAuth();
   const [previsiones, setPrevisiones] = useState<Prevision[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +24,9 @@ export function PrevisionesTab() {
 
   const [newName, setNewName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   useEffect(() => {
     fetchAllPrevisiones()
@@ -24,6 +34,36 @@ export function PrevisionesTab() {
       .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar las previsiones')))
       .finally(() => setIsLoading(false));
   }, []);
+
+  async function handleExport() {
+    setIsExporting(true);
+    setError(null);
+    try {
+      await exportPrevisionesExcel(previsiones, user?.clinicaName ?? undefined);
+    } catch {
+      setError('No se pudo generar el Excel de previsiones');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setIsImporting(true);
+    setError(null);
+    try {
+      const summary = await importPrevisionesExcel(file);
+      setImportSummary(summary);
+      if (summary.created > 0) {
+        fetchAllPrevisiones()
+          .then(setPrevisiones)
+          .catch((err) => setError(getErrorMessage(err, 'No se pudieron recargar las previsiones')));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo leer el archivo Excel');
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   async function handleCreate() {
     if (!newName.trim()) return;
@@ -69,9 +109,17 @@ export function PrevisionesTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-slate-500">
-        Las previsiones son sólo informativas dentro del presupuesto (Fonasa, Isapre, Particular, etc.) — no aplican descuento.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-slate-500">
+          Las previsiones son sólo informativas dentro del presupuesto (Fonasa, Isapre, Particular, etc.) — no aplican descuento.
+        </p>
+        <ExcelImportExportBar
+          isExporting={isExporting}
+          isImporting={isImporting}
+          onExport={handleExport}
+          onImportFile={handleImportFile}
+        />
+      </div>
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
@@ -143,6 +191,8 @@ export function PrevisionesTab() {
           </table>
         )}
       </div>
+
+      {importSummary && <ImportSummaryModal summary={importSummary} onClose={() => setImportSummary(null)} />}
     </div>
   );
 }
