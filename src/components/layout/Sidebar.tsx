@@ -45,6 +45,7 @@ const NAV_ITEMS: (NavItem & { moduleKey?: NavModuleKey })[] = [
     ],
   },
   { to: '/pacientes', label: 'Pacientes', icon: UsersIcon, moduleKey: 'pacientes' },
+  { to: '/presupuestos', label: 'Presupuesto', icon: ReceiptIcon },
   { to: '/pagos-consulta', label: 'Pagos de Consulta', icon: CashIcon },
   { to: '/profesionales', label: 'Profesionales', icon: IdBadgeIcon, adminOnly: true },
   { to: '/catalogo', label: 'Catálogo', icon: ClipboardIcon, adminOnly: true },

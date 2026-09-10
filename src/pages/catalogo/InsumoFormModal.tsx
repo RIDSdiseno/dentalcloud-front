@@ -8,12 +8,19 @@ import {
   INVENTORY_CATEGORIES,
   INVENTORY_UNITS,
   CONSULTING_ROOMS,
+  SUPPLY_CLINICAL_AREAS,
+  SUPPLY_CLINICAL_AREA_LABELS,
   type InventorySupply,
+  type SupplyClinicalArea,
 } from '../../api/inventory';
 
 type InsumoFormModalProps = {
   insumo: InventorySupply | null;
   sucursales: Sucursal[];
+  // Tipo de la clínica: igual que en PrestacionFormModal, determina si hace
+  // falta preguntar el área clínica del insumo o si ya está implícita
+  // (clínicas puramente "dental" o "estetica").
+  clinicaTipo: string | null | undefined;
   onClose: () => void;
   onSaved: (insumo: InventorySupply) => void;
 };
@@ -36,11 +43,15 @@ function todayInputValue(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-export function InsumoFormModal({ insumo, sucursales, onClose, onSaved }: InsumoFormModalProps) {
+export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSaved }: InsumoFormModalProps) {
+  const showAreaPicker = clinicaTipo === 'ambas';
   const [name, setName] = useState(insumo?.name ?? '');
   const [sucursalId, setSucursalId] = useState(matchSucursalByName(sucursales, insumo?.location?.name));
   const [consultingRoom, setConsultingRoom] = useState(insumo?.consultingRoom ?? '');
   const [category, setCategory] = useState(insumo?.category ?? '');
+  const [clinicalArea, setClinicalArea] = useState<SupplyClinicalArea>(
+    insumo?.clinicalArea ?? (clinicaTipo === 'estetica' ? 'ESTHETIC' : 'DENTAL')
+  );
   const [supplier, setSupplier] = useState(insumo?.supplier ?? '');
   const [description, setDescription] = useState(insumo?.description ?? '');
   const [purchaseDate, setPurchaseDate] = useState(insumo?.purchaseDate ? insumo.purchaseDate.slice(0, 10) : todayInputValue());
@@ -108,6 +119,7 @@ export function InsumoFormModal({ insumo, sucursales, onClose, onSaved }: Insumo
         totalCost: totalCost ? Math.round(Number(totalCost)) : undefined,
         minimumStock: minimumStock ? Number(minimumStock) : undefined,
         consultingRoom: consultingRoom || null,
+        clinicalArea,
       };
       const saved = insumo ? await updateInsumo(insumo.id, payload) : await createInsumo(payload);
       onSaved(saved);
@@ -184,6 +196,22 @@ export function InsumoFormModal({ insumo, sucursales, onClose, onSaved }: Insumo
               ))}
             </select>
           </div>
+          {showAreaPicker && (
+            <div>
+              <label className="text-sm font-medium text-slate-700">Área clínica</label>
+              <select
+                value={clinicalArea}
+                onChange={(e) => setClinicalArea(e.target.value as SupplyClinicalArea)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              >
+                {SUPPLY_CLINICAL_AREAS.map((area) => (
+                  <option key={area} value={area}>
+                    {SUPPLY_CLINICAL_AREA_LABELS[area]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <div>

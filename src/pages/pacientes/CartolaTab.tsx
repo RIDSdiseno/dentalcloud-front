@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { getErrorMessage } from '../../api/client';
 import {
   fetchLedgerSummary,
@@ -173,23 +173,44 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                 </tr>
               )}
               {summary.plans.map((plan) => (
-                <tr key={plan.id}>
-                  <td className="px-4 py-2 font-medium text-slate-700">{plan.number}</td>
-                  <td className="px-4 py-2 text-slate-500">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</td>
-                  <td className="px-4 py-2 text-slate-500">{plan.professional ?? '—'}</td>
-                  <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.subtotal)}</td>
-                  <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.interes)}</td>
-                  <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.ajustes)}</td>
-                  <td className="px-4 py-2 text-right font-medium text-slate-700">{formatCLP(plan.total)}</td>
-                  <td className="px-4 py-2 text-right text-emerald-600">{formatCLP(plan.abonado)}</td>
-                  <td
-                    className={`px-4 py-2 text-right font-semibold ${
-                      plan.saldo > 0 ? 'text-amber-600' : 'text-emerald-600'
-                    }`}
-                  >
-                    {formatCLP(plan.saldo)}
-                  </td>
-                </tr>
+                <Fragment key={plan.id}>
+                  <tr>
+                    <td className="px-4 py-2 font-medium text-slate-700">{plan.number}</td>
+                    <td className="px-4 py-2 text-slate-500">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</td>
+                    <td className="px-4 py-2 text-slate-500">{plan.professional ?? '—'}</td>
+                    <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.subtotal)}</td>
+                    <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.interes)}</td>
+                    <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.ajustes)}</td>
+                    <td className="px-4 py-2 text-right font-medium text-slate-700">{formatCLP(plan.total)}</td>
+                    <td className="px-4 py-2 text-right text-emerald-600">{formatCLP(plan.abonado)}</td>
+                    <td
+                      className={`px-4 py-2 text-right font-semibold ${
+                        plan.saldo > 0 ? 'text-amber-600' : 'text-emerald-600'
+                      }`}
+                    >
+                      {formatCLP(plan.saldo)}
+                    </td>
+                  </tr>
+                  {plan.items.length > 0 && (
+                    <tr className="bg-slate-50/60">
+                      <td colSpan={9} className="px-4 pb-2.5 pt-0">
+                        <div className="flex flex-wrap gap-1.5">
+                          {plan.items.map((item, index) => (
+                            <span
+                              key={index}
+                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                item.completed ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-50 text-brand-700'
+                              }`}
+                            >
+                              {item.toothNumber ? `Pieza ${item.toothNumber} · ` : ''}
+                              {item.description}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
             {summary.plans.length > 0 && (

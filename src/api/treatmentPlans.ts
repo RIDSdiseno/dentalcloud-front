@@ -128,6 +128,27 @@ export async function fetchTreatmentPlans(patientId: string) {
   return data.plans;
 }
 
+// Fila liviana para el módulo "Presupuesto" de Administración — todos los
+// presupuestos de la clínica juntos, no solo los de un paciente.
+export type TreatmentPlanSummary = {
+  id: string;
+  number: number;
+  patientId: string;
+  name: string | null;
+  status: TreatmentStatus;
+  amount: number;
+  paymentMethod: string | null;
+  createdAt: string;
+  patient: { id: string; firstName: string; lastName: string; rut: string };
+  professional: { id: string; name: string } | null;
+  createdBy: { id: string; name: string } | null;
+};
+
+export async function fetchTreatmentPlansForClinic() {
+  const { data } = await api.get<{ plans: TreatmentPlanSummary[] }>('/treatment-plans/clinic');
+  return data.plans;
+}
+
 export async function createTreatmentPlan(input: TreatmentPlanInput) {
   const { data } = await api.post<{ plan: TreatmentPlan }>('/treatment-plans', input);
   return data.plan;

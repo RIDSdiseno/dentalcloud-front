@@ -16,6 +16,8 @@ export type InventoryLotSummary = {
   nextExpirationDate: string | null;
 };
 
+export type SupplyClinicalArea = 'DENTAL' | 'ESTHETIC' | 'BOTH';
+
 export type InventorySupply = {
   id: string;
   locationId: string | null;
@@ -23,6 +25,7 @@ export type InventorySupply = {
   category: string | null;
   supplier: string | null;
   consultingRoom: string | null;
+  clinicalArea: SupplyClinicalArea;
   description: string | null;
   purchaseDate: string | null;
   quantity: number | null;
@@ -103,6 +106,14 @@ export const INVENTORY_CATEGORIES = [
 
 export const INVENTORY_UNITS = ['unidad', 'caja', 'paquete', 'frasco', 'tubo', 'ml', 'kit'] as const;
 
+export const SUPPLY_CLINICAL_AREAS: SupplyClinicalArea[] = ['DENTAL', 'ESTHETIC', 'BOTH'];
+
+export const SUPPLY_CLINICAL_AREA_LABELS: Record<SupplyClinicalArea, string> = {
+  DENTAL: 'Dental',
+  ESTHETIC: 'Estética',
+  BOTH: 'Dental y estética',
+};
+
 export const CONSULTING_ROOMS = [
   'Consultorio 1',
   'Consultorio 2',
@@ -118,6 +129,7 @@ export type SupplyFilters = {
   category?: string;
   supplier?: string;
   status?: InventorySupplyStatus;
+  clinicalArea?: SupplyClinicalArea;
   sucursalId?: string;
   consultingRoom?: string;
 };
@@ -142,6 +154,7 @@ export type SupplyInput = {
   totalCost?: number;
   minimumStock?: number;
   consultingRoom?: string | null;
+  clinicalArea?: SupplyClinicalArea;
 };
 
 export async function createInsumo(input: SupplyInput) {

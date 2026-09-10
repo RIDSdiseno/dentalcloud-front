@@ -19,6 +19,12 @@ export type LedgerMovement = {
   registeredBy: { id: string; name: string };
 };
 
+export type PlanLedgerItem = {
+  toothNumber: string | null;
+  description: string;
+  completed: boolean;
+};
+
 export type PlanLedgerRow = {
   id: string;
   number: number;
@@ -31,6 +37,7 @@ export type PlanLedgerRow = {
   total: number;
   abonado: number;
   saldo: number;
+  items: PlanLedgerItem[];
 };
 
 export type LedgerRow = {

@@ -7,9 +7,12 @@ import {
   fetchAlertas,
   archiveInsumo,
   INVENTORY_CATEGORIES,
+  SUPPLY_CLINICAL_AREAS,
+  SUPPLY_CLINICAL_AREA_LABELS,
   type InventorySupply,
   type InventoryAlerts,
   type InventorySupplyStatus,
+  type SupplyClinicalArea,
 } from '../../api/inventory';
 import { formatCLP } from '../../utils/treatmentStatus';
 import { BoxIcon, PlusIcon, EditIcon, TrashIcon } from '../../components/icons';
@@ -45,6 +48,8 @@ const STATUS_LABEL: Record<InventorySupplyStatus, string> = {
 
 export function InventarioTab() {
   const { user } = useAuth();
+  const clinicaTipo = user?.clinicaTipo;
+  const showAreaColumn = clinicaTipo === 'ambas';
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [insumos, setInsumos] = useState<InventorySupply[]>([]);
   const [alerts, setAlerts] = useState<InventoryAlerts | null>(null);
@@ -56,6 +61,7 @@ export function InventarioTab() {
   const [category, setCategory] = useState('');
   const [supplier, setSupplier] = useState('');
   const [status, setStatus] = useState<InventorySupplyStatus | ''>('');
+  const [clinicalArea, setClinicalArea] = useState<SupplyClinicalArea | ''>('');
   const [sucursalId, setSucursalId] = useState('');
 
   const [showForm, setShowForm] = useState(false);
@@ -88,6 +94,7 @@ export function InventarioTab() {
       category: category || undefined,
       supplier: supplier || undefined,
       status: status || undefined,
+      clinicalArea: clinicalArea || undefined,
       sucursalId: sucursalId || undefined,
     };
     return Promise.all([fetchInsumos(filters), fetchAlertas(sucursalId || undefined)])
@@ -102,7 +109,7 @@ export function InventarioTab() {
   useEffect(() => {
     loadInsumos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, category, supplier, status, sucursalId]);
+  }, [search, category, supplier, status, clinicalArea, sucursalId]);
 
   async function handleExport() {
     setIsExporting(true);
@@ -223,6 +230,20 @@ export function InventarioTab() {
             </option>
           ))}
         </select>
+        {showAreaColumn && (
+          <select
+            value={clinicalArea}
+            onChange={(e) => setClinicalArea(e.target.value as SupplyClinicalArea | '')}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          >
+            <option value="">Área clínica</option>
+            {SUPPLY_CLINICAL_AREAS.map((area) => (
+              <option key={area} value={area}>
+                {SUPPLY_CLINICAL_AREA_LABELS[area]}
+              </option>
+            ))}
+          </select>
+        )}
         <input
           value={supplier}
           onChange={(e) => setSupplier(e.target.value)}
@@ -274,6 +295,7 @@ export function InventarioTab() {
               <tr>
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Categoría</th>
+                {showAreaColumn && <th className="px-4 py-3">Área clínica</th>}
                 <th className="px-4 py-3">Sede</th>
                 <th className="px-4 py-3">Proveedor</th>
                 <th className="px-4 py-3">Stock</th>
@@ -287,6 +309,13 @@ export function InventarioTab() {
                 <tr key={insumo.id} className={`hover:bg-slate-50 ${insumo.status === 'ARCHIVED' ? 'opacity-50' : ''}`}>
                   <td className="px-4 py-3 font-medium text-slate-800">{insumo.name}</td>
                   <td className="px-4 py-3 text-slate-500">{insumo.category ?? '—'}</td>
+                  {showAreaColumn && (
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                        {SUPPLY_CLINICAL_AREA_LABELS[insumo.clinicalArea]}
+                      </span>
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-slate-500">{insumo.location?.name ?? '—'}</td>
                   <td className="px-4 py-3 text-slate-500">{insumo.supplier ?? '—'}</td>
                   <td className="px-4 py-3 text-slate-700">
@@ -343,6 +372,7 @@ export function InventarioTab() {
         <InsumoFormModal
           insumo={editing}
           sucursales={sucursales}
+          clinicaTipo={clinicaTipo}
           onClose={() => {
             setShowForm(false);
             setEditing(null);
