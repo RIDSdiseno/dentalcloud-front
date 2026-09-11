@@ -27,15 +27,22 @@ function getFaceDetector(): Promise<FaceDetector> {
       );
       const modelAssetPath =
         'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
+      // minDetectionConfidence alto (default de MediaPipe es 0.5) — el
+      // modelo "short_range" es rápido pero muy propenso a falsos positivos
+      // con cualquier patrón ovalado con manchas (una pelota con una cara
+      // dibujada, por ejemplo). Se exige alta confianza para no marcar
+      // "posición correcta" sobre algo que no es una cara real.
       try {
         return await FD.createFromOptions(vision, {
           baseOptions: { modelAssetPath, delegate: 'GPU' },
           runningMode: 'VIDEO',
+          minDetectionConfidence: 0.75,
         });
       } catch {
         return await FD.createFromOptions(vision, {
           baseOptions: { modelAssetPath, delegate: 'CPU' },
           runningMode: 'VIDEO',
+          minDetectionConfidence: 0.75,
         });
       }
     })();
@@ -159,30 +166,44 @@ export function CameraCaptureModal({
         if (cancelled) return;
         setAiStatus('active');
 
+        // Exige varios cuadros seguidos bien encuadrados antes de marcar
+        // "posición correcta" — un solo cuadro con una lectura ruidosa (o un
+        // falso positivo puntual) ya no alcanza para que se ponga verde, y
+        // cualquier cuadro malo reinicia el contador de inmediato.
+        const REQUIRED_GOOD_FRAMES = 10;
+        let goodFrameStreak = 0;
+        const MIN_SCORE = 0.75;
+
         const detectLoop = () => {
           const video = videoRef.current;
           if (video && video.readyState >= 2) {
             try {
               const result = detector.detectForVideo(video, performance.now());
               const detection = result.detections[0];
-              if (detection) {
+              const score = detection?.categories?.[0]?.score ?? 0;
+              if (detection && score >= MIN_SCORE) {
                 setFaceDetected(true);
                 const box = detection.boundingBox;
+                let frameOk = false;
                 if (box) {
                   const cx = (box.originX + box.width / 2) / video.videoWidth;
                   const cy = (box.originY + box.height / 2) / video.videoHeight;
                   const sizeRatio = box.height / video.videoHeight;
-                  const centered = cx > 0.3 && cx < 0.7 && cy > 0.2 && cy < 0.75;
-                  const wellSized = sizeRatio > 0.22 && sizeRatio < 0.75;
-                  setAligned(centered && wellSized);
+                  const centered = cx > 0.35 && cx < 0.65 && cy > 0.25 && cy < 0.7;
+                  const wellSized = sizeRatio > 0.28 && sizeRatio < 0.65;
+                  frameOk = centered && wellSized;
                 }
+                goodFrameStreak = frameOk ? goodFrameStreak + 1 : 0;
+                setAligned(goodFrameStreak >= REQUIRED_GOOD_FRAMES);
               } else {
+                goodFrameStreak = 0;
                 setFaceDetected(false);
                 setAligned(false);
               }
             } catch {
               // Best-effort: si un frame puntual falla la detección, no
               // interrumpe el loop — solo se pierde ese cuadro.
+              goodFrameStreak = 0;
             }
           }
           rafRef.current = requestAnimationFrame(detectLoop);
