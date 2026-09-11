@@ -20,6 +20,7 @@ import { TREATMENT_STATUS_LABELS, TREATMENT_STATUS_CLASSES, formatCLP } from '..
 import {
   ActivityIcon,
   CalendarIcon,
+  CameraIcon,
   ChevronDownIcon,
   ClipboardIcon,
   DownloadIcon,
@@ -34,6 +35,7 @@ import { Modal } from '../../components/Modal';
 import { ReasonModal } from '../../components/ReasonModal';
 import { TreatmentPlanFormModal } from './TreatmentPlanFormModal';
 import { PhotoEditorModal } from './PhotoEditorModal';
+import { CameraCaptureModal } from '../../components/CameraCaptureModal';
 import { FacialZonesHighlight } from './FacialMap';
 import {
   FACIAL_ZONES,
@@ -130,6 +132,7 @@ function PlantillaFotografica({
   const [pendingMoment, setPendingMoment] = useState<'Antes' | 'Después'>('Antes');
   const [pendingZone, setPendingZone] = useState<FacialZoneKey>(FACIAL_ZONES[0]);
   const [isUploading, setIsUploading] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handlePick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -227,11 +230,11 @@ function PlantillaFotografica({
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePick} />
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setCameraOpen(true)}
               disabled={isUploading}
               className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600 disabled:opacity-60"
             >
-              <PlusIcon className="h-5 w-5" />
+              <CameraIcon className="h-5 w-5" />
               <span className="text-[11px] font-medium">
                 {isUploading ? 'Subiendo...' : `Agregar (${FACIAL_ZONE_LABELS[pendingZone]})`}
               </span>
@@ -239,6 +242,22 @@ function PlantillaFotografica({
           </>
         )}
       </div>
+
+      {cameraOpen && (
+        <CameraCaptureModal
+          guide="frontal"
+          label={`${FACIAL_ZONE_LABELS[pendingZone]} — ${pendingMoment}`}
+          onClose={() => setCameraOpen(false)}
+          onFallbackToFile={() => {
+            setCameraOpen(false);
+            fileInputRef.current?.click();
+          }}
+          onCapture={(file) => {
+            setCameraOpen(false);
+            setPendingFile(file);
+          }}
+        />
+      )}
 
       {pendingFile && (
         <PhotoEditorModal file={pendingFile} onClose={() => setPendingFile(null)} onConfirm={handleConfirmEdit} />

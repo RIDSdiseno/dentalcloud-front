@@ -20,7 +20,7 @@ import { ALLERGY_LABEL, type AllergyKey } from '../../data/allergies';
 import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatCLP } from '../../utils/treatmentStatus';
-import { AlertTriangleIcon, CheckIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
+import { AlertTriangleIcon, CameraIcon, CheckIcon, EditIcon, SearchIcon, TrashIcon } from '../../components/icons';
 import { Odontogram, type OdontogramMark, type OdontogramMode, type ToothSelection, type ToothSurface } from './Odontogram';
 import {
   areaLabel,
@@ -32,6 +32,7 @@ import {
 } from './odontogramConfig';
 import { FacialMap, type FacialGender } from './FacialMap';
 import { PhotoEditorModal } from './PhotoEditorModal';
+import { CameraCaptureModal } from '../../components/CameraCaptureModal';
 import {
   EMPTY_FACIAL_ANNOTATIONS,
   FACIAL_ZONES,
@@ -363,6 +364,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [pendingPhotoZone, setPendingPhotoZone] = useState<FacialZoneKey>(FACIAL_ZONES[0]);
   const [pendingPhotoMoment, setPendingPhotoMoment] = useState<'Antes' | 'Después'>('Antes');
+  const [photoCameraOpen, setPhotoCameraOpen] = useState(false);
   const pendingPhotosRef = useRef(pendingPhotos);
   pendingPhotosRef.current = pendingPhotos;
 
@@ -1002,12 +1004,27 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     />
                     <button
                       type="button"
-                      onClick={() => document.getElementById('plantilla-photo-input')?.click()}
+                      onClick={() => setPhotoCameraOpen(true)}
                       className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600"
                     >
-                      <PlusIcon className="h-5 w-5" />
+                      <CameraIcon className="h-5 w-5" />
                       <span className="text-[11px] font-medium">Agregar ({FACIAL_ZONE_LABELS[pendingPhotoZone]})</span>
                     </button>
+                    {photoCameraOpen && (
+                      <CameraCaptureModal
+                        guide="frontal"
+                        label={`${FACIAL_ZONE_LABELS[pendingPhotoZone]} — ${pendingPhotoMoment}`}
+                        onClose={() => setPhotoCameraOpen(false)}
+                        onFallbackToFile={() => {
+                          setPhotoCameraOpen(false);
+                          document.getElementById('plantilla-photo-input')?.click();
+                        }}
+                        onCapture={(file) => {
+                          setPhotoCameraOpen(false);
+                          setPendingPhotoFile(file);
+                        }}
+                      />
+                    )}
                   </div>
                   {pendingPhotoFile && (
                     <PhotoEditorModal

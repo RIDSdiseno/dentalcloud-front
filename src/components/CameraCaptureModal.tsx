@@ -101,12 +101,24 @@ export function CameraCaptureModal({
   useEffect(() => {
     let cancelled = false;
 
-    async function start() {
+    async function openCamera() {
+      // Primer intento: pedir la cámara trasera. Si el navegador rechaza la
+      // restricción (algunos webviews de Android tratan "ideal" como si
+      // fuera obligatorio), se reintenta sin ninguna restricción — mejor una
+      // cámara cualquiera que ninguna.
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        return await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } },
           audio: false,
         });
+      } catch {
+        return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+    }
+
+    async function start() {
+      try {
+        const stream = await openCamera();
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -117,7 +129,22 @@ export function CameraCaptureModal({
           await videoRef.current.play();
         }
         setStatus('ready');
+      } catch (err) {
+        if (cancelled) return;
+        setStatus('error');
+        const name = err instanceof DOMException ? err.name : null;
+        setErrorMessage(
+          name === 'NotAllowedError'
+            ? 'No se pudo acceder a la cámara — revisa los permisos del navegador.'
+            : `No se pudo iniciar la cámara en este dispositivo${name ? ` (${name})` : ''}.`
+        );
+        return;
+      }
 
+      // La detección facial es un plus (guía visual) — si el modelo no
+      // carga (WASM/GPU no soportado en este navegador), la cámara sigue
+      // funcionando igual, solo sin el indicador de "posición correcta".
+      try {
         const detector = await getFaceDetector();
         if (cancelled) return;
 
@@ -150,14 +177,10 @@ export function CameraCaptureModal({
           rafRef.current = requestAnimationFrame(detectLoop);
         };
         rafRef.current = requestAnimationFrame(detectLoop);
-      } catch (err) {
-        if (cancelled) return;
-        setStatus('error');
-        setErrorMessage(
-          err instanceof DOMException && err.name === 'NotAllowedError'
-            ? 'No se pudo acceder a la cámara — revisa los permisos del navegador.'
-            : 'No se pudo iniciar la cámara en este dispositivo.'
-        );
+      } catch {
+        // Sin detección facial disponible en este navegador — se sigue
+        // mostrando la cámara y la silueta guía, solo sin el indicador
+        // automático de alineación.
       }
     }
 
