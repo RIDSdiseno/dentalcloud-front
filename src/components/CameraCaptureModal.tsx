@@ -14,6 +14,9 @@ const GUIDE_HINT: Record<CaptureGuide, string> = {
 // Carga perezosa y compartida entre todas las instancias del modal — el
 // modelo (~200KB) y el runtime WASM se piden una sola vez por sesión del
 // navegador, no cada vez que el doctor abre la cámara para una foto distinta.
+// Muchos navegadores móviles (sobre todo webviews de Android) no soportan
+// bien el delegate "GPU" de MediaPipe y fallan en silencio — por eso se
+// reintenta con "CPU" antes de darse por vencido.
 let faceDetectorPromise: Promise<FaceDetector> | null = null;
 function getFaceDetector(): Promise<FaceDetector> {
   if (!faceDetectorPromise) {
@@ -22,14 +25,19 @@ function getFaceDetector(): Promise<FaceDetector> {
       const vision = await FilesetResolver.forVisionTasks(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
       );
-      return FD.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath:
-            'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.task',
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
-      });
+      const modelAssetPath =
+        'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.task';
+      try {
+        return await FD.createFromOptions(vision, {
+          baseOptions: { modelAssetPath, delegate: 'GPU' },
+          runningMode: 'VIDEO',
+        });
+      } catch {
+        return await FD.createFromOptions(vision, {
+          baseOptions: { modelAssetPath, delegate: 'CPU' },
+          runningMode: 'VIDEO',
+        });
+      }
     })();
   }
   return faceDetectorPromise;
@@ -97,6 +105,7 @@ export function CameraCaptureModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [faceDetected, setFaceDetected] = useState(false);
   const [aligned, setAligned] = useState(false);
+  const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable'>('loading');
 
   useEffect(() => {
     let cancelled = false;
@@ -147,6 +156,7 @@ export function CameraCaptureModal({
       try {
         const detector = await getFaceDetector();
         if (cancelled) return;
+        setAiStatus('active');
 
         const detectLoop = () => {
           const video = videoRef.current;
@@ -181,6 +191,7 @@ export function CameraCaptureModal({
         // Sin detección facial disponible en este navegador — se sigue
         // mostrando la cámara y la silueta guía, solo sin el indicador
         // automático de alineación.
+        if (!cancelled) setAiStatus('unavailable');
       }
     }
 
@@ -248,13 +259,21 @@ export function CameraCaptureModal({
         </div>
 
         <div className="px-4 py-3">
-          {status === 'ready' && (
+          {status === 'ready' && aiStatus === 'active' && (
             <p className={`mb-3 text-center text-xs font-semibold ${aligned ? 'text-green-400' : 'text-amber-300'}`}>
               {aligned
                 ? '✓ Posición correcta — puedes tomar la foto'
                 : faceDetected
                   ? 'Ajusta la posición según la guía'
                   : 'No se detecta un rostro — acércate y busca buena luz'}
+            </p>
+          )}
+          {status === 'ready' && aiStatus === 'loading' && (
+            <p className="mb-3 text-center text-xs font-semibold text-slate-400">Cargando detección facial...</p>
+          )}
+          {status === 'ready' && aiStatus === 'unavailable' && (
+            <p className="mb-3 text-center text-xs font-semibold text-slate-400">
+              Solo guía visual — este navegador no soporta la detección automática. Usa la silueta para encuadrar.
             </p>
           )}
           <div className="flex items-center gap-3">
