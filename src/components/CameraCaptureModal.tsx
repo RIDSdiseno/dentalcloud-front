@@ -106,6 +106,7 @@ export function CameraCaptureModal({
   const [faceDetected, setFaceDetected] = useState(false);
   const [aligned, setAligned] = useState(false);
   const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable'>('loading');
+  const [aiErrorDetail, setAiErrorDetail] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,11 +188,16 @@ export function CameraCaptureModal({
           rafRef.current = requestAnimationFrame(detectLoop);
         };
         rafRef.current = requestAnimationFrame(detectLoop);
-      } catch {
+      } catch (err) {
         // Sin detección facial disponible en este navegador — se sigue
         // mostrando la cámara y la silueta guía, solo sin el indicador
-        // automático de alineación.
-        if (!cancelled) setAiStatus('unavailable');
+        // automático de alineación. Se guarda el motivo real (temporal,
+        // para diagnóstico) en vez de ocultarlo.
+        if (!cancelled) {
+          setAiStatus('unavailable');
+          const detail = err instanceof Error ? err.message : String(err);
+          setAiErrorDetail(detail.slice(0, 200));
+        }
       }
     }
 
@@ -272,9 +278,12 @@ export function CameraCaptureModal({
             <p className="mb-3 text-center text-xs font-semibold text-slate-400">Cargando detección facial...</p>
           )}
           {status === 'ready' && aiStatus === 'unavailable' && (
-            <p className="mb-3 text-center text-xs font-semibold text-slate-400">
-              Solo guía visual — este navegador no soporta la detección automática. Usa la silueta para encuadrar.
-            </p>
+            <div className="mb-3 text-center">
+              <p className="text-xs font-semibold text-slate-400">
+                Solo guía visual — este navegador no soporta la detección automática. Usa la silueta para encuadrar.
+              </p>
+              {aiErrorDetail && <p className="mt-1 text-[10px] text-slate-500">Detalle: {aiErrorDetail}</p>}
+            </div>
           )}
           <div className="flex items-center gap-3">
             <button
