@@ -39,10 +39,14 @@ import {
   formatFacialSelection,
   getFacialConfig,
   parseTreatedZones,
+  TERCIO_LABEL,
+  TERCIOS,
   zoneAreaLabel,
   zoneNumberForBackend,
+  zonesInTercio,
   type FacialAnnotations,
   type FacialZoneKey,
+  type Tercio,
 } from './facialZoneConfig';
 import { detectAllergensInPrestacion } from './allergenDetection';
 import { EditItemModal } from './EditItemModal';
@@ -508,6 +512,17 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     setToolResetTrigger((t) => t + 1);
   }
 
+  // Etapa 06 del flujo estético (reunión 2/9 con Urbina): "cantidad por
+  // tercio, nunca por punto" — en vez de exigir marcar cada zona fina en el
+  // rostro, el profesional elige un tercio completo de un clic. Selecciona
+  // todas las zonas de ese tercio que la prestación permita (si no permite
+  // ninguna, no hace nada) — no reemplaza el mapa facial, solo le da un atajo
+  // de carga más simple y grueso, que es justo lo que se pidió.
+  function handlePickTercio(tercio: Tercio) {
+    const zones = zonesInTercio(tercio, activePrestacion?.allowedZones);
+    if (zones.length === 0) return;
+    setDraftSelection(selectionFromDefaults(zones));
+  }
 
   function handleCustomModeChange(mode: OdontogramMode) {
     setCustomMode(mode);
@@ -1177,6 +1192,23 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                       Agregar prestación
                     </button>
                   </div>
+                </div>
+              )}
+
+              {isEstetica && activeMode === 'tooth' && (
+                <div id="tercio-quick-pick" className="flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 p-2.5">
+                  <span className="text-xs font-semibold text-brand-700">Elegir por tercio:</span>
+                  {TERCIOS.map((tercio) => (
+                    <button
+                      key={tercio}
+                      type="button"
+                      onClick={() => handlePickTercio(tercio)}
+                      className="rounded-md border border-brand-200 bg-white px-2.5 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                    >
+                      {TERCIO_LABEL[tercio]}
+                    </button>
+                  ))}
+                  <span className="text-[11px] text-brand-600/80">No es necesario marcar zona por zona.</span>
                 </div>
               )}
 

@@ -8,8 +8,12 @@ import {
   type UserPermissionsInfo,
 } from '../../api/users';
 import { PERMISSION_LABELS } from './PermisosPerfilPanel';
-import type { PermissionKey } from '../../api/clinicaSettings';
+import { GENERAL_PATIENT_PERMISSION_KEYS, type PermissionKey } from '../../api/clinicaSettings';
 import type { ClinicaModuleKey } from '../../api/clinicas';
+
+// Grupos de campos DENTRO de la ficha del paciente (no pantallas completas)
+// — mismo concepto que PERMISSION_ORDER pero para "Permisos generales".
+const GENERAL_PERMISSION_ORDER: PermissionKey[] = [...GENERAL_PATIENT_PERMISSION_KEYS];
 
 // Mismas 8 pantallas de `PERMISSION_LABELS`, pero a nivel de plan de la
 // clínica (`Clinica.modules`) en vez de perfil — por eso no incluyen 'rx'.
@@ -142,22 +146,41 @@ export function PermisosUsuarioModal({ user, onClose }: { user: StaffUser; onClo
           </p>
 
           {info.isPermissionedRole ? (
-            <div>
-              <h3 className="mb-2 text-sm font-semibold text-slate-800">Pantallas (dentro de la clínica)</h3>
-              <div className="flex flex-col divide-y divide-slate-100">
-                {PERMISSION_ORDER.map((key) => (
-                  <div key={key} className="flex items-center justify-between gap-3 py-2">
-                    <span className="text-sm text-slate-700">{PERMISSION_LABELS[key]}</span>
-                    <OverrideToggle
-                      value={info.permissionOverrides[key]}
-                      defaultValue={info.permissionDefaults[key]}
-                      disabled={busyKey === `p-${key}`}
-                      onChange={(value) => handlePermissionChange(key, value)}
-                    />
-                  </div>
-                ))}
+            <>
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-800">Pantallas (dentro de la clínica)</h3>
+                <div className="flex flex-col divide-y divide-slate-100">
+                  {PERMISSION_ORDER.map((key) => (
+                    <div key={key} className="flex items-center justify-between gap-3 py-2">
+                      <span className="text-sm text-slate-700">{PERMISSION_LABELS[key]}</span>
+                      <OverrideToggle
+                        value={info.permissionOverrides[key]}
+                        defaultValue={info.permissionDefaults[key]}
+                        disabled={busyKey === `p-${key}`}
+                        onChange={(value) => handlePermissionChange(key, value)}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-800">Permisos generales (ficha del paciente)</h3>
+                <div className="flex flex-col divide-y divide-slate-100">
+                  {GENERAL_PERMISSION_ORDER.map((key) => (
+                    <div key={key} className="flex items-center justify-between gap-3 py-2">
+                      <span className="text-sm text-slate-700">{PERMISSION_LABELS[key]}</span>
+                      <OverrideToggle
+                        value={info.permissionOverrides[key]}
+                        defaultValue={info.permissionDefaults[key]}
+                        disabled={busyKey === `p-${key}`}
+                        onChange={(value) => handlePermissionChange(key, value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
           ) : (
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
               Este rol siempre tiene acceso completo a todas las pantallas; no admite excepciones de permisos.

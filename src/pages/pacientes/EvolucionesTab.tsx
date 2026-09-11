@@ -380,7 +380,7 @@ export function EvolucionesTab({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+    <div id="evoluciones-card" className="grid grid-cols-1 gap-5 lg:grid-cols-5">
       <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         <div className="flex flex-wrap gap-2">
           <button

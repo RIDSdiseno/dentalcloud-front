@@ -4,7 +4,19 @@ import type { ClinicaModuleKey } from './clinicas';
 export const PERMISSIONED_ROLES = ['odontologo', 'radiologo', 'operador'] as const;
 export type PermissionedRole = (typeof PERMISSIONED_ROLES)[number];
 
-export type PermissionKey = ClinicaModuleKey | 'rx' | 'crearPresupuestos';
+// "Permisos generales": grupos de campos dentro de la ficha del paciente
+// (no pantallas completas) — ver PATIENT_FIELD_GROUPS en el backend
+// (patientsController.ts) para el detalle de qué campos cubre cada uno.
+export const GENERAL_PATIENT_PERMISSION_KEYS = [
+  'datosPersonales',
+  'datosContacto',
+  'antecedentesMedicos',
+  'motivoConsulta',
+  'contactoEmergencia',
+] as const;
+export type GeneralPatientPermissionKey = (typeof GENERAL_PATIENT_PERMISSION_KEYS)[number];
+
+export type PermissionKey = ClinicaModuleKey | 'rx' | 'crearPresupuestos' | GeneralPatientPermissionKey;
 
 export type RolePermissions = Record<PermissionedRole, Record<PermissionKey, boolean>>;
 

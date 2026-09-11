@@ -34,6 +34,10 @@ export type Patient = {
   photoUrl: string | null;
   motivoConsulta: string | null;
   motivoConsultaAudioUrl: string | null;
+  // Corroboración del médico (Etapa 01): null hasta que un profesional
+  // presiona "Confirmar datos del paciente" — se vuelve a poner en null si
+  // después cambia algo de identidad/contacto (ver patientsController.ts).
+  datosCorroboradosAt: string | null;
   expectativasPaciente: string | null;
   optimoTratamiento: string | null;
   examSkinType: string | null;
@@ -143,6 +147,11 @@ export async function uploadMotivoConsultaAudio(id: string, audio: Blob) {
   const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}/motivo-consulta-audio`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return data.patient;
+}
+
+export async function corroboratePatientData(id: string) {
+  const { data } = await api.post<{ patient: Patient }>(`/patients/${id}/corroborate-data`);
   return data.patient;
 }
 

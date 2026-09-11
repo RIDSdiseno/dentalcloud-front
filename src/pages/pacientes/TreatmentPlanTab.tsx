@@ -35,7 +35,16 @@ import { ReasonModal } from '../../components/ReasonModal';
 import { TreatmentPlanFormModal } from './TreatmentPlanFormModal';
 import { PhotoEditorModal } from './PhotoEditorModal';
 import { FacialZonesHighlight } from './FacialMap';
-import { FACIAL_ZONES, FACIAL_ZONE_LABELS, parseTreatedZones, type FacialZoneKey } from './facialZoneConfig';
+import {
+  FACIAL_ZONES,
+  FACIAL_ZONE_LABELS,
+  parseTreatedZones,
+  TERCIO_LABEL,
+  TERCIOS,
+  ZONE_TO_TERCIO,
+  type FacialZoneKey,
+  type Tercio,
+} from './facialZoneConfig';
 import { EditItemModal } from './EditItemModal';
 import { useAuth } from '../../context/AuthContext';
 import { Odontogram, type OdontogramMode, type ToothSelection } from './Odontogram';
@@ -53,25 +62,6 @@ function productExpiryStatus(item: TreatmentItem): { status: 'expired' | 'soon';
   if (daysUntil <= 30) return { status: 'soon', expiresAt, daysUntil };
   return null;
 }
-
-type Tercio = 'superior' | 'medio' | 'inferior';
-const TERCIO_LABEL: Record<Tercio, string> = { superior: 'Tercio Superior', medio: 'Tercio Medio', inferior: 'Tercio Inferior' };
-const ZONE_TO_TERCIO: Record<FacialZoneKey, Tercio> = {
-  frente: 'superior',
-  entrecejo: 'superior',
-  sienes: 'superior',
-  parpados: 'superior',
-  patas_gallo: 'superior',
-  ojeras: 'medio',
-  pomulos: 'medio',
-  nariz: 'medio',
-  nasogenianos: 'medio',
-  codigo_barras: 'medio',
-  labios: 'inferior',
-  menton: 'inferior',
-  mandibula: 'inferior',
-  cuello: 'inferior',
-};
 
 const LABEL_TO_ZONE_KEY: Record<string, FacialZoneKey> = Object.fromEntries(
   FACIAL_ZONES.map((zone) => [FACIAL_ZONE_LABELS[zone], zone])
@@ -106,7 +96,7 @@ function PlanPorTerciosSummary({ items }: { items: TreatmentItem[] }) {
             </tr>
           </thead>
           <tbody>
-            {(['superior', 'medio', 'inferior'] as Tercio[]).map((tercio, idx) => (
+            {TERCIOS.map((tercio, idx) => (
               <tr key={tercio} className={idx % 2 === 1 ? 'bg-slate-50' : undefined}>
                 <td className="px-3 py-2 align-top font-semibold text-slate-700">{TERCIO_LABEL[tercio]}</td>
                 <td className="px-3 py-2 text-slate-600">
@@ -1495,7 +1485,7 @@ export function TreatmentPlanTab({
         )}
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+      <div id="tratamiento-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
             <ClipboardIcon className="h-5 w-5 text-brand-500" />

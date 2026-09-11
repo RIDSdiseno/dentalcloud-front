@@ -22,6 +22,44 @@ export const FACIAL_ZONES = [
 
 export type FacialZoneKey = (typeof FACIAL_ZONES)[number];
 
+// Los 3 tercios faciales clásicos — unidad de trabajo pedida por Urbina para
+// el plan de tratamiento estético: se arma por tercio (y no por zona fina ni
+// por punto exacto), y el presupuesto se agrupa por tercio (ver reunión 2/9).
+export type Tercio = 'superior' | 'medio' | 'inferior';
+
+export const TERCIOS: Tercio[] = ['superior', 'medio', 'inferior'];
+
+export const TERCIO_LABEL: Record<Tercio, string> = {
+  superior: 'Tercio Superior',
+  medio: 'Tercio Medio',
+  inferior: 'Tercio Inferior',
+};
+
+export const ZONE_TO_TERCIO: Record<FacialZoneKey, Tercio> = {
+  frente: 'superior',
+  entrecejo: 'superior',
+  sienes: 'superior',
+  parpados: 'superior',
+  patas_gallo: 'superior',
+  ojeras: 'medio',
+  pomulos: 'medio',
+  nariz: 'medio',
+  nasogenianos: 'medio',
+  codigo_barras: 'medio',
+  labios: 'inferior',
+  menton: 'inferior',
+  mandibula: 'inferior',
+  cuello: 'inferior',
+};
+
+// Zonas que caen dentro de un tercio, opcionalmente acotadas a las zonas que
+// esta prestación en particular permite (`allowedZones` del catálogo) — así
+// el botón de tercio nunca preselecciona una zona que la prestación no cubre.
+export function zonesInTercio(tercio: Tercio, restrictTo?: readonly string[]): FacialZoneKey[] {
+  const allowed = restrictTo ? new Set(restrictTo) : null;
+  return FACIAL_ZONES.filter((zone) => ZONE_TO_TERCIO[zone] === tercio && (!allowed || allowed.has(zone)));
+}
+
 export const FACIAL_ZONE_LABELS: Record<FacialZoneKey, string> = {
   frente: 'Frente',
   entrecejo: 'Entrecejo',

@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { updatePatient, uploadExamPhoto, type ExamPhotoSlot, type Patient } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
-import { MicIcon } from '../../components/icons';
+import { MicIcon, CameraIcon } from '../../components/icons';
+import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
 
 const SKIN_TYPE_OPTIONS = ['seca', 'mixta', 'grasa', 'sensible'] as const;
 const SKIN_TYPE_LABEL: Record<string, string> = { seca: 'Seca', mixta: 'Mixta', grasa: 'Grasa', sensible: 'Sensible' };
@@ -17,11 +18,11 @@ const FLACCIDITY_LABEL: Record<string, string> = { leve: 'Leve', moderada: 'Mode
 const VOLUME_OPTIONS = ['deficit', 'normal', 'exceso'] as const;
 const VOLUME_LABEL: Record<string, string> = { deficit: 'Déficit', normal: 'Normal', exceso: 'Exceso' };
 
-const PHOTO_SLOTS: { key: ExamPhotoSlot; label: string; field: keyof Patient }[] = [
-  { key: 'frontal', label: 'Frontal', field: 'examPhotoFrontalUrl' },
-  { key: 'perfilDerecho', label: 'Perfil Derecho', field: 'examPhotoPerfilDerechoUrl' },
-  { key: '45derecha', label: '45° Derecha', field: 'examPhoto45DerechaUrl' },
-  { key: '45izquierda', label: '45° Izquierda', field: 'examPhoto45IzquierdaUrl' },
+const PHOTO_SLOTS: { key: ExamPhotoSlot; label: string; field: keyof Patient; guide: CaptureGuide }[] = [
+  { key: 'frontal', label: 'Frontal', field: 'examPhotoFrontalUrl', guide: 'frontal' },
+  { key: 'perfilDerecho', label: 'Perfil Derecho', field: 'examPhotoPerfilDerechoUrl', guide: 'perfil' },
+  { key: '45derecha', label: '45° Derecha', field: 'examPhoto45DerechaUrl', guide: '45derecha' },
+  { key: '45izquierda', label: '45° Izquierda', field: 'examPhoto45IzquierdaUrl', guide: '45izquierda' },
 ];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -49,6 +50,7 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
   const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadingSlot, setUploadingSlot] = useState<ExamPhotoSlot | null>(null);
   const [dictating, setDictating] = useState(false);
+  const [cameraSlot, setCameraSlot] = useState<ExamPhotoSlot | null>(null);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   async function handleSave() {
@@ -110,7 +112,7 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div id="examen-estetico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         <h2 className="mb-4 text-sm font-semibold text-slate-800">Evaluación estética</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Tipo de piel">
@@ -189,6 +191,9 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         <h2 className="mb-4 text-sm font-semibold text-slate-800">Registro fotográfico</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Máximo 4 fotos: Frontal, Perfil Derecho, 45° Derecha y 45° Izquierda. Cada una se guarda directo en su casilla.
+        </p>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {PHOTO_SLOTS.map((slot) => {
             const url = patient[slot.field] as string | null;
@@ -196,16 +201,19 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
               <div key={slot.key} className="flex flex-col items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => fileInputs.current[slot.key]?.click()}
+                  onClick={() => setCameraSlot(slot.key)}
                   disabled={uploadingSlot === slot.key}
-                  className="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50"
+                  className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50"
                 >
                   {uploadingSlot === slot.key ? (
                     <span className="text-xs">Subiendo...</span>
                   ) : url ? (
                     <img src={url} alt={slot.label} className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-xs">Click para capturar</span>
+                    <span className="flex flex-col items-center gap-1 text-slate-400">
+                      <CameraIcon className="h-6 w-6" />
+                      <span className="text-xs">Click para capturar</span>
+                    </span>
                   )}
                 </button>
                 <span className="text-xs font-semibold text-slate-600">{slot.label}</span>
@@ -224,6 +232,24 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
           })}
         </div>
       </div>
+
+      {cameraSlot && (
+        <CameraCaptureModal
+          guide={PHOTO_SLOTS.find((s) => s.key === cameraSlot)!.guide}
+          label={PHOTO_SLOTS.find((s) => s.key === cameraSlot)!.label}
+          onClose={() => setCameraSlot(null)}
+          onFallbackToFile={() => {
+            const slot = cameraSlot;
+            setCameraSlot(null);
+            fileInputs.current[slot]?.click();
+          }}
+          onCapture={(file) => {
+            const slot = cameraSlot;
+            setCameraSlot(null);
+            handlePhotoChange(slot, file);
+          }}
+        />
+      )}
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         <div className="mb-2 flex items-center justify-between">

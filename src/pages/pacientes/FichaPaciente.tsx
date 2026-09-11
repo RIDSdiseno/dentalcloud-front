@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { fetchPatient, updatePatient, uploadPatientPhoto, uploadMotivoConsultaAudio, type Patient } from '../../api/patients';
+import {
+  fetchPatient,
+  updatePatient,
+  uploadPatientPhoto,
+  uploadMotivoConsultaAudio,
+  corroboratePatientData,
+  type Patient,
+} from '../../api/patients';
 import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
 import { fetchPatientBalance } from '../../api/ledger';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
@@ -18,6 +25,7 @@ import {
   CalendarIcon,
   ChairIcon,
   ChatIcon,
+  CheckIcon,
   ClipboardIcon,
   ClockIcon,
   EditIcon,
@@ -44,6 +52,7 @@ import { DocumentosClinicosTab } from './DocumentosClinicosTab';
 import { RxTab } from './RxTab';
 import { ConsentimientosTab } from './ConsentimientosTab';
 import { ExamenEsteticoTab } from './ExamenEsteticoTab';
+import { EstheticWorkflowStepper, type EstheticStepKey } from './EstheticWorkflowStepper';
 import { DebtNotificationModal } from './DebtNotificationModal';
 
 const GENDER_LABEL: Record<string, string> = {
@@ -159,6 +168,68 @@ function GlanceCard({
   );
 }
 
+// Etapa 01 (reunión 2/9 con Urbina): recepción puede cargar nombre, RUT,
+// fecha de nacimiento, contacto — pero antes de avanzar, el médico tiene que
+// repasar esos datos con el paciente presente ("Juanita, ¿por qué vienes a
+// la consulta?") para pescar errores de tipeo, no solo confiar en lo que
+// cargó recepción. Se invalida sola si después cambia algo de identidad o
+// contacto (ver invalidatesCorroboration en patientsController.ts).
+function DatosCorroboracionCard({ patient, onUpdate }: { patient: Patient; onUpdate: (patient: Patient) => void }) {
+  const { user } = useAuth();
+  const canCorroborate = user?.permissions?.motivoConsulta !== false;
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleConfirm() {
+    setSaving(true);
+    setError(null);
+    try {
+      onUpdate(await corroboratePatientData(patient.id));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo confirmar los datos del paciente'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (patient.datosCorroboradosAt) {
+    return (
+      <div
+        id="datos-corroboracion-card"
+        className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200 lg:col-span-3"
+      >
+        <CheckIcon className="h-4 w-4 shrink-0" />
+        Datos del paciente confirmados por el profesional el {new Date(patient.datosCorroboradosAt).toLocaleDateString('es-CL')}.
+      </div>
+    );
+  }
+
+  return (
+    <div
+      id="datos-corroboracion-card"
+      className="flex flex-col gap-2 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 lg:col-span-3 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="text-sm text-amber-800">
+        <p className="font-semibold">Datos del paciente sin confirmar</p>
+        <p className="text-xs">
+          Recepción puede haber cargado estos datos — repásalos con el paciente presente antes de continuar (nombre, RUT,
+          fecha de nacimiento, contacto).
+        </p>
+        {error && <p className="mt-1 text-xs font-semibold text-red-600">{error}</p>}
+      </div>
+      <button
+        type="button"
+        onClick={handleConfirm}
+        disabled={!canCorroborate || saving}
+        title={canCorroborate ? undefined : 'Solo el profesional puede confirmar los datos del paciente'}
+        className="shrink-0 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {saving ? 'Confirmando...' : 'Confirmar datos del paciente'}
+      </button>
+    </div>
+  );
+}
+
 const VOICE_RECORDING_CONSENT_CODE = 'grabacion_voz';
 
 function MotivoConsultaCard({
@@ -170,6 +241,13 @@ function MotivoConsultaCard({
   onUpdate: (patient: Patient) => void;
   onGoToConsents: () => void;
 }) {
+  const { user } = useAuth();
+  // "Permisos generales" → Motivo de consulta (ver PermisosPerfilPanel): a
+  // diferencia del texto de advertencia que ya había, esto sí deshabilita el
+  // campo de verdad — el backend igual lo vuelve a chequear en el PATCH, así
+  // que esto es solo para no dejar que alguien escriba y recién se entere del
+  // bloqueo al guardar.
+  const canEditMotivo = user?.permissions?.motivoConsulta !== false;
   const [draft, setDraft] = useState(patient.motivoConsulta ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -290,25 +368,33 @@ function MotivoConsultaCard({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+    <div id="motivo-consulta-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
       <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-800">
         <MicIcon className="h-4 w-4 text-brand-500" />
         Motivo de consulta
       </h2>
       <p className="mb-4 text-xs text-slate-500">Debe completarlo el profesional durante la atención — no la secretaria.</p>
 
+      {!canEditMotivo && (
+        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+          <LockIcon className="h-3.5 w-3.5" />
+          Tu perfil no tiene permiso para editar el motivo de consulta.
+        </p>
+      )}
+
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows={3}
+        disabled={!canEditMotivo}
         placeholder="Ej: paciente refiere querer un aumento leve de volumen labial..."
-        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60"
       />
       <div className="mt-2 flex items-center gap-3">
         <button
           type="button"
           onClick={handleSaveMotivo}
-          disabled={saving || draft === (patient.motivoConsulta ?? '')}
+          disabled={!canEditMotivo || saving || draft === (patient.motivoConsulta ?? '')}
           className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
         >
           {saving ? 'Guardando...' : 'Guardar'}
@@ -697,28 +783,41 @@ export default function FichaPaciente() {
         </div>
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
-        {visibleTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                isActive ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {user?.clinicaTipo === 'estetica' || user?.clinicaTipo === 'ambas' ? (
+        <EstheticWorkflowStepper
+          patient={patient}
+          tabs={visibleTabs}
+          activeStep={activeTab}
+          onSelectStep={(step: EstheticStepKey) => setActiveTab(step)}
+        />
+      ) : (
+        <div className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+          {visibleTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                  isActive ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {activeTab === 'datos' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          {(user?.clinicaTipo === 'estetica' || user?.clinicaTipo === 'ambas') && (
+            <DatosCorroboracionCard patient={patient} onUpdate={setPatient} />
+          )}
+
           <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
             <h2 className="mb-4 text-sm font-semibold text-slate-800">Datos de contacto</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

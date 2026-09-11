@@ -328,7 +328,7 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div id="consentimientos-card" className="flex flex-col gap-5">
       {consentTypes.map((consentType) => (
         <ConsentTypeCard
           key={consentType.id}
