@@ -26,7 +26,7 @@ function getFaceDetector(): Promise<FaceDetector> {
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
       );
       const modelAssetPath =
-        'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.task';
+        'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
       try {
         return await FD.createFromOptions(vision, {
           baseOptions: { modelAssetPath, delegate: 'GPU' },
