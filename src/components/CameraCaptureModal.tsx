@@ -171,7 +171,14 @@ function GuideSilhouette({
             la figura tal cual, sin marcas. */}
         <g transform={isProfile ? 'rotate(8 100 140)' : undefined}>
           <ellipse cx="100" cy="26" rx="15" ry="17" {...common} />
-          <path d="M65 48 Q100 40 135 48 L128 130 Q100 138 72 130 Z" {...common} />
+          {gender === 'femenino' ? (
+            <path
+              d="M70 48 Q100 38 130 48 Q122 75 118 90 Q128 110 128 130 Q100 140 72 130 Q72 110 82 90 Q78 75 70 48 Z"
+              {...common}
+            />
+          ) : (
+            <path d="M65 48 Q100 40 135 48 L128 130 Q100 138 72 130 Z" {...common} />
+          )}
           <path d="M65 48 Q54 72 58 122" {...common} />
           <path d="M135 48 Q146 72 142 122" {...common} />
           <path d="M85 130 Q75 192 67 253" {...common} />
