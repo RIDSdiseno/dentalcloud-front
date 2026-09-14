@@ -155,11 +155,39 @@ export async function corroboratePatientData(id: string) {
   return data.patient;
 }
 
-export async function uploadExamPhoto(id: string, slot: ExamPhotoSlot, photo: File) {
+export type ExamPhotoMoment = 'antes' | 'avance';
+
+// Historial del registro fotográfico (11/09): cada captura queda como su
+// propia fila con fecha — "Antes" (ronda 1 fija) y una o más rondas de
+// "Avance" — en vez de un solo valor por ángulo que se sobrescribía.
+export type ExamPhoto = {
+  id: string;
+  patientId: string;
+  slot: ExamPhotoSlot;
+  moment: ExamPhotoMoment;
+  round: number;
+  url: string;
+  createdAt: string;
+};
+
+export async function fetchExamPhotos(patientId: string) {
+  const { data } = await api.get<{ examPhotos: ExamPhoto[] }>(`/patients/${patientId}/exam-photos`);
+  return data.examPhotos;
+}
+
+export async function uploadExamPhoto(
+  id: string,
+  slot: ExamPhotoSlot,
+  photo: File,
+  moment: ExamPhotoMoment,
+  round: number
+) {
   const formData = new FormData();
   formData.append('photo', photo);
-  const { data } = await api.patch<{ patient: Patient }>(`/patients/${id}/exam-photo/${slot}`, formData, {
+  formData.append('moment', moment);
+  formData.append('round', String(round));
+  const { data } = await api.patch<{ examPhotos: ExamPhoto[] }>(`/patients/${id}/exam-photo/${slot}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return data.patient;
+  return data.examPhotos;
 }
