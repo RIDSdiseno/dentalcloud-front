@@ -435,7 +435,20 @@ export function EstheticWorkflowStepper({
         </div>
       )}
 
-      <TourButton steps={TOUR_STEPS} storageKey={tourStorageKey} onNavigate={handleTourNavigate} floating />
+      {/* El botón flotante siempre parte en la pestaña donde el usuario está
+          parado ahora — antes usaba solo el progreso guardado (storageKey),
+          que quedaba pegado en la última pestaña que el tour mismo mostró,
+          aunque el usuario ya hubiera navegado a mano a otra parte (reportado
+          por Oscar: abrió "Módulo Rx", cerró, entró a mano a "Documentos
+          clínicos", y al volver a abrir "Instrucciones" igual lo mandaba a
+          "Módulo Rx"). */}
+      <TourButton
+        steps={TOUR_STEPS}
+        storageKey={tourStorageKey}
+        forceStartAt={tourIndexFor(activeStep as EstheticStepKey)}
+        onNavigate={handleTourNavigate}
+        floating
+      />
     </div>
   );
 }
