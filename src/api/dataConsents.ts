@@ -47,6 +47,19 @@ export async function fetchConsentText(consentTypeId: string) {
   return data;
 }
 
+export async function createConsentType(name: string, legalText: string) {
+  const { data } = await api.post<{ consentType: ConsentType }>('/data-consents/types', { name, legalText });
+  return data.consentType;
+}
+
+export async function updateConsentType(
+  consentTypeId: string,
+  input: { name?: string; legalText?: string }
+) {
+  const { data } = await api.patch<{ consentType: ConsentType }>(`/data-consents/types/${consentTypeId}`, input);
+  return data.consentType;
+}
+
 export async function uploadConsentTypePdf(consentTypeId: string, file: File) {
   const formData = new FormData();
   formData.append('pdf', file);

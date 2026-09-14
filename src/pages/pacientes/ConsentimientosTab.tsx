@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  createConsentType,
   downloadConsentPdf,
   fetchConsentTypes,
   fetchPatientConsents,
   removeConsentTypePdf,
   sendDataConsent,
+  updateConsentType,
   uploadConsentTypePdf,
   type ConsentStatus,
   type ConsentType,
@@ -13,9 +15,111 @@ import {
 import { getErrorMessage } from '../../api/client';
 import type { Patient } from '../../api/patients';
 import { useAuth } from '../../context/AuthContext';
-import { ShieldIcon } from '../../components/icons';
+import { EditIcon, PlusIcon, ShieldIcon } from '../../components/icons';
 import { formatRut } from '../../utils/rut';
 import { ConsentimientoPreviewModal } from './ConsentimientoPreviewModal';
+import { Modal } from '../../components/Modal';
+
+// Los codes del catálogo estándar (ver backend src/lib/consentTypes.ts) no
+// se pueden crear a mano — sirven para distinguir "propio de la clínica"
+// (creado con el botón de abajo) al mostrar de dónde salió cada tipo.
+const SYSTEM_CONSENT_CODES = new Set([
+  'proteccion_datos',
+  'tratamiento_general',
+  'anestesia',
+  'cirugia_procedimiento_invasivo',
+  'endodoncia',
+  'protesis',
+  'ortodoncia',
+  'implantes',
+  'blanqueamiento',
+  'uso_imagenes',
+  'sedacion',
+  'autorizacion_representante_menor',
+  'grabacion_voz',
+]);
+
+function ConsentTypeFormModal({
+  initial,
+  onClose,
+  onSaved,
+}: {
+  initial: ConsentType | null;
+  onClose: () => void;
+  onSaved: (consentType: ConsentType) => void;
+}) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [legalText, setLegalText] = useState(initial?.legalText ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+    try {
+      const saved = initial
+        ? await updateConsentType(initial.id, { name, legalText })
+        : await createConsentType(name, legalText);
+      onSaved(saved);
+      onClose();
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo guardar el consentimiento'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title={initial ? 'Editar consentimiento' : 'Nuevo consentimiento'} onClose={onClose}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <p className="text-sm text-slate-500">
+          {initial
+            ? 'Cambia el nombre o el texto legal que ven el paciente y el equipo al firmar.'
+            : 'Crea un tipo de consentimiento propio de esta clínica, además del catálogo estándar.'}
+        </p>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            placeholder='Ej. "Uso de peeling químico"'
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Texto legal</span>
+          <textarea
+            value={legalText}
+            onChange={(e) => setLegalText(e.target.value)}
+            required
+            rows={8}
+            placeholder="Texto que el paciente lee y firma..."
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          />
+        </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? 'Guardando...' : initial ? 'Guardar cambios' : 'Crear consentimiento'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 
 const STATUS_STYLES: Record<ConsentStatus, { label: string; className: string }> = {
   pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
@@ -35,12 +139,14 @@ function ConsentTypeCard({
   consent,
   onUpdated,
   onTypeUpdated,
+  onEdit,
 }: {
   patient: Patient;
   consentType: ConsentType;
   consent: PatientConsent | null;
   onUpdated: (consent: PatientConsent) => void;
   onTypeUpdated: (consentType: ConsentType) => void;
+  onEdit: () => void;
 }) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -138,6 +244,21 @@ function ConsentTypeCard({
         <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
           <ShieldIcon className="h-5 w-5 text-brand-500" />
           {consentType.name}
+          {!SYSTEM_CONSENT_CODES.has(consentType.code) && (
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Propio de la clínica
+            </span>
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label="Editar consentimiento"
+              className="text-slate-400 hover:text-brand-600"
+            >
+              <EditIcon className="h-3.5 w-3.5" />
+            </button>
+          )}
         </h2>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${status.className}`}>
           {status.label}
@@ -266,10 +387,13 @@ function ConsentTypeCard({
 }
 
 export function ConsentimientosTab({ patient }: { patient: Patient }) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [consentTypes, setConsentTypes] = useState<ConsentType[]>([]);
   const [consents, setConsents] = useState<PatientConsent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formModal, setFormModal] = useState<{ mode: 'create' } | { mode: 'edit'; type: ConsentType } | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -329,6 +453,17 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
 
   return (
     <div id="consentimientos-card" className="flex flex-col gap-5">
+      {isAdmin && (
+        <button
+          type="button"
+          onClick={() => setFormModal({ mode: 'create' })}
+          className="flex w-fit items-center gap-2 rounded-lg border-2 border-dashed border-brand-300 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Nuevo consentimiento
+        </button>
+      )}
+
       {consentTypes.map((consentType) => (
         <ConsentTypeCard
           key={consentType.id}
@@ -337,8 +472,21 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
           consent={consents.find((c) => c.consentTypeId === consentType.id) ?? null}
           onUpdated={(updated) => handleUpdated(consentType.id, updated)}
           onTypeUpdated={handleTypeUpdated}
+          onEdit={() => setFormModal({ mode: 'edit', type: consentType })}
         />
       ))}
+
+      {formModal && (
+        <ConsentTypeFormModal
+          initial={formModal.mode === 'edit' ? formModal.type : null}
+          onClose={() => setFormModal(null)}
+          onSaved={(saved) => {
+            setConsentTypes((prev) =>
+              prev.some((t) => t.id === saved.id) ? prev.map((t) => (t.id === saved.id ? saved : t)) : [...prev, saved]
+            );
+          }}
+        />
+      )}
     </div>
   );
 }

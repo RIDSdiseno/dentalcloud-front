@@ -32,6 +32,14 @@ export type EstheticStepTab = {
 // Módulo Rx) son paradas opcionales, sin ningún chequeo de progreso.
 const REQUIRED_KEYS = new Set<EstheticStepKey>(['datos', 'examen', 'tratamiento', 'evoluciones', 'consentimientos']);
 
+// Mismos codes que usa el backend (ver src/lib/consentTypes.ts) para exigir
+// estos dos consentimientos antes de grabar el motivo de consulta / tomar
+// fotos del examen estético — se usan acá solo para avisar en la advertencia
+// del stepper cuál de los dos falta, no para bloquear nada (el candado real
+// vive en el backend).
+const VOICE_RECORDING_CONSENT_CODE = 'grabacion_voz';
+const PHOTO_USAGE_CONSENT_CODE = 'uso_imagenes';
+
 function missingDetail(key: EstheticStepKey): string {
   switch (key) {
     case 'datos':
@@ -192,6 +200,15 @@ function useEstheticProgress(patient: Patient) {
   const [hasTreatmentItems, setHasTreatmentItems] = useState(false);
   const [hasStartedTreatment, setHasStartedTreatment] = useState(false);
   const [hasSignedConsent, setHasSignedConsent] = useState(false);
+  // Consentimientos "prioritarios" (11/09, pedido explícito): a diferencia de
+  // hasSignedConsent (basta CUALQUIER consentimiento firmado para marcar el
+  // paso "Consentimientos" como completo), estos dos bloquean una función
+  // puntual — grabar el motivo de consulta y tomar fotos del examen
+  // estético — y se avisan aparte, aunque el paso en sí ya esté completo.
+  const [missingPriorityConsents, setMissingPriorityConsents] = useState<{ voice: boolean; photo: boolean }>({
+    voice: false,
+    photo: false,
+  });
   const [prestacionesCount, setPrestacionesCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -212,12 +229,23 @@ function useEstheticProgress(patient: Patient) {
       });
 
     Promise.all([fetchConsentTypes(), fetchPatientConsents(patient.id)])
-      .then(([, consents]) => {
+      .then(([types, consents]) => {
         if (cancelled) return;
         setHasSignedConsent(consents.some((c) => c.status === 'firmado'));
+        const isSigned = (code: string) => {
+          const type = types.find((t) => t.code === code);
+          return Boolean(type && consents.some((c) => c.consentTypeId === type.id && c.status === 'firmado'));
+        };
+        setMissingPriorityConsents({
+          voice: !isSigned(VOICE_RECORDING_CONSENT_CODE),
+          photo: !isSigned(PHOTO_USAGE_CONSENT_CODE),
+        });
       })
       .catch(() => {
-        if (!cancelled) setHasSignedConsent(false);
+        if (!cancelled) {
+          setHasSignedConsent(false);
+          setMissingPriorityConsents({ voice: true, photo: true });
+        }
       });
 
     fetchPrestaciones()
@@ -249,7 +277,7 @@ function useEstheticProgress(patient: Patient) {
     consentimientos: hasSignedConsent,
   };
 
-  return { completed, prestacionesCount };
+  return { completed, prestacionesCount, missingPriorityConsents };
 }
 
 export function EstheticWorkflowStepper({
@@ -263,7 +291,7 @@ export function EstheticWorkflowStepper({
   activeStep: string;
   onSelectStep: (step: EstheticStepKey) => void;
 }) {
-  const { completed, prestacionesCount } = useEstheticProgress(patient);
+  const { completed, prestacionesCount, missingPriorityConsents } = useEstheticProgress(patient);
   const [warning, setWarning] = useState<{ text: string; jumpKey: EstheticStepKey } | null>(null);
   const tourStorageKey = `etapa-tour:${patient.id}`;
 
@@ -299,6 +327,21 @@ export function EstheticWorkflowStepper({
       texts.push('Catálogo: no hay prestaciones estéticas cargadas todavía — agrégalas en Catálogo → Prestaciones antes de armar el presupuesto.');
       firstKey = firstKey ?? 'tratamiento';
     }
+
+    // Consentimientos prioritarios: se avisan apenas el paso que bloquean es
+    // el objetivo (o ya se pasó por él), aunque ese paso ya esté marcado
+    // completo por otro motivo — porque lo que importa acá es la función
+    // puntual (grabar / fotografiar), no el estado general del paso.
+    const reachedOrPast = (key: EstheticStepKey) => tabs.slice(0, targetIndex + 1).some((tab) => tab.key === key);
+    if (reachedOrPast('datos') && missingPriorityConsents.voice) {
+      texts.push('"Consentimientos": falta firmar "Autorización de grabación de voz" — sin eso no se puede grabar el motivo de consulta.');
+      firstKey = firstKey ?? 'consentimientos';
+    }
+    if (reachedOrPast('examen') && missingPriorityConsents.photo) {
+      texts.push('"Consentimientos": falta firmar "Uso de fotografías y registros clínicos" — sin eso no se puede tomar fotos del examen estético.');
+      firstKey = firstKey ?? 'consentimientos';
+    }
+
     return { texts, firstKey };
   }
 
