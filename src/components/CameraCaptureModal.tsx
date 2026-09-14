@@ -271,6 +271,15 @@ export function CameraCaptureModal({
   const skeletonGroupRef = useRef<SVGGElement | null>(null);
   const skeletonLineRefs = useRef<(SVGLineElement | null)[]>([]);
   const headEllipseRef = useRef<SVGEllipseElement | null>(null);
+  // Marcas por género sobre el esqueleto en vivo (14/09) — la silueta
+  // genérica ya las tenía, pero apenas se detecta el cuerpo esa silueta se
+  // oculta y el esqueleto la reemplaza sin ellas (reportado por Oscar: "en
+  // el perfil del hombre el monigote no tiene el palo"). Se calculan sobre
+  // los mismos puntos reales (caderas/hombros), no son ninguna detección de
+  // anatomía — solo se dibujan si el paciente es masculino/femenino.
+  const groinLineRef = useRef<SVGLineElement | null>(null);
+  const breastLeftRef = useRef<SVGEllipseElement | null>(null);
+  const breastRightRef = useRef<SVGEllipseElement | null>(null);
 
   // El <video> se muestra con object-cover: si su relación de aspecto no
   // calza con el contenedor cuadrado, el navegador recorta el sobrante — sin
@@ -316,6 +325,41 @@ export function CameraCaptureModal({
       headEllipseRef.current.setAttribute('rx', String(headR));
       headEllipseRef.current.setAttribute('ry', String(headR * 1.15));
     }
+
+    const lh = toContainerPercent(landmarks[23], video);
+    const rh = toContainerPercent(landmarks[24], video);
+    const hipMidX = (lh.x + rh.x) / 2;
+    const hipMidY = (lh.y + rh.y) / 2;
+    const hipWidth = Math.hypot(lh.x - rh.x, lh.y - rh.y) || shoulderWidth;
+
+    if (patientGender === 'masculino' && groinLineRef.current) {
+      groinLineRef.current.setAttribute('x1', String(hipMidX));
+      groinLineRef.current.setAttribute('y1', String(hipMidY));
+      groinLineRef.current.setAttribute('x2', String(hipMidX));
+      groinLineRef.current.setAttribute('y2', String(hipMidY + hipWidth * 0.5));
+      groinLineRef.current.style.opacity = '1';
+    } else if (groinLineRef.current) {
+      groinLineRef.current.style.opacity = '0';
+    }
+
+    if (patientGender === 'femenino' && breastLeftRef.current && breastRightRef.current) {
+      const chestY = ls.y + (hipMidY - ls.y) * 0.35;
+      const breastR = Math.max(shoulderWidth * 0.14, 2);
+      breastLeftRef.current.setAttribute('cx', String(ls.x + (rs.x - ls.x) * 0.2));
+      breastLeftRef.current.setAttribute('cy', String(chestY));
+      breastLeftRef.current.setAttribute('rx', String(breastR));
+      breastLeftRef.current.setAttribute('ry', String(breastR));
+      breastLeftRef.current.style.opacity = '1';
+      breastRightRef.current.setAttribute('cx', String(rs.x + (ls.x - rs.x) * 0.2));
+      breastRightRef.current.setAttribute('cy', String(chestY));
+      breastRightRef.current.setAttribute('rx', String(breastR));
+      breastRightRef.current.setAttribute('ry', String(breastR));
+      breastRightRef.current.style.opacity = '1';
+    } else {
+      if (breastLeftRef.current) breastLeftRef.current.style.opacity = '0';
+      if (breastRightRef.current) breastRightRef.current.style.opacity = '0';
+    }
+
     if (skeletonGroupRef.current) {
       skeletonGroupRef.current.style.opacity = '1';
       skeletonGroupRef.current.setAttribute('stroke', aligned ? '#22c55e' : '#ffffff');
@@ -324,6 +368,9 @@ export function CameraCaptureModal({
 
   function hideSkeletonOverlay() {
     if (skeletonGroupRef.current) skeletonGroupRef.current.style.opacity = '0';
+    if (groinLineRef.current) groinLineRef.current.style.opacity = '0';
+    if (breastLeftRef.current) breastLeftRef.current.style.opacity = '0';
+    if (breastRightRef.current) breastRightRef.current.style.opacity = '0';
   }
 
   // Óvalo de rostro en vivo — mismo principio que el esqueleto de cuerpo:
@@ -642,6 +689,9 @@ export function CameraCaptureModal({
                     />
                   ))}
                   <ellipse ref={headEllipseRef} />
+                  <line ref={groinLineRef} style={{ opacity: 0 }} />
+                  <ellipse ref={breastLeftRef} style={{ opacity: 0 }} />
+                  <ellipse ref={breastRightRef} style={{ opacity: 0 }} />
                 </g>
               </svg>
             )}
