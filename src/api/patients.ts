@@ -112,7 +112,10 @@ export type PatientInput = {
   examDiagnosis?: string;
 };
 
-export type ExamPhotoSlot = 'frontal' | 'perfilDerecho' | '45derecha' | '45izquierda';
+export type ExamPhotoSlot = 'frontal' | 'perfilDerecho' | '45derecha' | '45izquierda' | 'espalda' | 'perfilIzquierdo';
+// 'facial' (rostro, de siempre) | 'corporal' (14/09, pedido explícito: switch
+// para alternar el registro fotográfico entre rostro y cuerpo).
+export type ExamPhotoArea = 'facial' | 'corporal';
 
 export async function fetchPatients(search?: string) {
   const { data } = await api.get<{ patients: Patient[] }>('/patients', {
@@ -182,6 +185,7 @@ export type ExamPhotoMoment = 'antes' | 'avance';
 export type ExamPhoto = {
   id: string;
   patientId: string;
+  area: ExamPhotoArea;
   slot: ExamPhotoSlot;
   moment: ExamPhotoMoment;
   round: number;
@@ -199,12 +203,14 @@ export async function uploadExamPhoto(
   slot: ExamPhotoSlot,
   photo: File,
   moment: ExamPhotoMoment,
-  round: number
+  round: number,
+  area: ExamPhotoArea = 'facial'
 ) {
   const formData = new FormData();
   formData.append('photo', photo);
   formData.append('moment', moment);
   formData.append('round', String(round));
+  formData.append('area', area);
   const { data } = await api.patch<{ examPhotos: ExamPhoto[] }>(`/patients/${id}/exam-photo/${slot}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });

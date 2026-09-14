@@ -2,14 +2,33 @@ import { useEffect, useRef, useState } from 'react';
 import type { FaceDetector } from '@mediapipe/tasks-vision';
 import { CameraIcon } from './icons';
 
-export type CaptureGuide = 'frontal' | 'perfil' | '45derecha' | '45izquierda';
+export type CaptureGuide =
+  | 'frontal'
+  | 'perfil'
+  | '45derecha'
+  | '45izquierda'
+  | 'corpFrontal'
+  | 'corpEspalda'
+  | 'corpPerfilIzquierdo'
+  | 'corpPerfilDerecho';
 
 const GUIDE_HINT: Record<CaptureGuide, string> = {
   frontal: 'Mira directo a la cámara, rostro centrado',
   perfil: 'Gira la cabeza para mostrar el perfil completo',
   '45derecha': 'Gira la cabeza 45° hacia su derecha',
   '45izquierda': 'Gira la cabeza 45° hacia su izquierda',
+  corpFrontal: 'Encuadra el cuerpo completo, de frente',
+  corpEspalda: 'Encuadra el cuerpo completo, de espaldas',
+  corpPerfilIzquierdo: 'Encuadra el cuerpo completo, perfil izquierdo',
+  corpPerfilDerecho: 'Encuadra el cuerpo completo, perfil derecho',
 };
+
+// Las fotos corporales no usan la guía de encuadre facial (el óvalo de
+// rostro no aplica a cuerpo completo) ni la detección de rostro con IA —
+// no tiene sentido buscar una cara cuando se está fotografiando el cuerpo.
+function isBodyGuide(guide: CaptureGuide): boolean {
+  return guide.startsWith('corp');
+}
 
 // Carga perezosa y compartida entre todas las instancias del modal — el
 // modelo (~200KB) y el runtime WASM se piden una sola vez por sesión del
@@ -54,6 +73,7 @@ function getFaceDetector(): Promise<FaceDetector> {
 // depende de la detección facial. '45derecha'/'45izquierda' usan el mismo
 // trazo, espejado con CSS.
 function GuideSilhouette({ guide, aligned }: { guide: CaptureGuide; aligned: boolean }) {
+  if (isBodyGuide(guide)) return null;
   const stroke = aligned ? '#22c55e' : '#ffffff';
   const mirrored = guide === '45izquierda';
   const common = { fill: 'none', stroke, strokeWidth: 2.5, strokeDasharray: aligned ? undefined : '6 6', opacity: 0.85 };
@@ -112,7 +132,7 @@ export function CameraCaptureModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [faceDetected, setFaceDetected] = useState(false);
   const [aligned, setAligned] = useState(false);
-  const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable'>('loading');
+  const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable' | 'skipped'>('loading');
   const [aiErrorDetail, setAiErrorDetail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -155,6 +175,13 @@ export function CameraCaptureModal({
             ? 'No se pudo acceder a la cámara — revisa los permisos del navegador.'
             : `No se pudo iniciar la cámara en este dispositivo${name ? ` (${name})` : ''}.`
         );
+        return;
+      }
+
+      // Fotos corporales: no tiene sentido buscar un rostro, así que se
+      // omite por completo el modelo de detección (ni se descarga).
+      if (isBodyGuide(guide)) {
+        setAiStatus('skipped');
         return;
       }
 

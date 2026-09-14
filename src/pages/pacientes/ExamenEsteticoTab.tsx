@@ -6,13 +6,14 @@ import {
   uploadExamVideo,
   fetchExamVideos,
   type ExamPhoto,
+  type ExamPhotoArea,
   type ExamPhotoMoment,
   type ExamPhotoSlot,
   type ExamVideo,
   type Patient,
 } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
-import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon } from '../../components/icons';
+import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon, RefreshIcon } from '../../components/icons';
 import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
 import { VideoCaptureModal } from '../../components/VideoCaptureModal';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
@@ -35,28 +36,45 @@ const FLACCIDITY_LABEL: Record<string, string> = { leve: 'Leve', moderada: 'Mode
 const VOLUME_OPTIONS = ['deficit', 'normal', 'exceso'] as const;
 const VOLUME_LABEL: Record<string, string> = { deficit: 'Déficit', normal: 'Normal', exceso: 'Exceso' };
 
-const PHOTO_SLOTS: { key: ExamPhotoSlot; label: string; guide: CaptureGuide }[] = [
+const FACIAL_PHOTO_SLOTS: { key: ExamPhotoSlot; label: string; guide: CaptureGuide }[] = [
   { key: 'frontal', label: 'Frontal', guide: 'frontal' },
   { key: 'perfilDerecho', label: 'Perfil Derecho', guide: 'perfil' },
   { key: '45derecha', label: '45° Derecha', guide: '45derecha' },
   { key: '45izquierda', label: '45° Izquierda', guide: '45izquierda' },
 ];
 
-// Última foto de cada ángulo para una ronda puntual (moment + round) — si se
-// retoma un ángulo dentro de la misma ronda, se usa la más reciente.
-function latestBySlot(photos: ExamPhoto[], moment: ExamPhotoMoment, round: number) {
+// Registro corporal (14/09, pedido explícito): switch para alternar el
+// registro fotográfico entre rostro y cuerpo completo — mismo mecanismo,
+// mismos 4 ángulos por ronda, solo cambia el set de tomas.
+const BODY_PHOTO_SLOTS: { key: ExamPhotoSlot; label: string; guide: CaptureGuide }[] = [
+  { key: 'frontal', label: 'Frontal', guide: 'corpFrontal' },
+  { key: 'espalda', label: 'Espalda', guide: 'corpEspalda' },
+  { key: 'perfilIzquierdo', label: 'Perfil Izquierdo', guide: 'corpPerfilIzquierdo' },
+  { key: 'perfilDerecho', label: 'Perfil Derecho', guide: 'corpPerfilDerecho' },
+];
+
+const PHOTO_SLOTS_BY_AREA: Record<ExamPhotoArea, typeof FACIAL_PHOTO_SLOTS> = {
+  facial: FACIAL_PHOTO_SLOTS,
+  corporal: BODY_PHOTO_SLOTS,
+};
+
+const PHOTO_AREA_LABEL: Record<ExamPhotoArea, string> = { facial: 'Rostro', corporal: 'Cuerpo' };
+
+// Última foto de cada ángulo para una ronda puntual (area + moment + round)
+// — si se retoma un ángulo dentro de la misma ronda, se usa la más reciente.
+function latestBySlot(photos: ExamPhoto[], area: ExamPhotoArea, moment: ExamPhotoMoment, round: number) {
   const map = new Map<ExamPhotoSlot, ExamPhoto>();
   for (const p of photos) {
-    if (p.moment !== moment || p.round !== round) continue;
+    if (p.area !== area || p.moment !== moment || p.round !== round) continue;
     const existing = map.get(p.slot);
     if (!existing || new Date(p.createdAt) > new Date(existing.createdAt)) map.set(p.slot, p);
   }
   return map;
 }
 
-function roundComplete(photos: ExamPhoto[], moment: ExamPhotoMoment, round: number) {
-  const map = latestBySlot(photos, moment, round);
-  return PHOTO_SLOTS.every((s) => map.has(s.key));
+function roundComplete(photos: ExamPhoto[], area: ExamPhotoArea, moment: ExamPhotoMoment, round: number) {
+  const map = latestBySlot(photos, area, moment, round);
+  return PHOTO_SLOTS_BY_AREA[area].every((s) => map.has(s.key));
 }
 
 // Registro de video: mismas rondas (antes / avance N) que el fotográfico,
@@ -149,6 +167,7 @@ function VideoRoundTile({
 // Grid de 4 casillas (Frontal/Perfil Derecho/45°/45°) para una ronda puntual
 // — se reutiliza tal cual para "Antes" y para cada ronda de "Avance".
 function PhotoRoundGrid({
+  area,
   moment,
   round,
   photos,
@@ -158,6 +177,7 @@ function PhotoRoundGrid({
   onFileChange,
   disabled,
 }: {
+  area: ExamPhotoArea;
   moment: ExamPhotoMoment;
   round: number;
   photos: ExamPhoto[];
@@ -167,12 +187,12 @@ function PhotoRoundGrid({
   onFileChange: (slot: ExamPhotoSlot, file: File | null) => void;
   disabled?: boolean;
 }) {
-  const bySlot = latestBySlot(photos, moment, round);
+  const bySlot = latestBySlot(photos, area, moment, round);
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      {PHOTO_SLOTS.map((slot) => {
+      {PHOTO_SLOTS_BY_AREA[area].map((slot) => {
         const url = bySlot.get(slot.key)?.url ?? null;
-        const inputKey = `${moment}-${round}-${slot.key}`;
+        const inputKey = `${area}-${moment}-${round}-${slot.key}`;
         return (
           <div key={slot.key} className="flex flex-col items-center gap-2">
             <button
@@ -244,6 +264,20 @@ export function ExamenEsteticoTab({
   const [uploadingSlot, setUploadingSlot] = useState<ExamPhotoSlot | null>(null);
   const [dictating, setDictating] = useState(false);
   const [examPhotos, setExamPhotos] = useState<ExamPhoto[]>([]);
+  // Switch Rostro/Cuerpo (14/09, pedido explícito) — mismo mecanismo de
+  // rondas para ambos, pero cada uno con su propia historia (ver `area` en
+  // ExamPhoto). Cambiar de área limpia el estado transitorio de la ronda
+  // (abajo) para no arrastrar una "Avance N" pendiente que no aplica al otro.
+  const [photoArea, setPhotoArea] = useState<ExamPhotoArea>('facial');
+  const [areaFlipping, setAreaFlipping] = useState(false);
+  function handleToggleArea() {
+    setAreaFlipping(true);
+    setTimeout(() => setAreaFlipping(false), 400);
+    setPhotoArea((prev) => (prev === 'facial' ? 'corporal' : 'facial'));
+    setPendingAvanceRound(null);
+    setCameraTarget(null);
+    setShowOlderPhotos(false);
+  }
   // Ronda de "Avance" que el doctor eligió empezar recién ahora, antes de que
   // tenga ninguna foto propia — así el grid vacío ya aparece al tocar el
   // botón, en vez de esperar a la primera foto para existir.
@@ -299,12 +333,12 @@ export function ExamenEsteticoTab({
     };
   }, [patient.id]);
 
-  const antesDone = roundComplete(examPhotos, 'antes', 1);
+  const antesDone = roundComplete(examPhotos, photoArea, 'antes', 1);
   const avanceRoundsWithPhotos = Array.from(
-    new Set(examPhotos.filter((p) => p.moment === 'avance').map((p) => p.round))
+    new Set(examPhotos.filter((p) => p.area === photoArea && p.moment === 'avance').map((p) => p.round))
   ).sort((a, b) => a - b);
   const lastAvanceRound = avanceRoundsWithPhotos[avanceRoundsWithPhotos.length - 1] ?? 0;
-  const lastAvanceDone = lastAvanceRound > 0 ? roundComplete(examPhotos, 'avance', lastAvanceRound) : true;
+  const lastAvanceDone = lastAvanceRound > 0 ? roundComplete(examPhotos, photoArea, 'avance', lastAvanceRound) : true;
   const visibleAvanceRounds = pendingAvanceRound
     ? Array.from(new Set([...avanceRoundsWithPhotos, pendingAvanceRound])).sort((a, b) => a - b)
     : avanceRoundsWithPhotos;
@@ -373,7 +407,7 @@ export function ExamenEsteticoTab({
     if (!file) return;
     setUploadingSlot(slot);
     try {
-      const updated = await uploadExamPhoto(patient.id, slot, file, moment, round);
+      const updated = await uploadExamPhoto(patient.id, slot, file, moment, round, photoArea);
       setExamPhotos(updated);
       if (moment === 'avance') setPendingAvanceRound(null);
     } catch (err) {
@@ -499,9 +533,22 @@ export function ExamenEsteticoTab({
       </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Registro fotográfico</h2>
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-800">Registro fotográfico — {PHOTO_AREA_LABEL[photoArea]}</h2>
+          <button
+            type="button"
+            onClick={handleToggleArea}
+            title={`Cambiar a registro de ${PHOTO_AREA_LABEL[photoArea === 'facial' ? 'corporal' : 'facial']}`}
+            className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            <RefreshIcon className={`h-4 w-4 transition-transform duration-400 ${areaFlipping ? 'rotate-[360deg]' : ''}`} />
+            {PHOTO_AREA_LABEL[photoArea === 'facial' ? 'corporal' : 'facial']}
+          </button>
+        </div>
         <p className="mb-4 text-xs text-slate-500">
-          Máximo 4 fotos por ronda: Frontal, Perfil Derecho, 45° Derecha y 45° Izquierda.
+          {photoArea === 'facial'
+            ? 'Máximo 4 fotos por ronda: Frontal, Perfil Derecho, 45° Derecha y 45° Izquierda.'
+            : 'Máximo 4 fotos por ronda: Frontal, Espalda, Perfil Izquierdo y Perfil Derecho.'}
         </p>
 
         {!photoConsentChecked ? (
@@ -523,6 +570,7 @@ export function ExamenEsteticoTab({
         <div className="mb-2">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{latestRound.label}</h3>
           <PhotoRoundGrid
+            area={photoArea}
             moment={latestRound.moment}
             round={latestRound.round}
             photos={examPhotos}
@@ -550,6 +598,7 @@ export function ExamenEsteticoTab({
                   <div key={`${r.moment}-${r.round}`}>
                     <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{r.label}</h3>
                     <PhotoRoundGrid
+                      area={photoArea}
                       moment={r.moment}
                       round={r.round}
                       photos={examPhotos}
@@ -699,15 +748,15 @@ export function ExamenEsteticoTab({
 
       {cameraTarget && (
         <CameraCaptureModal
-          guide={PHOTO_SLOTS.find((s) => s.key === cameraTarget.slot)!.guide}
-          label={`${PHOTO_SLOTS.find((s) => s.key === cameraTarget.slot)!.label} — ${
+          guide={PHOTO_SLOTS_BY_AREA[photoArea].find((s) => s.key === cameraTarget.slot)!.guide}
+          label={`${PHOTO_SLOTS_BY_AREA[photoArea].find((s) => s.key === cameraTarget.slot)!.label} — ${
             cameraTarget.moment === 'antes' ? 'Antes' : `Avance ${cameraTarget.round}`
           }`}
           onClose={() => setCameraTarget(null)}
           onFallbackToFile={() => {
             const target = cameraTarget;
             setCameraTarget(null);
-            fileInputs.current[`${target.moment}-${target.round}-${target.slot}`]?.click();
+            fileInputs.current[`${photoArea}-${target.moment}-${target.round}-${target.slot}`]?.click();
           }}
           onCapture={(file) => {
             const target = cameraTarget;
