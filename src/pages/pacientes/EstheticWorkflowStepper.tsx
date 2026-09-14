@@ -90,7 +90,7 @@ const TOUR_STEPS: DriveStep[] = [
     popover: {
       title: '2 · Examen estético (obligatorio)',
       description:
-        'Tipo de piel, fototipo de Fitzpatrick, arrugas, flacidez, volumen, asimetrías y otros hallazgos — todo por selección. Fotos clínicas (frontal, perfiles, 45°) y diagnóstico con dictado por voz.',
+        'Anamnesis por bloques con resumen generado por IA, evaluación por selección (piel, Fitzpatrick, arrugas, flacidez, volumen, asimetrías) y diagnóstico con dictado por voz. Registro fotográfico y de video — con switch Rostro/Cuerpo y reconocimiento en vivo para encuadrar — organizado en rondas de Antes y Avance. Al final, se decide si continuar al tratamiento o generar una solicitud de exámenes.',
       side: 'bottom',
     },
   },
