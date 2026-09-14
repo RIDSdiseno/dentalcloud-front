@@ -564,6 +564,22 @@ export function ExamenEsteticoTab({
         <h2 className="mb-1 text-sm font-semibold text-slate-800">Registro de video</h2>
         <p className="mb-4 text-xs text-slate-500">Un video por ronda — el mismo criterio de "Antes" y "Avance" que las fotos.</p>
 
+        {!photoConsentChecked ? (
+          <p className="mb-4 text-xs text-slate-400">Verificando consentimiento...</p>
+        ) : !photoConsentSigned ? (
+          <div className="mb-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+            <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="text-xs text-amber-800">
+              <p className="font-semibold">
+                El paciente debe firmar el consentimiento de uso de imágenes antes de poder grabar video.
+              </p>
+              <button type="button" onClick={onGoToConsents} className="mt-1.5 font-semibold underline">
+                Ir a Consentimientos
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="mb-2">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{latestVideoRound.label}</h3>
           <VideoRoundTile
