@@ -87,11 +87,14 @@ function VideoRoundTile({
   disabled?: boolean;
 }) {
   const video = latestVideo(videos, moment, round);
+  // Tocar la miniatura de un video ya guardado lo REPRODUCE (no vuelve a
+  // abrir la cámara) — "Regrabar" es la acción explícita para reemplazarlo.
+  const [viewing, setViewing] = useState(false);
   return (
     <div className="flex flex-col items-center gap-2">
       <button
         type="button"
-        onClick={onOpenCamera}
+        onClick={() => (video ? setViewing(true) : onOpenCamera())}
         disabled={disabled || uploading}
         className="relative flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50"
       >
@@ -106,6 +109,16 @@ function VideoRoundTile({
           </span>
         )}
       </button>
+      {video && (
+        <button
+          type="button"
+          onClick={onOpenCamera}
+          disabled={disabled || uploading}
+          className="text-xs font-semibold text-brand-600 hover:underline disabled:opacity-50"
+        >
+          Regrabar
+        </button>
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -114,6 +127,21 @@ function VideoRoundTile({
         hidden
         onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
       />
+      {viewing && video && (
+        <div
+          className="fixed inset-0 z-[85] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setViewing(false)}
+        >
+          <video
+            src={video.url}
+            controls
+            autoPlay
+            playsInline
+            className="max-h-[80vh] max-w-full rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

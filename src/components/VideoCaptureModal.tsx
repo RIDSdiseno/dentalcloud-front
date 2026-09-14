@@ -16,6 +16,7 @@ export function VideoCaptureModal({
   onFallbackToFile: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -62,6 +63,8 @@ export function VideoCaptureModal({
       cancelled = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
     };
+    // El video en vivo se monta una sola vez para toda la vida del modal (ver
+    // el <video hidden> más abajo) — así "Repetir" nunca pierde el srcObject.
   }, []);
 
   useEffect(() => {
@@ -105,6 +108,20 @@ export function VideoCaptureModal({
     onCapture(new File([previewBlob], `video-${Date.now()}.${ext}`, { type: previewBlob.type }));
   }
 
+  // Los blobs que entrega MediaRecorder no traen la duración total en el
+  // encabezado (solo se va sabiendo a medida que se reproduce) — Chrome/
+  // Android lo interpreta como una transmisión en vivo y muestra "Live" sin
+  // barra de progreso hasta que se fuerza un seek al final una vez cargado.
+  function fixInfiniteDuration(video: HTMLVideoElement) {
+    if (video.duration !== Infinity) return;
+    video.currentTime = 1e101;
+    const onTimeUpdate = () => {
+      video.currentTime = 0;
+      video.removeEventListener('timeupdate', onTimeUpdate);
+    };
+    video.addEventListener('timeupdate', onTimeUpdate);
+  }
+
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/80 p-4">
       <div className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-slate-900 shadow-2xl">
@@ -121,17 +138,24 @@ export function VideoCaptureModal({
         </div>
 
         <div className="relative aspect-square w-full bg-black">
-          {previewUrl ? (
-            <video src={previewUrl} controls playsInline className="h-full w-full object-cover" />
-          ) : (
-            status !== 'error' && <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
+          {/* Siempre montado (solo oculto) para no perder el srcObject al volver desde "Repetir". */}
+          <video ref={videoRef} playsInline muted hidden={!!previewUrl || status === 'error'} className="h-full w-full object-cover" />
+          {previewUrl && (
+            <video
+              ref={previewVideoRef}
+              src={previewUrl}
+              controls
+              playsInline
+              onLoadedMetadata={(e) => fixInfiniteDuration(e.currentTarget)}
+              className="h-full w-full object-cover"
+            />
           )}
           {status === 'loading' && !previewUrl && (
             <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-300">
               Cargando cámara...
             </div>
           )}
-          {status === 'error' && (
+          {status === 'error' && !previewUrl && (
             <div className="flex h-full items-center justify-center p-6 text-center text-sm text-slate-300">
               {errorMessage}
             </div>
