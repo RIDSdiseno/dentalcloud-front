@@ -35,6 +35,11 @@ export type Clinica = {
   logoUrl: string | null;
   rxEnabled: boolean;
   modules: ClinicaModules;
+  // Regulador manual de tokens de IA (14/09) — 0 = sin límite. Se reinicia
+  // solo cada mes calendario; aiTokensUsedThisMonth es el consumo real del
+  // mes en curso.
+  aiTokenLimitMonthly: number;
+  aiTokensUsedThisMonth: number;
   federatedClinicId: string | null;
   federationCatalogOnly: boolean;
   federationPaused: boolean;
@@ -184,6 +189,7 @@ export async function updateClinica(
     federationCatalogOnly?: boolean;
     federationPaused?: boolean;
     federationSyncSettings?: Partial<FederationSyncSettings>;
+    aiTokenLimitMonthly?: number;
   }
 ) {
   const { data } = await api.patch<{ clinica: Clinica }>(`/clinicas/${id}`, patch);

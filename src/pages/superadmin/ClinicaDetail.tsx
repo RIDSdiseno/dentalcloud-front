@@ -58,6 +58,9 @@ export default function ClinicaDetail() {
   const [rutTouched, setRutTouched] = useState(false);
   const [rutError, setRutError] = useState<string | null>(null);
 
+  const [aiTokenLimit, setAiTokenLimit] = useState('');
+  const [aiTokenLimitError, setAiTokenLimitError] = useState<string | null>(null);
+
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
@@ -69,6 +72,7 @@ export default function ClinicaDetail() {
         const found = clinicas.find((c) => c.id === id) ?? null;
         setClinica(found);
         setRut(found?.rut ? formatRut(found.rut) : '');
+        setAiTokenLimit(found ? String(found.aiTokenLimitMonthly) : '');
         setError(found ? null : 'Holding no encontrado');
       })
       .catch((err) => setError(getErrorMessage(err, 'No se pudo cargar el holding')))
@@ -133,6 +137,19 @@ export default function ClinicaDetail() {
       return;
     }
     await applyUpdate({ rut: rut.trim() || undefined }, 'rut');
+  }
+
+  // Regulador manual de tokens de IA (14/09): todas las clínicas comparten
+  // la misma OPENAI_API_KEY, así que esto es lo que evita que una sola se
+  // coma el presupuesto de todas. 0 = sin límite.
+  async function handleAiTokenLimitSave() {
+    setAiTokenLimitError(null);
+    const parsed = Number(aiTokenLimit);
+    if (!Number.isInteger(parsed) || parsed < 0) {
+      setAiTokenLimitError('Debe ser un entero mayor o igual a 0 (0 = sin límite)');
+      return;
+    }
+    await applyUpdate({ aiTokenLimitMonthly: parsed }, 'aiTokenLimitMonthly');
   }
 
   if (isLoading) return null;
@@ -389,6 +406,39 @@ export default function ClinicaDetail() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <label htmlFor="detail-ai-limit" className="text-sm font-medium text-slate-700">
+            Límite de tokens de IA (mensual)
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              id="detail-ai-limit"
+              type="number"
+              min={0}
+              step={1000}
+              value={aiTokenLimit}
+              onChange={(e) => setAiTokenLimit(e.target.value)}
+              placeholder="0 = sin límite"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            />
+            <button
+              type="button"
+              onClick={handleAiTokenLimitSave}
+              disabled={busyField === 'aiTokenLimitMonthly'}
+              className="shrink-0 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-60"
+            >
+              Guardar
+            </button>
+          </div>
+          {aiTokenLimitError && <p className="mt-1 text-xs text-red-600">{aiTokenLimitError}</p>}
+          <p className="mt-1.5 text-xs text-slate-500">
+            Uso este mes: <span className="font-semibold text-slate-700">{clinica.aiTokensUsedThisMonth.toLocaleString('es-CL')}</span>
+            {clinica.aiTokenLimitMonthly > 0 && ` / ${clinica.aiTokenLimitMonthly.toLocaleString('es-CL')} tokens`}
+            {clinica.aiTokenLimitMonthly === 0 && ' tokens (sin límite)'}
+            {' — se reinicia el 1° de cada mes.'}
+          </p>
         </div>
       </div>
 

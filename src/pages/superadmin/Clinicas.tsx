@@ -66,6 +66,7 @@ export default function Clinicas() {
                 <th className="px-4 py-3">Estado</th>
                 <th className="px-4 py-3 text-right">Pacientes</th>
                 <th className="px-4 py-3 text-right">Monto total</th>
+                <th className="px-4 py-3 text-right">IA (mes)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -117,6 +118,10 @@ export default function Clinicas() {
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-800">
                     {formatCLP(clinica.treatmentPlansAmount)}
+                  </td>
+                  <td className="px-4 py-3 text-right text-xs text-slate-500">
+                    {clinica.aiTokensUsedThisMonth.toLocaleString('es-CL')}
+                    {clinica.aiTokenLimitMonthly > 0 ? ` / ${clinica.aiTokenLimitMonthly.toLocaleString('es-CL')}` : ' (sin límite)'}
                   </td>
                 </tr>
               ))}
