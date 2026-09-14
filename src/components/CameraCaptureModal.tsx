@@ -113,6 +113,24 @@ function getPoseLandmarker(): Promise<PoseLandmarker> {
   return poseLandmarkerPromise;
 }
 
+// Pares de landmarks de MediaPipe Pose (33 puntos) que forman el esqueleto
+// visual — hombros, brazos, torso y piernas. La cabeza se dibuja aparte
+// (ver drawSkeleton) porque no hay un landmark de "borde de la cabeza".
+const POSE_CONNECTIONS: [number, number][] = [
+  [11, 12],
+  [11, 13],
+  [13, 15],
+  [12, 14],
+  [14, 16],
+  [11, 23],
+  [12, 24],
+  [23, 24],
+  [23, 25],
+  [25, 27],
+  [24, 26],
+  [26, 28],
+];
+
 // Silueta guía por ángulo — puramente visual (referencia de encuadre), no
 // depende de la detección. '45derecha'/'45izquierda' (rostro) y
 // 'corpPerfilIzquierdo' (cuerpo) usan el mismo trazo que su par, espejado
@@ -202,6 +220,69 @@ export function CameraCaptureModal({
   const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable'>('loading');
   const [aiErrorDetail, setAiErrorDetail] = useState<string | null>(null);
 
+  // Esqueleto de cuerpo en vivo (14/09, pedido explícito tras ver la silueta
+  // genérica: "no es preciso") — a diferencia de la silueta estática de
+  // rostro, para cuerpo se dibuja directamente sobre los puntos reales
+  // detectados cada cuadro, actualizados por ref (no por estado de React,
+  // que sería demasiado lento a 30-60 cuadros por segundo).
+  const skeletonGroupRef = useRef<SVGGElement | null>(null);
+  const skeletonLineRefs = useRef<(SVGLineElement | null)[]>([]);
+  const headEllipseRef = useRef<SVGEllipseElement | null>(null);
+
+  // El <video> se muestra con object-cover: si su relación de aspecto no
+  // calza con el contenedor cuadrado, el navegador recorta el sobrante — sin
+  // este cálculo, el esqueleto (que usa coordenadas normalizadas del cuadro
+  // completo) quedaría desalineado respecto a lo que realmente se ve.
+  function toContainerPercent(landmark: { x: number; y: number }, video: HTMLVideoElement) {
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
+    const cw = video.clientWidth;
+    const ch = video.clientHeight;
+    const scale = Math.max(cw / vw, ch / vh);
+    const dispW = vw * scale;
+    const dispH = vh * scale;
+    const offsetX = (dispW - cw) / 2;
+    const offsetY = (dispH - ch) / 2;
+    return {
+      x: ((landmark.x * dispW - offsetX) / cw) * 100,
+      y: ((landmark.y * dispH - offsetY) / ch) * 100,
+    };
+  }
+
+  function updateSkeletonOverlay(landmarks: { x: number; y: number }[], aligned: boolean) {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.clientWidth) return;
+    POSE_CONNECTIONS.forEach(([a, b], i) => {
+      const line = skeletonLineRefs.current[i];
+      if (!line) return;
+      const pa = toContainerPercent(landmarks[a], video);
+      const pb = toContainerPercent(landmarks[b], video);
+      line.setAttribute('x1', String(pa.x));
+      line.setAttribute('y1', String(pa.y));
+      line.setAttribute('x2', String(pb.x));
+      line.setAttribute('y2', String(pb.y));
+    });
+    const nose = toContainerPercent(landmarks[0], video);
+    const ls = toContainerPercent(landmarks[11], video);
+    const rs = toContainerPercent(landmarks[12], video);
+    const shoulderWidth = Math.hypot(ls.x - rs.x, ls.y - rs.y);
+    const headR = Math.max(shoulderWidth * 0.32, 3);
+    if (headEllipseRef.current) {
+      headEllipseRef.current.setAttribute('cx', String(nose.x));
+      headEllipseRef.current.setAttribute('cy', String(nose.y - headR * 0.6));
+      headEllipseRef.current.setAttribute('rx', String(headR));
+      headEllipseRef.current.setAttribute('ry', String(headR * 1.15));
+    }
+    if (skeletonGroupRef.current) {
+      skeletonGroupRef.current.style.opacity = '1';
+      skeletonGroupRef.current.setAttribute('stroke', aligned ? '#22c55e' : '#ffffff');
+    }
+  }
+
+  function hideSkeletonOverlay() {
+    if (skeletonGroupRef.current) skeletonGroupRef.current.style.opacity = '0';
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -285,14 +366,18 @@ export function CameraCaptureModal({
                   const feetNearBottom = leftAnkle.y > 0.7 && rightAnkle.y > 0.7;
                   const frameOk = centered && headNearTop && feetNearBottom;
                   goodFrameStreak = frameOk ? goodFrameStreak + 1 : 0;
-                  setAligned(goodFrameStreak >= REQUIRED_GOOD_FRAMES);
+                  const isAligned = goodFrameStreak >= REQUIRED_GOOD_FRAMES;
+                  setAligned(isAligned);
+                  updateSkeletonOverlay(landmarks, isAligned);
                 } else {
                   goodFrameStreak = 0;
                   setSubjectDetected(false);
                   setAligned(false);
+                  hideSkeletonOverlay();
                 }
               } catch {
                 goodFrameStreak = 0;
+                hideSkeletonOverlay();
               }
             }
             rafRef.current = requestAnimationFrame(detectLoop);
@@ -409,7 +494,24 @@ export function CameraCaptureModal({
           {status !== 'error' && (
             <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
           )}
-          {status === 'ready' && <GuideSilhouette guide={guide} aligned={aligned} />}
+          {status === 'ready' && (!isBodyGuide(guide) || !subjectDetected) && (
+            <GuideSilhouette guide={guide} aligned={aligned} />
+          )}
+          {status === 'ready' && isBodyGuide(guide) && (
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
+              <g ref={skeletonGroupRef} stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" fill="none" style={{ opacity: 0 }}>
+                {POSE_CONNECTIONS.map((_, i) => (
+                  <line
+                    key={i}
+                    ref={(el) => {
+                      skeletonLineRefs.current[i] = el;
+                    }}
+                  />
+                ))}
+                <ellipse ref={headEllipseRef} />
+              </g>
+            </svg>
+          )}
           {status === 'loading' && (
             <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-300">
               Cargando cámara...
