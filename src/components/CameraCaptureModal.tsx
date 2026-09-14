@@ -30,6 +30,19 @@ function isBodyGuide(guide: CaptureGuide): boolean {
   return guide.startsWith('corp');
 }
 
+// El modelo de pose (~6MB) pesa mucho más que el de rostro (~200KB) — en
+// una red lenta, o si el delegate GPU se cuelga en vez de fallar rápido en
+// algunos navegadores móviles, la carga puede demorar mucho o nunca
+// terminar. Sin este límite, la cámara quedaría pegada en "Cargando..."
+// para siempre en vez de degradar a "sin detección automática" (mismo
+// comportamiento que ya existe cuando el modelo no carga).
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Tiempo de espera agotado (${ms}ms)`)), ms)),
+  ]);
+}
+
 // Carga perezosa y compartida entre todas las instancias del modal — el
 // modelo (~200KB) y el runtime WASM se piden una sola vez por sesión del
 // navegador, no cada vez que el doctor abre la cámara para una foto distinta.
@@ -241,7 +254,7 @@ export function CameraCaptureModal({
 
       try {
         if (isBodyGuide(guide)) {
-          const landmarker = await getPoseLandmarker();
+          const landmarker = await withTimeout(getPoseLandmarker(), 15000);
           if (cancelled) return;
           setAiStatus('active');
 
@@ -288,7 +301,7 @@ export function CameraCaptureModal({
           return;
         }
 
-        const detector = await getFaceDetector();
+        const detector = await withTimeout(getFaceDetector(), 8000);
         if (cancelled) return;
         setAiStatus('active');
 
