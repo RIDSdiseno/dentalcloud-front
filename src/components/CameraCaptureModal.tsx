@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { FaceDetector } from '@mediapipe/tasks-vision';
+import type { FaceDetector, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { CameraIcon } from './icons';
 
 export type CaptureGuide =
@@ -69,14 +69,68 @@ function getFaceDetector(): Promise<FaceDetector> {
   return faceDetectorPromise;
 }
 
+// Mismo patrón que getFaceDetector (carga perezosa, GPU con reintento a CPU)
+// pero con el modelo de pose completa — para las fotos corporales, donde no
+// tiene sentido buscar un rostro sino que el cuerpo entero esté encuadrado.
+let poseLandmarkerPromise: Promise<PoseLandmarker> | null = null;
+function getPoseLandmarker(): Promise<PoseLandmarker> {
+  if (!poseLandmarkerPromise) {
+    poseLandmarkerPromise = (async () => {
+      const { PoseLandmarker: PL, FilesetResolver } = await import('@mediapipe/tasks-vision');
+      const vision = await FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
+      );
+      const modelAssetPath =
+        'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+      try {
+        return await PL.createFromOptions(vision, {
+          baseOptions: { modelAssetPath, delegate: 'GPU' },
+          runningMode: 'VIDEO',
+          numPoses: 1,
+        });
+      } catch {
+        return await PL.createFromOptions(vision, {
+          baseOptions: { modelAssetPath, delegate: 'CPU' },
+          runningMode: 'VIDEO',
+          numPoses: 1,
+        });
+      }
+    })();
+  }
+  return poseLandmarkerPromise;
+}
+
 // Silueta guía por ángulo — puramente visual (referencia de encuadre), no
-// depende de la detección facial. '45derecha'/'45izquierda' usan el mismo
-// trazo, espejado con CSS.
+// depende de la detección. '45derecha'/'45izquierda' (rostro) y
+// 'corpPerfilIzquierdo' (cuerpo) usan el mismo trazo que su par, espejado
+// con CSS.
 function GuideSilhouette({ guide, aligned }: { guide: CaptureGuide; aligned: boolean }) {
-  if (isBodyGuide(guide)) return null;
   const stroke = aligned ? '#22c55e' : '#ffffff';
-  const mirrored = guide === '45izquierda';
+  const mirrored = guide === '45izquierda' || guide === 'corpPerfilIzquierdo';
   const common = { fill: 'none', stroke, strokeWidth: 2.5, strokeDasharray: aligned ? undefined : '6 6', opacity: 0.85 };
+
+  if (isBodyGuide(guide)) {
+    const isProfile = guide === 'corpPerfilIzquierdo' || guide === 'corpPerfilDerecho';
+    return (
+      <svg
+        viewBox="0 0 200 260"
+        className="pointer-events-none absolute inset-0 h-full w-full"
+        style={mirrored ? { transform: 'scaleX(-1)' } : undefined}
+      >
+        {/* Silueta humana simplificada — cabeza, torso, brazos y piernas —
+            de pie de frente/espaldas; de perfil se muestra la misma silueta
+            apenas rotada, solo como referencia de encuadre completo. */}
+        <g transform={isProfile ? 'rotate(8 100 140)' : undefined}>
+          <ellipse cx="100" cy="26" rx="15" ry="17" {...common} />
+          <path d="M65 48 Q100 40 135 48 L128 130 Q100 138 72 130 Z" {...common} />
+          <path d="M65 48 Q54 72 58 122" {...common} />
+          <path d="M135 48 Q146 72 142 122" {...common} />
+          <path d="M85 130 Q75 192 67 253" {...common} />
+          <path d="M115 130 Q125 192 133 253" {...common} />
+        </g>
+      </svg>
+    );
+  }
 
   return (
     <svg
@@ -130,9 +184,9 @@ export function CameraCaptureModal({
   const rafRef = useRef<number | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [faceDetected, setFaceDetected] = useState(false);
+  const [subjectDetected, setSubjectDetected] = useState(false);
   const [aligned, setAligned] = useState(false);
-  const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable' | 'skipped'>('loading');
+  const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable'>('loading');
   const [aiErrorDetail, setAiErrorDetail] = useState<string | null>(null);
 
   useEffect(() => {
@@ -178,17 +232,62 @@ export function CameraCaptureModal({
         return;
       }
 
-      // Fotos corporales: no tiene sentido buscar un rostro, así que se
-      // omite por completo el modelo de detección (ni se descarga).
-      if (isBodyGuide(guide)) {
-        setAiStatus('skipped');
-        return;
-      }
+      // La detección (rostro o cuerpo, según la toma) es un plus (guía
+      // visual) — si el modelo no carga (WASM/GPU no soportado en este
+      // navegador), la cámara sigue funcionando igual, solo sin el
+      // indicador de "posición correcta".
+      const REQUIRED_GOOD_FRAMES = 10;
+      let goodFrameStreak = 0;
 
-      // La detección facial es un plus (guía visual) — si el modelo no
-      // carga (WASM/GPU no soportado en este navegador), la cámara sigue
-      // funcionando igual, solo sin el indicador de "posición correcta".
       try {
+        if (isBodyGuide(guide)) {
+          const landmarker = await getPoseLandmarker();
+          if (cancelled) return;
+          setAiStatus('active');
+
+          // Cuerpo completo bien encuadrado: nariz cerca de la parte
+          // superior, ambos tobillos cerca de la parte inferior (o sea, se
+          // ve desde la cabeza hasta los pies) y hombros centrados
+          // horizontalmente. Visibility baja en algún punto clave (oclusión,
+          // mala luz) invalida el cuadro igual que si no se detectara nada.
+          const MIN_VISIBILITY = 0.5;
+          const detectLoop = () => {
+            const video = videoRef.current;
+            if (video && video.readyState >= 2) {
+              try {
+                const result = landmarker.detectForVideo(video, performance.now());
+                const landmarks = result.landmarks[0];
+                const nose = landmarks?.[0];
+                const leftShoulder = landmarks?.[11];
+                const rightShoulder = landmarks?.[12];
+                const leftAnkle = landmarks?.[27];
+                const rightAnkle = landmarks?.[28];
+                const keyPoints = [nose, leftShoulder, rightShoulder, leftAnkle, rightAnkle];
+                const bodyOk = keyPoints.every((p) => p && (p.visibility ?? 0) >= MIN_VISIBILITY);
+                if (bodyOk && nose && leftShoulder && rightShoulder && leftAnkle && rightAnkle) {
+                  setSubjectDetected(true);
+                  const shoulderMidX = (leftShoulder.x + rightShoulder.x) / 2;
+                  const centered = shoulderMidX > 0.3 && shoulderMidX < 0.7;
+                  const headNearTop = nose.y < 0.3;
+                  const feetNearBottom = leftAnkle.y > 0.7 && rightAnkle.y > 0.7;
+                  const frameOk = centered && headNearTop && feetNearBottom;
+                  goodFrameStreak = frameOk ? goodFrameStreak + 1 : 0;
+                  setAligned(goodFrameStreak >= REQUIRED_GOOD_FRAMES);
+                } else {
+                  goodFrameStreak = 0;
+                  setSubjectDetected(false);
+                  setAligned(false);
+                }
+              } catch {
+                goodFrameStreak = 0;
+              }
+            }
+            rafRef.current = requestAnimationFrame(detectLoop);
+          };
+          rafRef.current = requestAnimationFrame(detectLoop);
+          return;
+        }
+
         const detector = await getFaceDetector();
         if (cancelled) return;
         setAiStatus('active');
@@ -197,8 +296,6 @@ export function CameraCaptureModal({
         // "posición correcta" — un solo cuadro con una lectura ruidosa (o un
         // falso positivo puntual) ya no alcanza para que se ponga verde, y
         // cualquier cuadro malo reinicia el contador de inmediato.
-        const REQUIRED_GOOD_FRAMES = 10;
-        let goodFrameStreak = 0;
         const MIN_SCORE = 0.75;
 
         const detectLoop = () => {
@@ -209,7 +306,7 @@ export function CameraCaptureModal({
               const detection = result.detections[0];
               const score = detection?.categories?.[0]?.score ?? 0;
               if (detection && score >= MIN_SCORE) {
-                setFaceDetected(true);
+                setSubjectDetected(true);
                 const box = detection.boundingBox;
                 let frameOk = false;
                 if (box) {
@@ -224,7 +321,7 @@ export function CameraCaptureModal({
                 setAligned(goodFrameStreak >= REQUIRED_GOOD_FRAMES);
               } else {
                 goodFrameStreak = 0;
-                setFaceDetected(false);
+                setSubjectDetected(false);
                 setAligned(false);
               }
             } catch {
@@ -237,10 +334,10 @@ export function CameraCaptureModal({
         };
         rafRef.current = requestAnimationFrame(detectLoop);
       } catch (err) {
-        // Sin detección facial disponible en este navegador — se sigue
-        // mostrando la cámara y la silueta guía, solo sin el indicador
-        // automático de alineación. Se guarda el motivo real (temporal,
-        // para diagnóstico) en vez de ocultarlo.
+        // Sin detección disponible en este navegador — se sigue mostrando
+        // la cámara y la silueta guía, solo sin el indicador automático de
+        // alineación. Se guarda el motivo real (temporal, para diagnóstico)
+        // en vez de ocultarlo.
         if (!cancelled) {
           setAiStatus('unavailable');
           const detail = err instanceof Error ? err.message : String(err);
@@ -317,13 +414,17 @@ export function CameraCaptureModal({
             <p className={`mb-3 text-center text-xs font-semibold ${aligned ? 'text-green-400' : 'text-amber-300'}`}>
               {aligned
                 ? '✓ Posición correcta — puedes tomar la foto'
-                : faceDetected
+                : subjectDetected
                   ? 'Ajusta la posición según la guía'
-                  : 'No se detecta un rostro — acércate y busca buena luz'}
+                  : isBodyGuide(guide)
+                    ? 'No se detecta el cuerpo completo — aléjate para que se vea de la cabeza a los pies'
+                    : 'No se detecta un rostro — acércate y busca buena luz'}
             </p>
           )}
           {status === 'ready' && aiStatus === 'loading' && (
-            <p className="mb-3 text-center text-xs font-semibold text-slate-400">Cargando detección facial...</p>
+            <p className="mb-3 text-center text-xs font-semibold text-slate-400">
+              {isBodyGuide(guide) ? 'Cargando detección de cuerpo...' : 'Cargando detección facial...'}
+            </p>
           )}
           {status === 'ready' && aiStatus === 'unavailable' && (
             <div className="mb-3 text-center">
