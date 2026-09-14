@@ -141,7 +141,15 @@ const POSE_CONNECTIONS: [number, number][] = [
 // depende de la detección. '45derecha'/'45izquierda' (rostro) y
 // 'corpPerfilIzquierdo' (cuerpo) usan el mismo trazo que su par, espejado
 // con CSS.
-function GuideSilhouette({ guide, aligned }: { guide: CaptureGuide; aligned: boolean }) {
+function GuideSilhouette({
+  guide,
+  aligned,
+  gender,
+}: {
+  guide: CaptureGuide;
+  aligned: boolean;
+  gender?: string | null;
+}) {
   const stroke = aligned ? '#22c55e' : '#ffffff';
   const mirrored = guide === '45izquierda' || guide === 'corpPerfilIzquierdo';
   const common = { fill: 'none', stroke, strokeWidth: 2.5, strokeDasharray: aligned ? undefined : '6 6', opacity: 0.85 };
@@ -156,7 +164,11 @@ function GuideSilhouette({ guide, aligned }: { guide: CaptureGuide; aligned: boo
       >
         {/* Silueta humana simplificada — cabeza, torso, brazos y piernas —
             de pie de frente/espaldas; de perfil se muestra la misma silueta
-            apenas rotada, solo como referencia de encuadre completo. */}
+            apenas rotada, solo como referencia de encuadre completo. Marcas
+            según género (14/09, pedido explícito) — puramente decorativas
+            sobre este ícono genérico, no hay ninguna detección real de
+            anatomía sobre la foto de la cámara. "otro"/sin especificar deja
+            la figura tal cual, sin marcas. */}
         <g transform={isProfile ? 'rotate(8 100 140)' : undefined}>
           <ellipse cx="100" cy="26" rx="15" ry="17" {...common} />
           <path d="M65 48 Q100 40 135 48 L128 130 Q100 138 72 130 Z" {...common} />
@@ -164,6 +176,16 @@ function GuideSilhouette({ guide, aligned }: { guide: CaptureGuide; aligned: boo
           <path d="M135 48 Q146 72 142 122" {...common} />
           <path d="M85 130 Q75 192 67 253" {...common} />
           <path d="M115 130 Q125 192 133 253" {...common} />
+          {gender === 'masculino' && <line x1="100" y1="130" x2="100" y2="150" {...common} strokeDasharray={undefined} />}
+          {gender === 'femenino' && (
+            <>
+              <line x1="88" y1="132" x2="112" y2="132" {...common} strokeDasharray={undefined} />
+              <circle cx="83" cy="76" r="7" {...common} />
+              <circle cx="83" cy="76" r="1.6" fill={stroke} stroke="none" />
+              <circle cx="117" cy="76" r="7" {...common} />
+              <circle cx="117" cy="76" r="1.6" fill={stroke} stroke="none" />
+            </>
+          )}
         </g>
       </svg>
     );
@@ -209,12 +231,16 @@ export function CameraCaptureModal({
   onCapture,
   onClose,
   onFallbackToFile,
+  patientGender,
 }: {
   guide: CaptureGuide;
   label: string;
   onCapture: (file: File) => void;
   onClose: () => void;
   onFallbackToFile: () => void;
+  // Solo afecta la silueta genérica de cuerpo (marcas decorativas por
+  // género) — no tiene ningún efecto sobre rostro ni sobre la detección.
+  patientGender?: string | null;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -594,7 +620,9 @@ export function CameraCaptureModal({
             {status !== 'error' && (
               <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
             )}
-            {status === 'ready' && !subjectDetected && <GuideSilhouette guide={guide} aligned={aligned} />}
+            {status === 'ready' && !subjectDetected && (
+              <GuideSilhouette guide={guide} aligned={aligned} gender={patientGender} />
+            )}
             {status === 'ready' && isBodyGuide(guide) && (
               <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
                 <g ref={skeletonGroupRef} stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" fill="none" style={{ opacity: 0 }}>

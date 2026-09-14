@@ -752,6 +752,7 @@ export function ExamenEsteticoTab({
           label={`${PHOTO_SLOTS_BY_AREA[photoArea].find((s) => s.key === cameraTarget.slot)!.label} — ${
             cameraTarget.moment === 'antes' ? 'Antes' : `Avance ${cameraTarget.round}`
           }`}
+          patientGender={patient.gender}
           onClose={() => setCameraTarget(null)}
           onFallbackToFile={() => {
             const target = cameraTarget;
