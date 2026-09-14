@@ -9,8 +9,13 @@ import {
   type Patient,
 } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
-import { MicIcon, CameraIcon, LockIcon } from '../../components/icons';
+import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon } from '../../components/icons';
 import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
+import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
+
+// Mismo code que usa el backend (ver src/lib/consentTypes.ts) para exigir
+// este consentimiento antes de subir cualquier foto del examen estético.
+const PHOTO_USAGE_CONSENT_CODE = 'uso_imagenes';
 
 const SKIN_TYPE_OPTIONS = ['seca', 'mixta', 'grasa', 'sensible'] as const;
 const SKIN_TYPE_LABEL: Record<string, string> = { seca: 'Seca', mixta: 'Mixta', grasa: 'Grasa', sensible: 'Sensible' };
@@ -60,6 +65,7 @@ function PhotoRoundGrid({
   fileInputs,
   onOpenCamera,
   onFileChange,
+  disabled,
 }: {
   moment: ExamPhotoMoment;
   round: number;
@@ -68,6 +74,7 @@ function PhotoRoundGrid({
   fileInputs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
   onOpenCamera: (slot: ExamPhotoSlot) => void;
   onFileChange: (slot: ExamPhotoSlot, file: File | null) => void;
+  disabled?: boolean;
 }) {
   const bySlot = latestBySlot(photos, moment, round);
   return (
@@ -80,7 +87,7 @@ function PhotoRoundGrid({
             <button
               type="button"
               onClick={() => onOpenCamera(slot.key)}
-              disabled={uploadingSlot === slot.key}
+              disabled={disabled || uploadingSlot === slot.key}
               className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50"
             >
               {uploadingSlot === slot.key ? (
@@ -124,7 +131,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const selectClass =
   'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10';
 
-export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onUpdate: (patient: Patient) => void }) {
+export function ExamenEsteticoTab({
+  patient,
+  onUpdate,
+  onGoToConsents,
+}: {
+  patient: Patient;
+  onUpdate: (patient: Patient) => void;
+  onGoToConsents: () => void;
+}) {
   const [skinType, setSkinType] = useState(patient.examSkinType ?? '');
   const [fitzpatrick, setFitzpatrick] = useState(patient.examFitzpatrick ?? '');
   const [wrinkles, setWrinkles] = useState(patient.examWrinkles ?? '');
@@ -145,12 +160,40 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
   const [cameraTarget, setCameraTarget] = useState<{ slot: ExamPhotoSlot; moment: ExamPhotoMoment; round: number } | null>(
     null
   );
+  const [showOlderPhotos, setShowOlderPhotos] = useState(false);
+  const [photoConsentChecked, setPhotoConsentChecked] = useState(false);
+  const [photoConsentSigned, setPhotoConsentSigned] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     fetchExamPhotos(patient.id)
       .then(setExamPhotos)
       .catch((err) => setSaveError(getErrorMessage(err, 'No se pudo cargar el registro fotográfico')));
+  }, [patient.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkConsent() {
+      try {
+        const types = await fetchConsentTypes();
+        const photoType = types.find((t) => t.code === PHOTO_USAGE_CONSENT_CODE);
+        if (!photoType) {
+          if (!cancelled) setPhotoConsentSigned(false);
+          return;
+        }
+        const consents = await fetchPatientConsents(patient.id);
+        const signed = consents.some((c) => c.consentTypeId === photoType.id && c.status === 'firmado');
+        if (!cancelled) setPhotoConsentSigned(signed);
+      } catch {
+        if (!cancelled) setPhotoConsentSigned(false);
+      } finally {
+        if (!cancelled) setPhotoConsentChecked(true);
+      }
+    }
+    checkConsent();
+    return () => {
+      cancelled = true;
+    };
   }, [patient.id]);
 
   const antesDone = roundComplete(examPhotos, 'antes', 1);
@@ -163,6 +206,18 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
     ? Array.from(new Set([...avanceRoundsWithPhotos, pendingAvanceRound])).sort((a, b) => a - b)
     : avanceRoundsWithPhotos;
   const canStartNewAvance = antesDone && lastAvanceDone && !pendingAvanceRound;
+
+  // Orden de despliegue: lo más nuevo arriba, lo más viejo abajo. "Antes" es
+  // siempre lo más antiguo — solo queda primero cuando todavía no existe
+  // ningún Avance.
+  const allRounds: { moment: ExamPhotoMoment; round: number; label: string }[] = [
+    ...visibleAvanceRounds
+      .slice()
+      .reverse()
+      .map((round) => ({ moment: 'avance' as const, round, label: `Avance ${round}` })),
+    { moment: 'antes' as const, round: 1, label: 'Antes' },
+  ];
+  const [latestRound, ...olderRounds] = allRounds;
 
   async function handleSave() {
     setSaving(true);
@@ -307,43 +362,81 @@ export function ExamenEsteticoTab({ patient, onUpdate }: { patient: Patient; onU
       </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Registro fotográfico — Antes</h2>
+        <h2 className="mb-1 text-sm font-semibold text-slate-800">Registro fotográfico</h2>
         <p className="mb-4 text-xs text-slate-500">
-          Máximo 4 fotos: Frontal, Perfil Derecho, 45° Derecha y 45° Izquierda. Es la línea base para comparar contra
-          los avances.
+          Máximo 4 fotos por ronda: Frontal, Perfil Derecho, 45° Derecha y 45° Izquierda.
         </p>
-        <PhotoRoundGrid
-          moment="antes"
-          round={1}
-          photos={examPhotos}
-          uploadingSlot={uploadingSlot}
-          fileInputs={fileInputs}
-          onOpenCamera={(slot) => setCameraTarget({ slot, moment: 'antes', round: 1 })}
-          onFileChange={(slot, file) => handlePhotoChange(slot, 'antes', 1, file)}
-        />
-      </div>
 
-      {visibleAvanceRounds.map((round) => (
-        <div key={round} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-          <h2 className="mb-4 text-sm font-semibold text-slate-800">Avance {round}</h2>
+        {!photoConsentChecked ? (
+          <p className="mb-4 text-xs text-slate-400">Verificando consentimiento...</p>
+        ) : !photoConsentSigned ? (
+          <div className="mb-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+            <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="text-xs text-amber-800">
+              <p className="font-semibold">
+                El paciente debe firmar el consentimiento de uso de fotografías antes de poder tomar fotos.
+              </p>
+              <button type="button" onClick={onGoToConsents} className="mt-1.5 font-semibold underline">
+                Ir a Consentimientos
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mb-2">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{latestRound.label}</h3>
           <PhotoRoundGrid
-            moment="avance"
-            round={round}
+            moment={latestRound.moment}
+            round={latestRound.round}
             photos={examPhotos}
             uploadingSlot={uploadingSlot}
             fileInputs={fileInputs}
-            onOpenCamera={(slot) => setCameraTarget({ slot, moment: 'avance', round })}
-            onFileChange={(slot, file) => handlePhotoChange(slot, 'avance', round, file)}
+            disabled={!photoConsentSigned}
+            onOpenCamera={(slot) => setCameraTarget({ slot, moment: latestRound.moment, round: latestRound.round })}
+            onFileChange={(slot, file) => handlePhotoChange(slot, latestRound.moment, latestRound.round, file)}
           />
         </div>
-      ))}
+
+        {olderRounds.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowOlderPhotos((v) => !v)}
+              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
+            >
+              <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showOlderPhotos ? 'rotate-180' : ''}`} />
+              {showOlderPhotos ? 'Ocultar fotos anteriores' : `Desplegar fotos anteriores (${olderRounds.length})`}
+            </button>
+            {showOlderPhotos && (
+              <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4">
+                {olderRounds.map((r) => (
+                  <div key={`${r.moment}-${r.round}`}>
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{r.label}</h3>
+                    <PhotoRoundGrid
+                      moment={r.moment}
+                      round={r.round}
+                      photos={examPhotos}
+                      uploadingSlot={uploadingSlot}
+                      fileInputs={fileInputs}
+                      disabled={!photoConsentSigned}
+                      onOpenCamera={(slot) => setCameraTarget({ slot, moment: r.moment, round: r.round })}
+                      onFileChange={(slot, file) => handlePhotoChange(slot, r.moment, r.round, file)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         {canStartNewAvance ? (
           <button
             type="button"
             onClick={() => setPendingAvanceRound(lastAvanceRound + 1)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+            disabled={!photoConsentSigned}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <CameraIcon className="h-4 w-4" />
             + Agregar Avance {lastAvanceRound + 1}

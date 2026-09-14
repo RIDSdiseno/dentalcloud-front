@@ -1014,7 +1014,9 @@ export default function FichaPaciente() {
         </div>
       )}
 
-      {activeTab === 'examen' && <ExamenEsteticoTab patient={patient} onUpdate={setPatient} />}
+      {activeTab === 'examen' && (
+        <ExamenEsteticoTab patient={patient} onUpdate={setPatient} onGoToConsents={() => setActiveTab('consentimientos')} />
+      )}
 
       {activeTab === 'horas' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
