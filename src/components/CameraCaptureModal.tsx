@@ -457,22 +457,53 @@ export function CameraCaptureModal({
                 setSubjectDetected(true);
                 const box = detection.boundingBox;
                 let frameOk = false;
+                let mismatch = false;
                 if (box) {
                   const cx = (box.originX + box.width / 2) / video.videoWidth;
                   const cy = (box.originY + box.height / 2) / video.videoHeight;
                   const sizeRatio = box.height / video.videoHeight;
                   const centered = cx > 0.35 && cx < 0.65 && cy > 0.25 && cy < 0.7;
-                  const wellSized = sizeRatio > 0.28 && sizeRatio < 0.65;
-                  frameOk = centered && wellSized;
+                  // El acercamiento digital (ver FACE_ZOOM_SCALE) ya recorta
+                  // la foto final — sin dividir el umbral por el mismo
+                  // factor, había que acercarse mucho más de lo normal para
+                  // que el rostro alcanzara a verse "bien encuadrado" en el
+                  // cuadro completo sin recortar (reportado por Oscar).
+                  const wellSized = sizeRatio > 0.28 / FACE_ZOOM_SCALE && sizeRatio < 0.65 / FACE_ZOOM_SCALE;
+
+                  // BlazeFace entrega 6 puntos: 0 ojo derecho, 1 ojo
+                  // izquierdo, 2 punta de la nariz (del propio paciente, no
+                  // espejado). De frente la nariz queda centrada entre los
+                  // ojos; al girar la cabeza se corre hacia un lado — sin
+                  // este chequeo, "45° Derecha" y "45° Izquierda" aceptaban
+                  // cualquier giro (o ninguno) como válido (reportado por
+                  // Oscar: fotos a la derecha y a la izquierda "detectadas
+                  // igual"). Signo por confirmar en terreno — si queda al
+                  // revés, basta invertir NOSE_TURN_SIGN.
+                  const keypoints = detection.keypoints;
+                  const rightEye = keypoints?.[0];
+                  const leftEye = keypoints?.[1];
+                  const nose = keypoints?.[2];
+                  let orientationOk = true;
+                  if ((guide === '45derecha' || guide === '45izquierda') && rightEye && leftEye && nose) {
+                    const eyeMidX = (rightEye.x + leftEye.x) / 2;
+                    const NOSE_TURN_SIGN = 1;
+                    const turn = (nose.x - eyeMidX) * NOSE_TURN_SIGN;
+                    const TURN_THRESHOLD = 0.02;
+                    orientationOk = guide === '45derecha' ? turn > TURN_THRESHOLD : turn < -TURN_THRESHOLD;
+                    mismatch = !orientationOk && centered && wellSized;
+                  }
+                  frameOk = centered && wellSized && orientationOk;
                 }
                 goodFrameStreak = frameOk ? goodFrameStreak + 1 : 0;
                 const isAligned = goodFrameStreak >= REQUIRED_GOOD_FRAMES;
                 setAligned(isAligned);
+                setOrientationMismatch(mismatch);
                 if (box) updateFaceOverlay(box, isAligned);
               } else {
                 goodFrameStreak = 0;
                 setSubjectDetected(false);
                 setAligned(false);
+                setOrientationMismatch(false);
                 hideFaceOverlay();
               }
             } catch {
@@ -605,7 +636,11 @@ export function CameraCaptureModal({
                 : orientationMismatch
                   ? guide === 'corpPerfilIzquierdo' || guide === 'corpPerfilDerecho'
                     ? 'Gírate de perfil — se te detecta de frente'
-                    : 'Ponte de frente — se te detecta de perfil'
+                    : guide === '45derecha'
+                      ? 'Gira la cabeza hacia su derecha — se te detecta de frente o al otro lado'
+                      : guide === '45izquierda'
+                        ? 'Gira la cabeza hacia su izquierda — se te detecta de frente o al otro lado'
+                        : 'Ponte de frente — se te detecta de perfil'
                   : subjectDetected
                     ? 'Ajusta la posición según la guía'
                     : isBodyGuide(guide)
