@@ -7,8 +7,20 @@ import {
   uploadPatientPhoto,
   uploadMotivoConsultaAudio,
   corroboratePatientData,
+  generatePatientAnamnesisSummary,
+  createPatientExamRequest,
   type Patient,
 } from '../../api/patients';
+import {
+  ANAMNESIS_PATHOLOGY_KEYS,
+  ANAMNESIS_PATHOLOGY_LABEL,
+  ANAMNESIS_HABIT_KEYS,
+  ANAMNESIS_HABIT_LABEL,
+  normalizeAnamnesisData,
+  type AnamnesisData,
+  type YesNoDetail,
+} from './anamnesisData';
+import { Modal } from '../../components/Modal';
 import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
 import { fetchPatientBalance } from '../../api/ledger';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
@@ -493,78 +505,430 @@ function buildAnamnesisSummary(patient: Patient): string {
   return parts.join(' ');
 }
 
-function AnamnesisConclusionesCard({ patient, onUpdate }: { patient: Patient; onUpdate: (patient: Patient) => void }) {
+function YesNoBlock({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: YesNoDetail;
+  onChange: (value: YesNoDetail) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => onChange({ tiene: false, detalle: '' })}
+          className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
+            value.tiene === false ? 'bg-slate-700 text-white ring-slate-700' : 'bg-slate-50 text-slate-600 ring-slate-200'
+          }`}
+        >
+          No
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange({ ...value, tiene: true })}
+          className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
+            value.tiene === true ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200'
+          }`}
+        >
+          Sí
+        </button>
+      </div>
+      {value.tiene === true && (
+        <input
+          value={value.detalle}
+          onChange={(e) => onChange({ ...value, detalle: e.target.value })}
+          placeholder="Detalle..."
+          className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+        />
+      )}
+    </div>
+  );
+}
+
+function CheckboxPills<T extends string>({
+  options,
+  labels,
+  selected,
+  onToggle,
+}: {
+  options: readonly T[];
+  labels: Record<T, string>;
+  selected: T[];
+  onToggle: (key: T) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((key) => {
+        const active = selected.includes(key);
+        return (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onToggle(key)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition-colors ${
+              active ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            {labels[key]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ExamRequestModal({ patient, onClose, onCreated }: { patient: Patient; onClose: () => void; onCreated: (fileUrl: string) => void }) {
+  const [exams, setExams] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+    try {
+      const document = await createPatientExamRequest(patient.id, { exams, notes: notes || undefined });
+      onCreated(document.fileUrl);
+      onClose();
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo generar la solicitud de exámenes'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal title="Solicitud de exámenes" onClose={onClose}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <p className="text-sm text-slate-500">
+          Se genera una receta imprimible con los exámenes solicitados y el flujo queda pausado en esta etapa hasta
+          que el paciente los traiga.
+        </p>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exámenes solicitados</span>
+          <textarea
+            value={exams}
+            onChange={(e) => setExams(e.target.value)}
+            required
+            rows={4}
+            placeholder="Ej. Hemograma completo, perfil tiroideo, test de embarazo..."
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          />
+        </label>
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Observaciones (opcional)</span>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          />
+        </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving || !exams.trim()}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saving ? 'Generando...' : 'Generar e imprimir'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function AnamnesisConclusionesCard({
+  patient,
+  onUpdate,
+  onGoToExamen,
+}: {
+  patient: Patient;
+  onUpdate: (patient: Patient) => void;
+  onGoToExamen: () => void;
+}) {
+  const [anamnesis, setAnamnesis] = useState<AnamnesisData>(() => normalizeAnamnesisData(patient.anamnesisData));
   const [expectativas, setExpectativas] = useState(patient.expectativasPaciente ?? '');
   const [optimo, setOptimo] = useState(patient.optimoTratamiento ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [examModalOpen, setExamModalOpen] = useState(false);
+
+  useEffect(() => {
+    setAnamnesis(normalizeAnamnesisData(patient.anamnesisData));
+    setExpectativas(patient.expectativasPaciente ?? '');
+    setOptimo(patient.optimoTratamiento ?? '');
+  }, [patient.id]);
 
   async function handleSave() {
     setSaving(true);
     setSaveError(null);
     try {
       const updated = await updatePatient(patient.id, {
+        anamnesisData: anamnesis,
         expectativasPaciente: expectativas,
         optimoTratamiento: optimo,
       });
       onUpdate(updated);
     } catch (err) {
-      setSaveError(getErrorMessage(err, 'No se pudo guardar la conclusión de anamnesis'));
+      setSaveError(getErrorMessage(err, 'No se pudo guardar la anamnesis'));
     } finally {
       setSaving(false);
     }
   }
 
-  const dirty = expectativas !== (patient.expectativasPaciente ?? '') || optimo !== (patient.optimoTratamiento ?? '');
+  async function handleGenerateSummary() {
+    setGeneratingSummary(true);
+    setSaveError(null);
+    try {
+      const updated = await generatePatientAnamnesisSummary(patient.id);
+      onUpdate(updated);
+    } catch (err) {
+      setSaveError(getErrorMessage(err, 'No se pudo generar el resumen con IA'));
+    } finally {
+      setGeneratingSummary(false);
+    }
+  }
+
+  const savedAnamnesis = normalizeAnamnesisData(patient.anamnesisData);
+  const dirty =
+    JSON.stringify(anamnesis) !== JSON.stringify(savedAnamnesis) ||
+    expectativas !== (patient.expectativasPaciente ?? '') ||
+    optimo !== (patient.optimoTratamiento ?? '');
+
+  const allergyText =
+    patient.allergies.length > 0 || patient.allergyNotes
+      ? patient.allergyNotes || patient.allergies.map((a) => ALLERGY_LABEL[a] ?? a).join(', ')
+      : 'Niega alergias medicamentosas, cosméticas o al látex.';
 
   return (
     <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-      <h2 className="mb-3 text-sm font-semibold text-slate-800">Conclusiones de Anamnesis</h2>
-      <div className="rounded-xl bg-slate-50 p-4 text-sm italic text-slate-600">{buildAnamnesisSummary(patient)}</div>
+      <h2 className="mb-1 text-sm font-semibold text-slate-800">Anamnesis</h2>
+      <p className="mb-4 text-xs text-slate-500">Los 8 bloques que pidió Urbina, marcables con el dedo — nada de texto libre para antecedentes.</p>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Expectativas del paciente</span>
-          <select
-            value={expectativas}
-            onChange={(e) => setExpectativas(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
-          >
-            <option value="">No especificado</option>
-            {Object.entries(EXPECTATIVAS_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">¿Paciente óptimo para tratamiento?</span>
-          <select
-            value={optimo}
-            onChange={(e) => setOptimo(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
-          >
-            <option value="">No especificado</option>
-            {Object.entries(OPTIMO_LABEL).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+            1. Antecedentes mórbidos personales
+          </span>
+          <CheckboxPills
+            options={ANAMNESIS_PATHOLOGY_KEYS}
+            labels={ANAMNESIS_PATHOLOGY_LABEL}
+            selected={anamnesis.antecedentesMorbidos}
+            onToggle={(key) =>
+              setAnamnesis((prev) => ({
+                ...prev,
+                antecedentesMorbidos: prev.antecedentesMorbidos.includes(key)
+                  ? prev.antecedentesMorbidos.filter((k) => k !== key)
+                  : [...prev.antecedentesMorbidos, key],
+              }))
+            }
+          />
+          <input
+            value={anamnesis.antecedentesMorbidosOtro}
+            onChange={(e) => setAnamnesis((prev) => ({ ...prev, antecedentesMorbidosOtro: e.target.value }))}
+            placeholder="Otro (no listado arriba)..."
+            className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          />
+        </div>
+
+        <YesNoBlock
+          label="2. Antecedentes quirúrgicos estéticos"
+          value={anamnesis.quirurgicosEsteticos}
+          onChange={(v) => setAnamnesis((prev) => ({ ...prev, quirurgicosEsteticos: v }))}
+        />
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">3. Procedimiento estético previo</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { tiene: false, tipo: '', zona: '', fecha: '' } }))}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
+                anamnesis.procedimientoPrevio.tiene === false ? 'bg-slate-700 text-white ring-slate-700' : 'bg-slate-50 text-slate-600 ring-slate-200'
+              }`}
+            >
+              No
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, tiene: true } }))}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
+                anamnesis.procedimientoPrevio.tiene === true ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200'
+              }`}
+            >
+              Sí
+            </button>
+          </div>
+          {anamnesis.procedimientoPrevio.tiene === true && (
+            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <input
+                value={anamnesis.procedimientoPrevio.tipo}
+                onChange={(e) => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, tipo: e.target.value } }))}
+                placeholder="Tipo"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              />
+              <input
+                value={anamnesis.procedimientoPrevio.zona}
+                onChange={(e) => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, zona: e.target.value } }))}
+                placeholder="Zona"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              />
+              <input
+                value={anamnesis.procedimientoPrevio.fecha}
+                onChange={(e) => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, fecha: e.target.value } }))}
+                placeholder="Fecha"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              />
+            </div>
+          )}
+        </div>
+
+        <YesNoBlock
+          label="4. Complicaciones previas"
+          value={anamnesis.complicacionesPrevias}
+          onChange={(v) => setAnamnesis((prev) => ({ ...prev, complicacionesPrevias: v }))}
+        />
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">5. Medicación actual</span>
+          <p className="text-sm text-slate-600">
+            {patient.currentMedications || 'Sin medicación actual registrada.'}{' '}
+            <span className="text-xs text-slate-400">(se edita en "Antecedentes médicos" más abajo)</span>
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">6. Alergias</span>
+          <p className="text-sm text-slate-600">
+            {allergyText} <span className="text-xs text-slate-400">(se edita en "Antecedentes médicos" más abajo)</span>
+          </p>
+        </div>
+
+        <YesNoBlock
+          label="7. Antecedentes familiares relevantes"
+          value={anamnesis.antecedentesFamiliares}
+          onChange={(v) => setAnamnesis((prev) => ({ ...prev, antecedentesFamiliares: v }))}
+        />
+
+        <div>
+          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">8. Hábitos</span>
+          <CheckboxPills
+            options={ANAMNESIS_HABIT_KEYS}
+            labels={ANAMNESIS_HABIT_LABEL}
+            selected={anamnesis.habitos}
+            onToggle={(key) =>
+              setAnamnesis((prev) => ({
+                ...prev,
+                habitos: prev.habitos.includes(key) ? prev.habitos.filter((k) => k !== key) : [...prev.habitos, key],
+              }))
+            }
+          />
+          <input
+            value={anamnesis.habitosOtro}
+            onChange={(e) => setAnamnesis((prev) => ({ ...prev, habitosOtro: e.target.value }))}
+            placeholder="Otro..."
+            className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          />
+        </div>
       </div>
-      <div className="mt-3 flex items-center gap-3">
+
+      <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
           onClick={handleSave}
           disabled={saving || !dirty}
           className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-40"
         >
-          {saving ? 'Guardando...' : 'Guardar'}
+          {saving ? 'Guardando...' : 'Guardar anamnesis'}
         </button>
         {saveError && <p className="text-xs text-red-600">{saveError}</p>}
       </div>
+
+      <div className="mt-6 border-t border-slate-100 pt-5">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-slate-800">Conclusiones de Anamnesis</h3>
+          <button
+            type="button"
+            onClick={handleGenerateSummary}
+            disabled={generatingSummary}
+            className="rounded-lg border border-brand-300 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {generatingSummary ? 'Generando con IA...' : patient.anamnesisSummary ? '↻ Regenerar con IA' : '✨ Generar resumen con IA'}
+          </button>
+        </div>
+        <div className="rounded-xl bg-slate-50 p-4 text-sm italic text-slate-600">
+          {patient.anamnesisSummary || buildAnamnesisSummary(patient)}
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Expectativas del paciente</span>
+            <select
+              value={expectativas}
+              onChange={(e) => setExpectativas(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            >
+              <option value="">No especificado</option>
+              {Object.entries(EXPECTATIVAS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">¿Paciente óptimo para tratamiento?</span>
+            <select
+              value={optimo}
+              onChange={(e) => setOptimo(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            >
+              <option value="">No especificado</option>
+              {Object.entries(OPTIMO_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        {/* Etapa 04: bifurcación — solo aparece una vez que el médico ya marcó su criterio. */}
+        {optimo === 'necesita_examenes' && (
+          <button
+            type="button"
+            onClick={() => setExamModalOpen(true)}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+          >
+            <ClipboardIcon className="h-4 w-4" />
+            Solicitud de exámenes — el flujo se pausa aquí hasta traerlos
+          </button>
+        )}
+        {optimo === 'si' && (
+          <button
+            type="button"
+            onClick={onGoToExamen}
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white hover:bg-brand-700"
+          >
+            Continuar a Evaluación Estética →
+          </button>
+        )}
+      </div>
+
+      {examModalOpen && (
+        <ExamRequestModal patient={patient} onClose={() => setExamModalOpen(false)} onCreated={(fileUrl) => window.open(fileUrl, '_blank')} />
+      )}
     </div>
   );
 }
@@ -942,7 +1306,11 @@ export default function FichaPaciente() {
             onGoToConsents={() => setActiveTab('consentimientos')}
           />
 
-          <AnamnesisConclusionesCard patient={patient} onUpdate={setPatient} />
+          <AnamnesisConclusionesCard
+            patient={patient}
+            onUpdate={setPatient}
+            onGoToExamen={() => setActiveTab('examen')}
+          />
 
           <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">

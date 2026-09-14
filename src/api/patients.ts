@@ -38,6 +38,9 @@ export type Patient = {
   // presiona "Confirmar datos del paciente" — se vuelve a poner en null si
   // después cambia algo de identidad/contacto (ver patientsController.ts).
   datosCorroboradosAt: string | null;
+  // Anamnesis por checkbox (Etapa 03) — shape en ./anamnesisData.ts.
+  anamnesisData: unknown;
+  anamnesisSummary: string | null;
   expectativasPaciente: string | null;
   optimoTratamiento: string | null;
   examSkinType: string | null;
@@ -96,6 +99,7 @@ export type PatientInput = {
   bloodType?: string;
   tags?: string[];
   motivoConsulta?: string;
+  anamnesisData?: unknown;
   expectativasPaciente?: string;
   optimoTratamiento?: string;
   examSkinType?: string;
@@ -153,6 +157,21 @@ export async function uploadMotivoConsultaAudio(id: string, audio: Blob) {
 export async function corroboratePatientData(id: string) {
   const { data } = await api.post<{ patient: Patient }>(`/patients/${id}/corroborate-data`);
   return data.patient;
+}
+
+// Etapa 03: genera (o regenera) el párrafo de "Conclusiones de Anamnesis"
+// con IA a partir de los 8 bloques + medicación/alergias/motivo de consulta
+// ya guardados.
+export async function generatePatientAnamnesisSummary(id: string) {
+  const { data } = await api.post<{ patient: Patient }>(`/patients/${id}/anamnesis-summary`);
+  return data.patient;
+}
+
+// Etapa 04 (bifurcación): genera la receta de exámenes en PDF y la deja
+// guardada como documento clínico (categoría solicitud_laboratorio).
+export async function createPatientExamRequest(id: string, input: { exams: string; notes?: string }) {
+  const { data } = await api.post<{ document: { id: string; fileUrl: string } }>(`/patients/${id}/exam-request`, input);
+  return data.document;
 }
 
 export type ExamPhotoMoment = 'antes' | 'avance';
