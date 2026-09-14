@@ -30,6 +30,12 @@ function isBodyGuide(guide: CaptureGuide): boolean {
   return guide.startsWith('corp');
 }
 
+// Las tomas de rostro se ven "lejos" a menos que la cámara ya esté muy cerca
+// físicamente — se compensa con un acercamiento digital (recorte centrado),
+// aplicado igual al video en vivo y a la foto final (ver handleCapture) para
+// que lo que se ve al encuadrar sea exactamente lo que queda guardado.
+const FACE_ZOOM_SCALE = 1.6;
+
 // El modelo de pose (~6MB) pesa mucho más que el de rostro (~200KB) — en
 // una red lenta, o si el delegate GPU se cuelga en vez de fallar rápido en
 // algunos navegadores móviles, la carga puede demorar mucho o nunca
@@ -217,6 +223,10 @@ export function CameraCaptureModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [subjectDetected, setSubjectDetected] = useState(false);
   const [aligned, setAligned] = useState(false);
+  // Cuerpo detectado y bien encuadrado, pero de espaldas/frente cuando la
+  // ronda pedía perfil (o viceversa) — mensaje específico en vez del
+  // genérico "ajusta la posición".
+  const [orientationMismatch, setOrientationMismatch] = useState(false);
   const [aiStatus, setAiStatus] = useState<'loading' | 'active' | 'unavailable'>('loading');
   const [aiErrorDetail, setAiErrorDetail] = useState<string | null>(null);
 
@@ -283,6 +293,36 @@ export function CameraCaptureModal({
     if (skeletonGroupRef.current) skeletonGroupRef.current.style.opacity = '0';
   }
 
+  // Óvalo de rostro en vivo — mismo principio que el esqueleto de cuerpo:
+  // en vez de un óvalo genérico de tamaño fijo, se dibuja sobre el
+  // recuadro real que detecta el modelo, cuadro a cuadro.
+  const faceEllipseRef = useRef<SVGEllipseElement | null>(null);
+
+  function updateFaceOverlay(box: { originX: number; originY: number; width: number; height: number }, aligned: boolean) {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.clientWidth) return;
+    const tl = toContainerPercent({ x: box.originX / video.videoWidth, y: box.originY / video.videoHeight }, video);
+    const br = toContainerPercent(
+      { x: (box.originX + box.width) / video.videoWidth, y: (box.originY + box.height) / video.videoHeight },
+      video
+    );
+    const w = br.x - tl.x;
+    const h = br.y - tl.y;
+    const el = faceEllipseRef.current;
+    if (el) {
+      el.setAttribute('cx', String((tl.x + br.x) / 2));
+      el.setAttribute('cy', String((tl.y + br.y) / 2));
+      el.setAttribute('rx', String(w * 0.62));
+      el.setAttribute('ry', String(h * 0.78));
+      el.style.opacity = '1';
+      el.setAttribute('stroke', aligned ? '#22c55e' : '#ffffff');
+    }
+  }
+
+  function hideFaceOverlay() {
+    if (faceEllipseRef.current) faceEllipseRef.current.style.opacity = '0';
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -345,6 +385,12 @@ export function CameraCaptureModal({
           // horizontalmente. Visibility baja en algún punto clave (oclusión,
           // mala luz) invalida el cuadro igual que si no se detectara nada.
           const MIN_VISIBILITY = 0.5;
+          // De frente/espaldas los hombros se ven bien separados en el
+          // cuadro; de perfil, un hombro queda casi detrás del otro (poca
+          // separación horizontal). Sin este chequeo, una pose de frente se
+          // marcaba "correcta" aunque la ronda pidiera perfil (reportado por
+          // Oscar: "es el perfil izquierdo y lo detecta frontalmente").
+          const isProfileGuide = guide === 'corpPerfilIzquierdo' || guide === 'corpPerfilDerecho';
           const detectLoop = () => {
             const video = videoRef.current;
             if (video && video.readyState >= 2) {
@@ -364,15 +410,19 @@ export function CameraCaptureModal({
                   const centered = shoulderMidX > 0.3 && shoulderMidX < 0.7;
                   const headNearTop = nose.y < 0.3;
                   const feetNearBottom = leftAnkle.y > 0.7 && rightAnkle.y > 0.7;
-                  const frameOk = centered && headNearTop && feetNearBottom;
+                  const shoulderSeparation = Math.abs(leftShoulder.x - rightShoulder.x);
+                  const orientationOk = isProfileGuide ? shoulderSeparation < 0.09 : shoulderSeparation > 0.14;
+                  const frameOk = centered && headNearTop && feetNearBottom && orientationOk;
                   goodFrameStreak = frameOk ? goodFrameStreak + 1 : 0;
                   const isAligned = goodFrameStreak >= REQUIRED_GOOD_FRAMES;
                   setAligned(isAligned);
+                  setOrientationMismatch(!orientationOk && centered && headNearTop && feetNearBottom);
                   updateSkeletonOverlay(landmarks, isAligned);
                 } else {
                   goodFrameStreak = 0;
                   setSubjectDetected(false);
                   setAligned(false);
+                  setOrientationMismatch(false);
                   hideSkeletonOverlay();
                 }
               } catch {
@@ -416,16 +466,20 @@ export function CameraCaptureModal({
                   frameOk = centered && wellSized;
                 }
                 goodFrameStreak = frameOk ? goodFrameStreak + 1 : 0;
-                setAligned(goodFrameStreak >= REQUIRED_GOOD_FRAMES);
+                const isAligned = goodFrameStreak >= REQUIRED_GOOD_FRAMES;
+                setAligned(isAligned);
+                if (box) updateFaceOverlay(box, isAligned);
               } else {
                 goodFrameStreak = 0;
                 setSubjectDetected(false);
                 setAligned(false);
+                hideFaceOverlay();
               }
             } catch {
               // Best-effort: si un frame puntual falla la detección, no
               // interrumpe el loop — solo se pierde ese cuadro.
               goodFrameStreak = 0;
+              hideFaceOverlay();
             }
           }
           rafRef.current = requestAnimationFrame(detectLoop);
@@ -456,12 +510,20 @@ export function CameraCaptureModal({
   function handleCapture() {
     const video = videoRef.current;
     if (!video || video.videoWidth === 0) return;
+    // La foto guardada debe coincidir con el acercamiento que se ve en
+    // pantalla (ver FACE_ZOOM_SCALE) — mismo recorte centrado, no solo un
+    // efecto visual del preview.
+    const zoom = isBodyGuide(guide) ? 1 : FACE_ZOOM_SCALE;
+    const srcW = video.videoWidth / zoom;
+    const srcH = video.videoHeight / zoom;
+    const srcX = (video.videoWidth - srcW) / 2;
+    const srcY = (video.videoHeight - srcH) / 2;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = srcW;
+    canvas.height = srcH;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -490,28 +552,39 @@ export function CameraCaptureModal({
           </button>
         </div>
 
-        <div className="relative aspect-square w-full bg-black">
-          {status !== 'error' && (
-            <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
-          )}
-          {status === 'ready' && (!isBodyGuide(guide) || !subjectDetected) && (
-            <GuideSilhouette guide={guide} aligned={aligned} />
-          )}
-          {status === 'ready' && isBodyGuide(guide) && (
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
-              <g ref={skeletonGroupRef} stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" fill="none" style={{ opacity: 0 }}>
-                {POSE_CONNECTIONS.map((_, i) => (
-                  <line
-                    key={i}
-                    ref={(el) => {
-                      skeletonLineRefs.current[i] = el;
-                    }}
-                  />
-                ))}
-                <ellipse ref={headEllipseRef} />
-              </g>
-            </svg>
-          )}
+        <div className="relative aspect-square w-full overflow-hidden bg-black">
+          {/* El acercamiento (rostro) escala este contenedor completo — video
+              y overlays juntos — para que la guía y el óvalo en vivo sigan
+              coincidiendo exactamente con lo que se ve ampliado. */}
+          <div
+            className="absolute inset-0"
+            style={!isBodyGuide(guide) ? { transform: `scale(${FACE_ZOOM_SCALE})` } : undefined}
+          >
+            {status !== 'error' && (
+              <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
+            )}
+            {status === 'ready' && !subjectDetected && <GuideSilhouette guide={guide} aligned={aligned} />}
+            {status === 'ready' && isBodyGuide(guide) && (
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
+                <g ref={skeletonGroupRef} stroke="#ffffff" strokeWidth={1.6} strokeLinecap="round" fill="none" style={{ opacity: 0 }}>
+                  {POSE_CONNECTIONS.map((_, i) => (
+                    <line
+                      key={i}
+                      ref={(el) => {
+                        skeletonLineRefs.current[i] = el;
+                      }}
+                    />
+                  ))}
+                  <ellipse ref={headEllipseRef} />
+                </g>
+              </svg>
+            )}
+            {status === 'ready' && !isBodyGuide(guide) && (
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
+                <ellipse ref={faceEllipseRef} fill="none" stroke="#ffffff" strokeWidth={1.6} style={{ opacity: 0 }} />
+              </svg>
+            )}
+          </div>
           {status === 'loading' && (
             <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-300">
               Cargando cámara...
@@ -529,11 +602,15 @@ export function CameraCaptureModal({
             <p className={`mb-3 text-center text-xs font-semibold ${aligned ? 'text-green-400' : 'text-amber-300'}`}>
               {aligned
                 ? '✓ Posición correcta — puedes tomar la foto'
-                : subjectDetected
-                  ? 'Ajusta la posición según la guía'
-                  : isBodyGuide(guide)
-                    ? 'No se detecta el cuerpo completo — aléjate para que se vea de la cabeza a los pies'
-                    : 'No se detecta un rostro — acércate y busca buena luz'}
+                : orientationMismatch
+                  ? guide === 'corpPerfilIzquierdo' || guide === 'corpPerfilDerecho'
+                    ? 'Gírate de perfil — se te detecta de frente'
+                    : 'Ponte de frente — se te detecta de perfil'
+                  : subjectDetected
+                    ? 'Ajusta la posición según la guía'
+                    : isBodyGuide(guide)
+                      ? 'No se detecta el cuerpo completo — aléjate para que se vea de la cabeza a los pies'
+                      : 'No se detecta un rostro — acércate y busca buena luz'}
             </p>
           )}
           {status === 'ready' && aiStatus === 'loading' && (
