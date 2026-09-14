@@ -3,14 +3,18 @@ import {
   updatePatient,
   uploadExamPhoto,
   fetchExamPhotos,
+  uploadExamVideo,
+  fetchExamVideos,
   type ExamPhoto,
   type ExamPhotoMoment,
   type ExamPhotoSlot,
+  type ExamVideo,
   type Patient,
 } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
 import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon } from '../../components/icons';
 import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
+import { VideoCaptureModal } from '../../components/VideoCaptureModal';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
 
 // Mismo code que usa el backend (ver src/lib/consentTypes.ts) para exigir
@@ -53,6 +57,65 @@ function latestBySlot(photos: ExamPhoto[], moment: ExamPhotoMoment, round: numbe
 function roundComplete(photos: ExamPhoto[], moment: ExamPhotoMoment, round: number) {
   const map = latestBySlot(photos, moment, round);
   return PHOTO_SLOTS.every((s) => map.has(s.key));
+}
+
+// Registro de video: mismas rondas (antes / avance N) que el fotográfico,
+// pero un solo clip por ronda — "completa" es simplemente "existe".
+function latestVideo(videos: ExamVideo[], moment: ExamPhotoMoment, round: number): ExamVideo | null {
+  const matches = videos.filter((v) => v.moment === moment && v.round === round);
+  if (matches.length === 0) return null;
+  return matches.reduce((latest, v) => (new Date(v.createdAt) > new Date(latest.createdAt) ? v : latest));
+}
+
+function VideoRoundTile({
+  moment,
+  round,
+  videos,
+  uploading,
+  fileInputRef,
+  onOpenCamera,
+  onFileChange,
+  disabled,
+}: {
+  moment: ExamPhotoMoment;
+  round: number;
+  videos: ExamVideo[];
+  uploading: boolean;
+  fileInputRef: (el: HTMLInputElement | null) => void;
+  onOpenCamera: () => void;
+  onFileChange: (file: File | null) => void;
+  disabled?: boolean;
+}) {
+  const video = latestVideo(videos, moment, round);
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={onOpenCamera}
+        disabled={disabled || uploading}
+        className="relative flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50"
+      >
+        {uploading ? (
+          <span className="text-xs">Subiendo...</span>
+        ) : video ? (
+          <video src={video.url} className="h-full w-full object-cover" muted />
+        ) : (
+          <span className="flex flex-col items-center gap-1 text-slate-400">
+            <CameraIcon className="h-6 w-6" />
+            <span className="text-xs">Click para grabar</span>
+          </span>
+        )}
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="video/*"
+        capture="environment"
+        hidden
+        onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+      />
+    </div>
+  );
 }
 
 // Grid de 4 casillas (Frontal/Perfil Derecho/45°/45°) para una ronda puntual
@@ -165,10 +228,22 @@ export function ExamenEsteticoTab({
   const [photoConsentSigned, setPhotoConsentSigned] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  // Registro de video — mismo esquema de rondas que las fotos, pero
+  // independiente (su propio contador de "Avance").
+  const [examVideos, setExamVideos] = useState<ExamVideo[]>([]);
+  const [pendingAvanceVideoRound, setPendingAvanceVideoRound] = useState<number | null>(null);
+  const [videoCameraTarget, setVideoCameraTarget] = useState<{ moment: ExamPhotoMoment; round: number } | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [showOlderVideos, setShowOlderVideos] = useState(false);
+  const videoFileInputs = useRef<Record<string, HTMLInputElement | null>>({});
+
   useEffect(() => {
     fetchExamPhotos(patient.id)
       .then(setExamPhotos)
       .catch((err) => setSaveError(getErrorMessage(err, 'No se pudo cargar el registro fotográfico')));
+    fetchExamVideos(patient.id)
+      .then(setExamVideos)
+      .catch((err) => setSaveError(getErrorMessage(err, 'No se pudo cargar el registro de video')));
   }, [patient.id]);
 
   useEffect(() => {
@@ -219,6 +294,26 @@ export function ExamenEsteticoTab({
   ];
   const [latestRound, ...olderRounds] = allRounds;
 
+  const antesVideoDone = latestVideo(examVideos, 'antes', 1) !== null;
+  const avanceVideoRoundsWithVideo = Array.from(
+    new Set(examVideos.filter((v) => v.moment === 'avance').map((v) => v.round))
+  ).sort((a, b) => a - b);
+  const lastAvanceVideoRound = avanceVideoRoundsWithVideo[avanceVideoRoundsWithVideo.length - 1] ?? 0;
+  const lastAvanceVideoDone = lastAvanceVideoRound > 0 ? latestVideo(examVideos, 'avance', lastAvanceVideoRound) !== null : true;
+  const visibleAvanceVideoRounds = pendingAvanceVideoRound
+    ? Array.from(new Set([...avanceVideoRoundsWithVideo, pendingAvanceVideoRound])).sort((a, b) => a - b)
+    : avanceVideoRoundsWithVideo;
+  const canStartNewAvanceVideo = antesVideoDone && lastAvanceVideoDone && !pendingAvanceVideoRound;
+
+  const allVideoRounds: { moment: ExamPhotoMoment; round: number; label: string }[] = [
+    ...visibleAvanceVideoRounds
+      .slice()
+      .reverse()
+      .map((round) => ({ moment: 'avance' as const, round, label: `Avance ${round}` })),
+    { moment: 'antes' as const, round: 1, label: 'Antes' },
+  ];
+  const [latestVideoRound, ...olderVideoRounds] = allVideoRounds;
+
   async function handleSave() {
     setSaving(true);
     setSaveError(null);
@@ -257,6 +352,20 @@ export function ExamenEsteticoTab({
       setSaveError(getErrorMessage(err, 'No se pudo subir la foto'));
     } finally {
       setUploadingSlot(null);
+    }
+  }
+
+  async function handleVideoChange(moment: ExamPhotoMoment, round: number, file: File | null) {
+    if (!file) return;
+    setUploadingVideo(true);
+    try {
+      const updated = await uploadExamVideo(patient.id, file, moment, round);
+      setExamVideos(updated);
+      if (moment === 'avance') setPendingAvanceVideoRound(null);
+    } catch (err) {
+      setSaveError(getErrorMessage(err, 'No se pudo subir el video'));
+    } finally {
+      setUploadingVideo(false);
     }
   }
 
@@ -450,6 +559,99 @@ export function ExamenEsteticoTab({
           </div>
         )}
       </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800">Registro de video</h2>
+        <p className="mb-4 text-xs text-slate-500">Un video por ronda — el mismo criterio de "Antes" y "Avance" que las fotos.</p>
+
+        <div className="mb-2">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{latestVideoRound.label}</h3>
+          <VideoRoundTile
+            moment={latestVideoRound.moment}
+            round={latestVideoRound.round}
+            videos={examVideos}
+            uploading={uploadingVideo}
+            fileInputRef={(el) => {
+              videoFileInputs.current[`${latestVideoRound.moment}-${latestVideoRound.round}`] = el;
+            }}
+            disabled={!photoConsentSigned}
+            onOpenCamera={() => setVideoCameraTarget({ moment: latestVideoRound.moment, round: latestVideoRound.round })}
+            onFileChange={(file) => handleVideoChange(latestVideoRound.moment, latestVideoRound.round, file)}
+          />
+        </div>
+
+        {olderVideoRounds.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowOlderVideos((v) => !v)}
+              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
+            >
+              <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showOlderVideos ? 'rotate-180' : ''}`} />
+              {showOlderVideos ? 'Ocultar videos anteriores' : `Desplegar videos anteriores (${olderVideoRounds.length})`}
+            </button>
+            {showOlderVideos && (
+              <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4">
+                {olderVideoRounds.map((r) => (
+                  <div key={`${r.moment}-${r.round}`}>
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{r.label}</h3>
+                    <VideoRoundTile
+                      moment={r.moment}
+                      round={r.round}
+                      videos={examVideos}
+                      uploading={uploadingVideo}
+                      fileInputRef={(el) => {
+                        videoFileInputs.current[`${r.moment}-${r.round}`] = el;
+                      }}
+                      disabled={!photoConsentSigned}
+                      onOpenCamera={() => setVideoCameraTarget({ moment: r.moment, round: r.round })}
+                      onFileChange={(file) => handleVideoChange(r.moment, r.round, file)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+        {canStartNewAvanceVideo ? (
+          <button
+            type="button"
+            onClick={() => setPendingAvanceVideoRound(lastAvanceVideoRound + 1)}
+            disabled={!photoConsentSigned}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <CameraIcon className="h-4 w-4" />
+            + Agregar Avance {lastAvanceVideoRound + 1} (video)
+          </button>
+        ) : (
+          <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-3 text-sm font-medium text-slate-400">
+            <LockIcon className="h-4 w-4" />
+            {antesVideoDone
+              ? 'Completa el video del Avance actual para poder agregar uno nuevo'
+              : 'Sube el video de "Antes" primero para desbloquear el Avance'}
+          </div>
+        )}
+      </div>
+
+      {videoCameraTarget && (
+        <VideoCaptureModal
+          label={videoCameraTarget.moment === 'antes' ? 'Antes' : `Avance ${videoCameraTarget.round}`}
+          onClose={() => setVideoCameraTarget(null)}
+          onFallbackToFile={() => {
+            const target = videoCameraTarget;
+            setVideoCameraTarget(null);
+            videoFileInputs.current[`${target.moment}-${target.round}`]?.click();
+          }}
+          onCapture={(file) => {
+            const target = videoCameraTarget;
+            setVideoCameraTarget(null);
+            handleVideoChange(target.moment, target.round, file);
+          }}
+        />
+      )}
 
       {cameraTarget && (
         <CameraCaptureModal

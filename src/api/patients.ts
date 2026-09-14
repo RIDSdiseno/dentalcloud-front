@@ -210,3 +210,30 @@ export async function uploadExamPhoto(
   });
   return data.examPhotos;
 }
+
+// Registro de video (14/09): mismo esquema de rondas que ExamPhoto (antes /
+// avance N), pero un solo video por ronda — no hay "slot" de ángulo.
+export type ExamVideo = {
+  id: string;
+  patientId: string;
+  moment: ExamPhotoMoment;
+  round: number;
+  url: string;
+  createdAt: string;
+};
+
+export async function fetchExamVideos(patientId: string) {
+  const { data } = await api.get<{ examVideos: ExamVideo[] }>(`/patients/${patientId}/exam-videos`);
+  return data.examVideos;
+}
+
+export async function uploadExamVideo(id: string, video: File, moment: ExamPhotoMoment, round: number) {
+  const formData = new FormData();
+  formData.append('video', video);
+  formData.append('moment', moment);
+  formData.append('round', String(round));
+  const { data } = await api.patch<{ examVideos: ExamVideo[] }>(`/patients/${id}/exam-video`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.examVideos;
+}
