@@ -712,9 +712,9 @@ function AnamnesisConclusionesCard({
       : 'Niega alergias medicamentosas, cosméticas o al látex.';
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+    <div id="anamnesis-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
       <h2 className="mb-1 text-sm font-semibold text-slate-800">Anamnesis</h2>
-      <p className="mb-4 text-xs text-slate-500">Los 8 bloques que pidió Urbina, marcables con el dedo — nada de texto libre para antecedentes.</p>
+      <p className="mb-4 text-xs text-slate-500">Antecedentes por bloques, marcables con el dedo — nada de texto libre.</p>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">

@@ -86,11 +86,46 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
+    element: '#anamnesis-card',
+    popover: {
+      title: '1 · Anamnesis (obligatorio)',
+      description:
+        'Antecedentes médicos, alergias y hábitos por bloques marcables — nada de texto libre. Al guardar, se puede generar un resumen clínico automático con IA en vez de escribirlo a mano.',
+      side: 'bottom',
+    },
+  },
+  {
     element: '#examen-estetico-card',
     popover: {
-      title: '2 · Examen estético (obligatorio)',
+      title: '2 · Examen estético — Evaluación (obligatorio)',
       description:
-        'Anamnesis por bloques con resumen generado por IA, evaluación por selección (piel, Fitzpatrick, arrugas, flacidez, volumen, asimetrías) y diagnóstico con dictado por voz. Registro fotográfico y de video — con switch Rostro/Cuerpo y reconocimiento en vivo para encuadrar — organizado en rondas de Antes y Avance. Al final, se decide si continuar al tratamiento o generar una solicitud de exámenes.',
+        'Tipo de piel, fototipo de Fitzpatrick, arrugas, flacidez, volumen y asimetrías — todo por selección, sin texto libre.',
+      side: 'bottom',
+    },
+  },
+  {
+    element: '#registro-fotografico-card',
+    popover: {
+      title: '2 · Examen estético — Registro fotográfico (obligatorio)',
+      description:
+        'Fotos organizadas en rondas de "Antes" y "Avance", con reconocimiento en vivo para ayudar a encuadrar bien. El botón de la esquina alterna entre registro de Rostro y de Cuerpo — requiere que el paciente haya firmado antes el consentimiento de uso de imágenes.',
+      side: 'bottom',
+    },
+  },
+  {
+    element: '#registro-video-card',
+    popover: {
+      title: '2 · Examen estético — Registro de video (obligatorio)',
+      description: 'Un video por ronda, mismo criterio de "Antes"/"Avance" que las fotos y el mismo consentimiento.',
+      side: 'bottom',
+    },
+  },
+  {
+    element: '#diagnostico-card',
+    popover: {
+      title: '2 · Examen estético — Diagnóstico (obligatorio)',
+      description:
+        'Diagnóstico con dictado por voz. Al guardar el examen, se decide si continuar directo al tratamiento o generar una solicitud de exámenes primero.',
       side: 'bottom',
     },
   },
@@ -175,6 +210,10 @@ const TOUR_STEP_KEYS: (EstheticStepKey | null)[] = [
   null,
   'datos',
   'datos',
+  'datos',
+  'examen',
+  'examen',
+  'examen',
   'examen',
   'horas',
   'tratamiento',

@@ -532,7 +532,7 @@ export function ExamenEsteticoTab({
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div id="registro-fotografico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         <div className="mb-1 flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-800">Registro fotográfico — {PHOTO_AREA_LABEL[photoArea]}</h2>
           <button
@@ -637,7 +637,7 @@ export function ExamenEsteticoTab({
         )}
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div id="registro-video-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         <h2 className="mb-1 text-sm font-semibold text-slate-800">Registro de video</h2>
         <p className="mb-4 text-xs text-slate-500">Un video por ronda — el mismo criterio de "Antes" y "Avance" que las fotos.</p>
 
@@ -767,7 +767,7 @@ export function ExamenEsteticoTab({
         />
       )}
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div id="diagnostico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800">Diagnóstico</h2>
           <button
