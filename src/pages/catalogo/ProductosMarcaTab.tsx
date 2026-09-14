@@ -94,12 +94,6 @@ export function ProductosMarcaTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-sm text-slate-500">
-        Catálogo multimarca (Etapa 08): un mismo producto puede tener varias marcas, cada una con su propio costo y
-        margen. El precio de venta se calcula solo — costo × (1 + margen%) — y es lo que usa el presupuesto al elegir
-        un producto en el plan de tratamiento por tercios.
-      </p>
-
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
       <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3">
