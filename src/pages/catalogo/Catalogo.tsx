@@ -11,6 +11,7 @@ import { ConveniosTab } from './ConveniosTab';
 import { PrevisionesTab } from './PrevisionesTab';
 import { ClinicasTab } from './ClinicasTab';
 import { InventarioTab } from './InventarioTab';
+import { ProductosMarcaTab } from './ProductosMarcaTab';
 import { exportPrestacionesExcel } from '../../utils/exportPrestacionesExcel';
 import { importPrestacionesExcel, type ImportSummary } from '../../utils/importPrestacionesExcel';
 import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
@@ -27,6 +28,7 @@ const TABS = [
   { key: 'previsiones', label: 'Previsiones' },
   { key: 'clinicas', label: 'Clínicas' },
   { key: 'inventario', label: 'Inventario' },
+  { key: 'productos-marca', label: 'Productos y Marcas' },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
@@ -149,6 +151,7 @@ export default function Catalogo() {
       {tab === 'previsiones' && <PrevisionesTab />}
       {tab === 'clinicas' && <ClinicasTab />}
       {tab === 'inventario' && <InventarioTab />}
+      {tab === 'productos-marca' && <ProductosMarcaTab />}
 
       {tab === 'prestaciones' && (
         <>

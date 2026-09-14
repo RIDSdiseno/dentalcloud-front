@@ -9,6 +9,18 @@ export type Sucursal = {
 };
 export type Prevision = { id: string; name: string; active: boolean };
 export type Convenio = { id: string; name: string; discountPercent: number; active: boolean };
+// Etapa 08 (catálogo multimarca) — precioVenta es derivado por el backend
+// (costo × (1 + margenPercent/100), Chile), nunca se edita directo.
+export type ProductoMarca = {
+  id: string;
+  nombreGenerico: string;
+  marca: string;
+  unidad: string;
+  costo: number;
+  margenPercent: number;
+  precioVenta: number;
+  active: boolean;
+};
 // El backend todavía no expone configuración de odontograma por prestación;
 // estos campos quedan opcionales (camelCase y snake_case) para no romper
 // nada hoy y poder consumirlos el día que la API los entregue.
@@ -212,4 +224,37 @@ export async function deleteConvenio(id: string) {
 export async function fetchAllConvenios() {
   const { data } = await api.get<{ convenios: Convenio[] }>('/catalogs/convenios', { params: { all: 'true' } });
   return data.convenios;
+}
+
+export async function fetchProductosMarca() {
+  const { data } = await api.get<{ productos: ProductoMarca[] }>('/catalogs/productos-marca');
+  return data.productos;
+}
+
+export async function fetchAllProductosMarca() {
+  const { data } = await api.get<{ productos: ProductoMarca[] }>('/catalogs/productos-marca', { params: { all: 'true' } });
+  return data.productos;
+}
+
+export async function createProductoMarca(input: {
+  nombreGenerico: string;
+  marca: string;
+  unidad?: string;
+  costo?: number;
+  margenPercent?: number;
+}) {
+  const { data } = await api.post<{ producto: ProductoMarca }>('/catalogs/productos-marca', input);
+  return data.producto;
+}
+
+export async function updateProductoMarca(
+  id: string,
+  patch: { nombreGenerico?: string; marca?: string; unidad?: string; costo?: number; margenPercent?: number; active?: boolean }
+) {
+  const { data } = await api.patch<{ producto: ProductoMarca }>(`/catalogs/productos-marca/${id}`, patch);
+  return data.producto;
+}
+
+export async function deleteProductoMarca(id: string) {
+  await api.delete(`/catalogs/productos-marca/${id}`);
 }

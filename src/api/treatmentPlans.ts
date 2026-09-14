@@ -36,6 +36,10 @@ export type TreatmentItem = {
   productLot: string | null;
   productExpiresAt: string | null;
   productQuantity: string | null;
+  // Etapa 08 — producto del catálogo multimarca usado para calcular `cost`
+  // solo (costo × margen del producto × cantidad), en vez de escribirlo a mano.
+  productoMarcaId: string | null;
+  productUnitQuantity: number | null;
   photos: TreatmentItemPhoto[];
   createdAt: string;
 };
@@ -104,6 +108,8 @@ export type TreatmentItemInput = {
   productLot?: string;
   productExpiresAt?: string;
   productQuantity?: string;
+  productoMarcaId?: string;
+  productUnitQuantity?: number;
 };
 
 export type TreatmentPlanInput = {
@@ -195,6 +201,8 @@ export async function updateTreatmentItem(
     productLot?: string | null;
     productExpiresAt?: string | null;
     productQuantity?: string | null;
+    productoMarcaId?: string | null;
+    productUnitQuantity?: number | null;
   }
 ) {
   const { data } = await api.patch<{ plan: TreatmentPlan }>(`/treatment-items/${id}`, patch);

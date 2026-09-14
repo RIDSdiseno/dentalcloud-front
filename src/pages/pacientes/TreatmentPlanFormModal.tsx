@@ -13,8 +13,15 @@ import {
   type TreatmentItemInput,
 } from '../../api/treatmentPlans';
 import { fetchUsers, type StaffUser } from '../../api/users';
-import { fetchSucursales, fetchPrevisiones, fetchConvenios, fetchPrestaciones, searchProductLots } from '../../api/catalogs';
-import type { Sucursal, Prevision, Convenio, Prestacion, ProductLot } from '../../api/catalogs';
+import {
+  fetchSucursales,
+  fetchPrevisiones,
+  fetchConvenios,
+  fetchPrestaciones,
+  searchProductLots,
+  fetchAllProductosMarca,
+} from '../../api/catalogs';
+import type { Sucursal, Prevision, Convenio, Prestacion, ProductLot, ProductoMarca } from '../../api/catalogs';
 import type { Patient } from '../../api/patients';
 import { ALLERGY_LABEL, type AllergyKey } from '../../data/allergies';
 import { useAuth } from '../../context/AuthContext';
@@ -109,6 +116,11 @@ type ItemRow = {
   productLot?: string;
   productExpiresAt?: string;
   productQuantity?: string;
+  // Etapa 08 — producto del catálogo multimarca que fijó el precio de esta
+  // línea (costo × margen × cantidad, ver ProductosMarcaTab); si se usó, el
+  // input de "Costo" de la fila queda de solo lectura (ver `existing` de abajo).
+  productoMarcaId?: string;
+  productUnitQuantity?: number;
   // Ya existía en el presupuesto que se está modificando (ver `editingPlan`)
   // — se muestra sin poder editarla/quitarla y no se reenvía al grabar, solo
   // las prestaciones nuevas agregadas en esta sesión.
@@ -186,6 +198,8 @@ function existingItemToRow(item: TreatmentItem, isEstetica: boolean): ItemRow {
     productLot: item.productLot ?? undefined,
     productExpiresAt: item.productExpiresAt ?? undefined,
     productQuantity: item.productQuantity ?? undefined,
+    productoMarcaId: item.productoMarcaId ?? undefined,
+    productUnitQuantity: item.productUnitQuantity ?? undefined,
     existing: true,
   };
 }
@@ -223,17 +237,30 @@ function buildCatalogRow(
   selection: ToothSelection[],
   color: string | undefined,
   discount: number,
-  extras?: { notes?: string; productName?: string; productLot?: string; productExpiresAt?: string; productQuantity?: string }
+  extras?: {
+    notes?: string;
+    productName?: string;
+    productLot?: string;
+    productExpiresAt?: string;
+    productQuantity?: string;
+    // Etapa 08 — si se eligió un producto del catálogo multimarca, su precio
+    // (costo × margen × cantidad) reemplaza el precio de catálogo/convenio.
+    productoMarca?: ProductoMarca;
+    productUnitQuantity?: number;
+  }
 ): ItemRow {
-  const listPrice = listPriceForPrestacion(prestacion, selection);
-  const cost = convenioPrice(listPrice, discount);
+  const catalogListPrice = listPriceForPrestacion(prestacion, selection);
+  const usesProducto = !!extras?.productoMarca;
+  const unitQuantity = Math.max(1, Math.round(extras?.productUnitQuantity ?? 1));
+  const listPrice = usesProducto ? extras!.productoMarca!.precioVenta * unitQuantity : catalogListPrice;
+  const cost = usesProducto ? listPrice : convenioPrice(catalogListPrice, discount);
   return {
     key: `${prestacion.id}-${Date.now()}`,
     prestacionId: prestacion.id,
     description: prestacion.name,
     toothNumber: locationForBackend(isEstetica, mode, selection),
     listPrice,
-    convenioDiscountPercent: discount,
+    convenioDiscountPercent: usesProducto ? 0 : discount,
     cost,
     odontogramMode: mode,
     odontogramSelection: selection,
@@ -243,6 +270,8 @@ function buildCatalogRow(
     productLot: extras?.productLot,
     productExpiresAt: extras?.productExpiresAt,
     productQuantity: extras?.productQuantity,
+    productoMarcaId: extras?.productoMarca?.id,
+    productUnitQuantity: usesProducto ? unitQuantity : undefined,
   };
 }
 
@@ -337,6 +366,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
   const [draftProductLot, setDraftProductLot] = useState('');
   const [draftProductExpiresAt, setDraftProductExpiresAt] = useState('');
   const [draftProductQuantity, setDraftProductQuantity] = useState('');
+  // Etapa 08 — producto del catálogo multimarca elegido para esta línea (ver
+  // buildCatalogRow): si se elige uno, su precio reemplaza al de catálogo.
+  const [productosMarca, setProductosMarca] = useState<ProductoMarca[]>([]);
+  const [draftProductoMarcaId, setDraftProductoMarcaId] = useState('');
+  const [draftProductUnitQuantity, setDraftProductUnitQuantity] = useState('1');
   // Lote real de inventario elegido en el buscador (ver lotSearchQuery) — null
   // significa que todavía no se eligió ninguno, o que el usuario volvió a
   // escribir después de elegir uno (se invalida la selección anterior, ver
@@ -393,6 +427,9 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     fetchPrevisiones().then(setPrevisiones).catch(() => undefined);
     fetchConvenios().then(setConvenios).catch(() => undefined);
     fetchPrestaciones().then(setPrestaciones).catch(() => undefined);
+    fetchAllProductosMarca()
+      .then((productos) => setProductosMarca(productos.filter((p) => p.active)))
+      .catch(() => undefined);
   }, [isAdmin]);
 
   const selectedConvenio = convenios.find((c) => c.id === convenioId) ?? null;
@@ -465,6 +502,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     setDraftProductLot('');
     setDraftProductExpiresAt('');
     setDraftProductQuantity('');
+    setDraftProductoMarcaId('');
+    setDraftProductUnitQuantity('1');
     setSelectedLot(null);
     setLotSearchQuery('');
     setLotResults([]);
@@ -506,6 +545,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     setDraftProductLot('');
     setDraftProductExpiresAt('');
     setDraftProductQuantity('');
+    setDraftProductoMarcaId('');
+    setDraftProductUnitQuantity('1');
     setSelectedLot(null);
     setLotSearchQuery(prestacion.requiresProductTracking ? prestacion.name : '');
     setLotResults([]);
@@ -602,12 +643,15 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     // es por el grupo completo. El mapa facial no se separa así: cuando hay
     // varias zonas con precio propio (`zonePrices`), van en una sola línea
     // cuyo total es la suma de esas zonas (ver listPriceForPrestacion).
+    const selectedProductoMarca = productosMarca.find((p) => p.id === draftProductoMarcaId);
     const extras = {
       notes: draftNotes.trim() || undefined,
       productName: draftProductName.trim() || undefined,
       productLot: draftProductLot.trim() || undefined,
       productExpiresAt: draftProductExpiresAt || undefined,
       productQuantity: draftProductQuantity.trim() || undefined,
+      productoMarca: selectedProductoMarca,
+      productUnitQuantity: Number(draftProductUnitQuantity) || 1,
     };
     if (isEstetica) {
       const row = buildCatalogRow(isEstetica, activePrestacion, activeMode, draftSelection, activeColor, discount, extras);
@@ -692,6 +736,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
         productLot: i.productLot,
         productExpiresAt: i.productExpiresAt,
         productQuantity: i.productQuantity,
+        productoMarcaId: i.productoMarcaId,
+        productUnitQuantity: i.productUnitQuantity,
       }));
 
       let plan = await createTreatmentPlan({
@@ -750,6 +796,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
           productLot: i.productLot,
           productExpiresAt: i.productExpiresAt,
           productQuantity: i.productQuantity,
+          productoMarcaId: i.productoMarcaId,
+          productUnitQuantity: i.productUnitQuantity,
         });
       }
       onSaved(plan);
@@ -1186,6 +1234,47 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                       className="col-span-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 sm:col-span-1"
                     />
                   </div>
+
+                  {productosMarca.length > 0 && (
+                    <div className="mt-2 rounded-md border border-amber-200 bg-white p-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Producto del catálogo (opcional — calcula el precio solo)
+                      </p>
+                      <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
+                        <select
+                          value={draftProductoMarcaId}
+                          onChange={(e) => setDraftProductoMarcaId(e.target.value)}
+                          className="col-span-2 rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                        >
+                          <option value="">Sin producto (usar precio de catálogo)</option>
+                          {productosMarca.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.nombreGenerico} — {p.marca} ({formatCLP(p.precioVenta)}/{p.unidad})
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min={1}
+                          value={draftProductUnitQuantity}
+                          disabled={!draftProductoMarcaId}
+                          onChange={(e) => setDraftProductUnitQuantity(e.target.value)}
+                          placeholder="Cantidad"
+                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-slate-50"
+                        />
+                      </div>
+                      {draftProductoMarcaId && (
+                        <p className="mt-1.5 text-xs font-semibold text-emerald-700">
+                          Precio calculado:{' '}
+                          {formatCLP(
+                            (productosMarca.find((p) => p.id === draftProductoMarcaId)?.precioVenta ?? 0) *
+                              Math.max(1, Number(draftProductUnitQuantity) || 1)
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <textarea
                     value={draftNotes}
                     onChange={(e) => setDraftNotes(e.target.value)}
@@ -1338,7 +1427,8 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                         type="number"
                         min={0}
                         value={item.cost}
-                        disabled={item.existing}
+                        disabled={item.existing || !!item.productoMarcaId}
+                        title={item.productoMarcaId ? 'Calculado automáticamente por el producto elegido' : undefined}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateItemCost(item.key, e.target.value)}
                         className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-slate-50 disabled:text-slate-400"
