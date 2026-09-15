@@ -10,13 +10,17 @@ export type Sucursal = {
 export type Prevision = { id: string; name: string; active: boolean };
 export type Convenio = { id: string; name: string; discountPercent: number; active: boolean };
 // Etapa 08 (catálogo multimarca) — precioVenta es derivado por el backend
-// (costo × (1 + margenPercent/100), Chile), nunca se edita directo.
+// (costo/rendimientoPorEnvase × (1 + margenPercent/100), Chile), nunca se
+// edita directo. El costo se ingresa por ENVASE comprado (ej. un vial);
+// rendimientoPorEnvase dice cuántas "unidad" rinde ese envase (15/09,
+// mockup real de Urbina: "ml/und por vial/jeringa").
 export type ProductoMarca = {
   id: string;
   nombreGenerico: string;
   marca: string;
   unidad: string;
   costo: number;
+  rendimientoPorEnvase: number;
   margenPercent: number;
   precioVenta: number;
   active: boolean;
@@ -241,6 +245,7 @@ export async function createProductoMarca(input: {
   marca: string;
   unidad?: string;
   costo?: number;
+  rendimientoPorEnvase?: number;
   margenPercent?: number;
 }) {
   const { data } = await api.post<{ producto: ProductoMarca }>('/catalogs/productos-marca', input);
@@ -249,7 +254,15 @@ export async function createProductoMarca(input: {
 
 export async function updateProductoMarca(
   id: string,
-  patch: { nombreGenerico?: string; marca?: string; unidad?: string; costo?: number; margenPercent?: number; active?: boolean }
+  patch: {
+    nombreGenerico?: string;
+    marca?: string;
+    unidad?: string;
+    costo?: number;
+    rendimientoPorEnvase?: number;
+    margenPercent?: number;
+    active?: boolean;
+  }
 ) {
   const { data } = await api.patch<{ producto: ProductoMarca }>(`/catalogs/productos-marca/${id}`, patch);
   return data.producto;

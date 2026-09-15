@@ -23,6 +23,7 @@ export function ProductosMarcaTab() {
   const [newMarca, setNewMarca] = useState('');
   const [newUnidad, setNewUnidad] = useState('unidad');
   const [newCosto, setNewCosto] = useState('0');
+  const [newRendimiento, setNewRendimiento] = useState('1');
   const [newMargen, setNewMargen] = useState('0');
   const [isCreating, setIsCreating] = useState(false);
 
@@ -33,7 +34,9 @@ export function ProductosMarcaTab() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const previewPrecio = Math.round((Number(newCosto) || 0) * (1 + (Number(newMargen) || 0) / 100));
+  const previewPrecio = Math.round(
+    ((Number(newCosto) || 0) / Math.max(1, Number(newRendimiento) || 1)) * (1 + (Number(newMargen) || 0) / 100)
+  );
 
   async function handleCreate() {
     if (!newNombre.trim() || !newMarca.trim()) return;
@@ -45,6 +48,7 @@ export function ProductosMarcaTab() {
         marca: newMarca.trim(),
         unidad: newUnidad.trim() || 'unidad',
         costo: Number(newCosto) || 0,
+        rendimientoPorEnvase: Math.max(1, Number(newRendimiento) || 1),
         margenPercent: Number(newMargen) || 0,
       });
       setProductos((prev) =>
@@ -54,6 +58,7 @@ export function ProductosMarcaTab() {
       setNewMarca('');
       setNewUnidad('unidad');
       setNewCosto('0');
+      setNewRendimiento('1');
       setNewMargen('0');
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo crear el producto'));
@@ -64,7 +69,7 @@ export function ProductosMarcaTab() {
 
   async function handleUpdate(
     producto: ProductoMarca,
-    patch: { costo?: number; margenPercent?: number; active?: boolean }
+    patch: { costo?: number; rendimientoPorEnvase?: number; margenPercent?: number; active?: boolean }
   ) {
     setBusyId(producto.id);
     setError(null);
@@ -125,12 +130,24 @@ export function ProductosMarcaTab() {
           />
         </div>
         <div className="w-28">
-          <label className="text-xs font-medium text-slate-500">Costo</label>
+          <label className="text-xs font-medium text-slate-500">Costo por envase</label>
           <input
             type="number"
             min={0}
             value={newCosto}
             onChange={(e) => setNewCosto(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          />
+        </div>
+        <div className="w-24">
+          <label className="text-xs font-medium text-slate-500" title='Cuántas "unidad" rinde un envase (ej. 500 UI por vial)'>
+            Rendimiento
+          </label>
+          <input
+            type="number"
+            min={1}
+            value={newRendimiento}
+            onChange={(e) => setNewRendimiento(e.target.value)}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
           />
         </div>
@@ -172,7 +189,8 @@ export function ProductosMarcaTab() {
                 <th className="px-4 py-3">Producto</th>
                 <th className="px-4 py-3">Marca</th>
                 <th className="px-4 py-3">Unidad</th>
-                <th className="px-4 py-3 text-right">Costo</th>
+                <th className="px-4 py-3 text-right">Costo/envase</th>
+                <th className="px-4 py-3 text-right">Rendimiento</th>
                 <th className="px-4 py-3 text-right">Margen</th>
                 <th className="px-4 py-3 text-right">Precio de venta</th>
                 <th className="px-4 py-3">Estado</th>
@@ -196,6 +214,19 @@ export function ProductosMarcaTab() {
                         if (value !== p.costo) handleUpdate(p, { costo: value });
                       }}
                       className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <input
+                      type="number"
+                      min={1}
+                      defaultValue={p.rendimientoPorEnvase}
+                      disabled={busyId === p.id}
+                      onBlur={(e) => {
+                        const value = Math.max(1, Number(e.target.value) || 1);
+                        if (value !== p.rendimientoPorEnvase) handleUpdate(p, { rendimientoPorEnvase: value });
+                      }}
+                      className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500"
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
