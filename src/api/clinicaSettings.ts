@@ -41,3 +41,44 @@ export async function updateAgendaSettings(slotDurationMinutes: SlotDurationMinu
   });
   return data.slotDurationMinutes;
 }
+
+// "Compañía" en Configuración (15/09, Lámina 8 de la reunión con Urbina) —
+// de solo la propia clínica de quien pide, siempre de solo administradores.
+export type CompanyInfo = {
+  name: string;
+  rut: string | null;
+  pais: string;
+  logoUrl: string | null;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  legalName: string | null;
+  legalAddress: string | null;
+  legalEmail: string | null;
+  legalPhone: string | null;
+  legalWebsite: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  contactAddress: string | null;
+};
+
+export async function fetchCompanyInfo() {
+  const { data } = await api.get<{ company: CompanyInfo }>('/clinica/company');
+  return data.company;
+}
+
+export async function updateCompanyInfo(patch: Partial<Omit<CompanyInfo, 'logoUrl'>>) {
+  const { data } = await api.patch<{ company: CompanyInfo }>('/clinica/company', patch);
+  return data.company;
+}
+
+export async function uploadCompanyLogo(file: File) {
+  const formData = new FormData();
+  formData.append('logo', file);
+  const { data } = await api.patch<{ company: CompanyInfo }>('/clinica/company/logo', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.company;
+}

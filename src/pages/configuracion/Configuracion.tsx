@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FormatosPanel } from './FormatosPanel';
 import { EmailSettingsPanel } from './EmailSettingsPanel';
+import { CompaniaPanel } from './CompaniaPanel';
 
 const SECTIONS = [
   { key: 'compania', label: 'Compañía' },
@@ -49,6 +50,8 @@ export default function Configuracion() {
             <FormatosPanel />
           ) : section === 'notificaciones' ? (
             <EmailSettingsPanel />
+          ) : section === 'compania' ? (
+            <CompaniaPanel />
           ) : (
             <StubSection label={SECTIONS.find((s) => s.key === section)!.label} />
           )}
