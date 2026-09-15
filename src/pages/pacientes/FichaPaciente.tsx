@@ -18,6 +18,9 @@ import {
   ANAMNESIS_HABIT_LABEL,
   normalizeAnamnesisData,
   type AnamnesisData,
+  type AnamnesisPathologyKey,
+  type AntecedentesMorbidos,
+  type MorbidStatus,
   type YesNoDetail,
 } from './anamnesisData';
 import { Modal } from '../../components/Modal';
@@ -549,6 +552,64 @@ function YesNoBlock({
   );
 }
 
+// Reemplaza el "marca las que aplican" por el mockup real de Urbina: cada
+// condición tiene su propio Sí/No/Desconoce independiente (14/09).
+function TriStateConditionsTable({
+  options,
+  labels,
+  value,
+  onChange,
+}: {
+  options: readonly AnamnesisPathologyKey[];
+  labels: Record<AnamnesisPathologyKey, string>;
+  value: AntecedentesMorbidos;
+  onChange: (key: AnamnesisPathologyKey, status: MorbidStatus) => void;
+}) {
+  const OPTIONS: { status: Exclude<MorbidStatus, null>; label: string }[] = [
+    { status: 'si', label: 'Sí' },
+    { status: 'no', label: 'No' },
+    { status: 'desconoce', label: 'Desconoce' },
+  ];
+  return (
+    <div className="overflow-hidden rounded-xl ring-1 ring-slate-200">
+      <table className="w-full text-left text-sm">
+        <tbody className="divide-y divide-slate-100">
+          {options.map((key) => (
+            <tr key={key}>
+              <td className="px-3 py-2 text-slate-700">{labels[key]}</td>
+              <td className="px-3 py-2">
+                <div className="flex justify-end gap-1.5">
+                  {OPTIONS.map((opt) => {
+                    const active = value[key] === opt.status;
+                    return (
+                      <button
+                        key={opt.status}
+                        type="button"
+                        onClick={() => onChange(key, active ? null : opt.status)}
+                        className={`rounded-md px-2.5 py-1 text-xs font-semibold ring-1 transition-colors ${
+                          active
+                            ? opt.status === 'si'
+                              ? 'bg-brand-600 text-white ring-brand-600'
+                              : opt.status === 'no'
+                                ? 'bg-slate-700 text-white ring-slate-700'
+                                : 'bg-amber-500 text-white ring-amber-500'
+                            : 'bg-slate-50 text-slate-500 ring-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function CheckboxPills<T extends string>({
   options,
   labels,
@@ -721,16 +782,14 @@ function AnamnesisConclusionesCard({
           <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
             1. Antecedentes mórbidos personales
           </span>
-          <CheckboxPills
+          <TriStateConditionsTable
             options={ANAMNESIS_PATHOLOGY_KEYS}
             labels={ANAMNESIS_PATHOLOGY_LABEL}
-            selected={anamnesis.antecedentesMorbidos}
-            onToggle={(key) =>
+            value={anamnesis.antecedentesMorbidos}
+            onChange={(key, status) =>
               setAnamnesis((prev) => ({
                 ...prev,
-                antecedentesMorbidos: prev.antecedentesMorbidos.includes(key)
-                  ? prev.antecedentesMorbidos.filter((k) => k !== key)
-                  : [...prev.antecedentesMorbidos, key],
+                antecedentesMorbidos: { ...prev.antecedentesMorbidos, [key]: status },
               }))
             }
           />
