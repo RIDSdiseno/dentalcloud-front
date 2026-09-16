@@ -44,6 +44,7 @@ export type Patient = {
   expectativasPaciente: string | null;
   optimoTratamiento: string | null;
   examSkinType: string | null;
+  examSkinQuality: string | null;
   examFitzpatrick: string | null;
   examWrinkles: string | null;
   examFlaccidity: string | null;
@@ -103,6 +104,7 @@ export type PatientInput = {
   expectativasPaciente?: string;
   optimoTratamiento?: string;
   examSkinType?: string;
+  examSkinQuality?: string;
   examFitzpatrick?: string;
   examWrinkles?: string;
   examFlaccidity?: string;

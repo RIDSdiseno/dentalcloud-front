@@ -252,6 +252,7 @@ export function ExamenEsteticoTab({
   onGoToConsents: () => void;
 }) {
   const [skinType, setSkinType] = useState(patient.examSkinType ?? '');
+  const [skinQuality, setSkinQuality] = useState(patient.examSkinQuality ?? '');
   const [fitzpatrick, setFitzpatrick] = useState(patient.examFitzpatrick ?? '');
   const [wrinkles, setWrinkles] = useState(patient.examWrinkles ?? '');
   const [flaccidity, setFlaccidity] = useState(patient.examFlaccidity ?? '');
@@ -382,6 +383,7 @@ export function ExamenEsteticoTab({
     try {
       const updated = await updatePatient(patient.id, {
         examSkinType: skinType,
+        examSkinQuality: skinQuality,
         examFitzpatrick: fitzpatrick,
         examWrinkles: wrinkles,
         examFlaccidity: flaccidity,
@@ -467,6 +469,14 @@ export function ExamenEsteticoTab({
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label="Calidad cutánea">
+            <input
+              value={skinQuality}
+              onChange={(e) => setSkinQuality(e.target.value)}
+              placeholder="Ej: hidratación, textura, poros..."
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            />
           </Field>
           <Field label="Fototipo Fitzpatrick">
             <select className={selectClass} value={fitzpatrick} onChange={(e) => setFitzpatrick(e.target.value)}>
