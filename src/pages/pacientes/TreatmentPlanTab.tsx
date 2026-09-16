@@ -885,7 +885,12 @@ function PlanCard({
                     {item.description}
                     {item.toothNumber && (
                       <span className="ml-1.5 text-xs text-slate-400">
-                        ({isEstetica ? 'Zona' : 'Pieza'}: {item.toothNumber})
+                        {/* toothNumber ya viene formateado y autodescriptivo desde el
+                            odontograma ("Piezas: 4.2", "Cuadrante 1") — anteponerle
+                            "Pieza:" quedaba duplicado ("Pieza: Piezas: 4.2"). Las zonas
+                            estéticas sí necesitan el prefijo, porque su valor es solo
+                            el nombre de la zona ("Frente, Mentón"). */}
+                        {isEstetica ? `(Zona: ${item.toothNumber})` : `(${item.toothNumber})`}
                       </span>
                     )}
                     {(() => {

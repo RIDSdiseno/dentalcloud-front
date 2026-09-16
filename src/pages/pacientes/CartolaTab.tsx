@@ -202,7 +202,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                                 item.completed ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-50 text-brand-700'
                               }`}
                             >
-                              {item.toothNumber ? `Pieza ${item.toothNumber} · ` : ''}
+                              {item.toothNumber ? `${item.toothNumber} · ` : ''}
                               {item.description}
                             </span>
                           ))}
