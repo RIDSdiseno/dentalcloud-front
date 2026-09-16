@@ -10,6 +10,7 @@ export type StaffUser = {
   rut: string | null;
   createdAt: string;
   signatureUrl: string | null;
+  active: boolean;
 };
 
 export type CreateUserInput = {
@@ -33,9 +34,16 @@ export type DimageSyncResult = {
 
 export type ImportedProfessional = { name: string; rut: string; role: string; generatedPassword: string };
 
-export async function fetchUsers() {
-  const { data } = await api.get<{ users: StaffUser[] }>('/users');
+export async function fetchUsers(options?: { includeInactive?: boolean }) {
+  const { data } = await api.get<{ users: StaffUser[] }>('/users', {
+    params: options?.includeInactive ? { includeInactive: 'true' } : undefined,
+  });
   return data.users;
+}
+
+export async function setUserActive(id: string, active: boolean) {
+  const { data } = await api.patch<{ user: StaffUser } & DimageSyncResult>(`/users/${id}`, { active });
+  return data;
 }
 
 export async function createUser(input: CreateUserInput) {

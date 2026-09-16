@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { fetchUsers, updateUserRut, importProfessionalsFromDimage, type StaffUser } from '../../api/users';
+import { fetchUsers, updateUserRut, setUserActive, importProfessionalsFromDimage, type StaffUser } from '../../api/users';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import { ClockIcon, DownloadIcon, PlusIcon, ShieldIcon, UsersIcon } from '../../components/icons';
+import { CheckIcon, ClockIcon, DownloadIcon, LockIcon, PlusIcon, ShieldIcon, UsersIcon } from '../../components/icons';
 import { roleLabel } from '../../utils/roles';
 import { formatRutInput } from '../../utils/rut';
 import { ProfessionalFormModal } from './ProfessionalFormModal';
@@ -65,13 +65,27 @@ export default function Profesionales() {
   const [permissionsFor, setPermissionsFor] = useState<StaffUser | null>(null);
   const [passwordEntries, setPasswordEntries] = useState<{ label: string; password: string }[] | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchUsers()
+    fetchUsers({ includeInactive: true })
       .then(setUsers)
       .catch((err) => setError(getErrorMessage(err, 'No se pudo cargar la lista de profesionales')))
       .finally(() => setIsLoading(false));
   }, []);
+
+  async function handleToggleActive(user: StaffUser) {
+    setError(null);
+    setTogglingId(user.id);
+    try {
+      const { user: updated } = await setUserActive(user.id, !user.active);
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo actualizar el estado del profesional'));
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   function handleProfessionalSynced(user: StaffUser, dimageGeneratedPassword?: string | null) {
     setUsers((prev) => (prev.some((u) => u.id === user.id) ? prev.map((u) => (u.id === user.id ? user : u)) : [...prev, user]));
@@ -158,22 +172,29 @@ export default function Profesionales() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {users.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-50">
+                <tr key={user.id} className={`hover:bg-slate-50 ${user.active ? '' : 'bg-slate-50/60 opacity-60'}`}>
                   <td className="px-4 py-3 font-medium text-slate-800">{user.name}</td>
                   <td className="px-4 py-3 text-slate-500">{user.email}</td>
                   <td className="px-4 py-3">
                     <RutCell user={user} onUpdated={handleProfessionalSynced} />
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                        user.role === 'admin'
-                          ? 'bg-slate-100 text-slate-600'
-                          : 'bg-brand-50 text-brand-700'
-                      }`}
-                    >
-                      {roleLabel(user.role)}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          user.role === 'admin'
+                            ? 'bg-slate-100 text-slate-600'
+                            : 'bg-brand-50 text-brand-700'
+                        }`}
+                      >
+                        {roleLabel(user.role)}
+                      </span>
+                      {!user.active && (
+                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600">
+                          Inactivo · solo lectura
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -193,6 +214,26 @@ export default function Profesionales() {
                         >
                           <ClockIcon className="h-4 w-4" />
                           Horario
+                        </button>
+                      )}
+                      {user.role !== 'admin' && user.id !== currentUser?.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleToggleActive(user)}
+                          disabled={togglingId === user.id}
+                          title={
+                            user.active
+                              ? 'Desactiva su cuenta: podrá seguir viendo su historial, pero no crear ni modificar nada nuevo, y dejará de aparecer para asignarle cosas nuevas.'
+                              : 'Reactiva su cuenta con acceso normal.'
+                          }
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 ${
+                            user.active
+                              ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                              : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                          }`}
+                        >
+                          {user.active ? <LockIcon className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}
+                          {togglingId === user.id ? '...' : user.active ? 'Desactivar' : 'Activar'}
                         </button>
                       )}
                     </div>

@@ -14,6 +14,7 @@ export type User = {
   email: string;
   name: string;
   role: string;
+  active: boolean;
   clinicaId: string | null;
   clinicaModules: ClinicaModules | null;
   clinicaTipo: string | null;
