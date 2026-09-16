@@ -65,7 +65,7 @@ export default function Agenda() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div id="agenda-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Agenda general</h1>
           <p className="mt-1 text-sm text-slate-500 capitalize">{formatLongDate(selectedDate)}</p>
@@ -78,6 +78,7 @@ export default function Agenda() {
           </span>
           <SlotDurationControl />
           <button
+            id="agenda-nueva-cita-btn"
             type="button"
             onClick={() => setShowNewAppointment(true)}
             className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
@@ -86,6 +87,7 @@ export default function Agenda() {
             Nueva cita
           </button>
           <button
+            id="agenda-urgencia-btn"
             type="button"
             onClick={() => setShowUrgencyForm(true)}
             className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-600/25 hover:bg-red-700"
@@ -94,6 +96,7 @@ export default function Agenda() {
             Atender urgencia
           </button>
           <button
+            id="agenda-sillon-btn"
             type="button"
             onClick={() => setShowChairForm(true)}
             className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
@@ -121,11 +124,11 @@ export default function Agenda() {
         </p>
       )}
 
-      <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+      <div id="agenda-day-tabs" className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
         <DayTabs selectedDate={selectedDate} onSelect={setSelectedDate} />
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div id="agenda-grid" className="min-h-0 flex-1">
         <ChairAgendaGrid
           date={selectedDate}
           chairs={chairs}

@@ -129,7 +129,7 @@ export default function Pacientes() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div id="pacientes-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Pacientes</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -137,6 +137,7 @@ export default function Pacientes() {
           </p>
         </div>
         <button
+          id="pacientes-nuevo-btn"
           type="button"
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
@@ -146,7 +147,7 @@ export default function Pacientes() {
         </button>
       </div>
 
-      <div className="relative max-w-md">
+      <div id="pacientes-search" className="relative max-w-md">
         <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
@@ -157,7 +158,7 @@ export default function Pacientes() {
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div id="pacientes-filtros" className="flex flex-wrap gap-2">
         {CONSENT_FILTERS.map((filter) => (
           <button
             key={filter.key}
@@ -174,7 +175,7 @@ export default function Pacientes() {
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div id="pacientes-tabla" className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         {error && <p className="p-6 text-sm text-red-600">{error}</p>}
 
         {!error && !isLoading && visiblePatients.length === 0 && (

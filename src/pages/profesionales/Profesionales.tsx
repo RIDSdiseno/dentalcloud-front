@@ -101,7 +101,7 @@ export default function Profesionales() {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div id="profesionales-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Profesionales</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -111,6 +111,7 @@ export default function Profesionales() {
         <div className="flex items-center gap-2">
           {currentUser?.role === 'admin' && currentUser?.rxEnabled && (
             <button
+              id="profesionales-importar-btn"
               type="button"
               onClick={handleImportFromDimage}
               disabled={isImporting}
@@ -121,6 +122,7 @@ export default function Profesionales() {
             </button>
           )}
           <button
+            id="profesionales-nuevo-btn"
             type="button"
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
@@ -133,7 +135,7 @@ export default function Profesionales() {
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
-      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div id="profesionales-tabla" className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         {!isLoading && users.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
@@ -202,7 +204,9 @@ export default function Profesionales() {
         )}
       </div>
 
-      <PermisosPerfilPanel />
+      <div id="profesionales-permisos-perfil">
+        <PermisosPerfilPanel />
+      </div>
 
       {showForm && (
         <ProfessionalFormModal

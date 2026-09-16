@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
+import { TourButton } from '../TourButton';
+import { useModuleTour } from '../../lib/moduleTours';
 import { useAuth } from '../../context/AuthContext';
 import { applyTenantTheme, resetTenantTheme } from '../../theme';
 
@@ -9,6 +11,7 @@ export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
+  const moduleTour = useModuleTour();
 
   useEffect(() => {
     applyTenantTheme(user?.clinicaTipo);
@@ -31,6 +34,9 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      {moduleTour && (
+        <TourButton key={moduleTour.storageKey} steps={moduleTour.steps} storageKey={moduleTour.storageKey} floating />
+      )}
     </div>
   );
 }

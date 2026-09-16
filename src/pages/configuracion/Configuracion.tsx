@@ -31,7 +31,7 @@ export default function Configuracion() {
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <h1 className="text-2xl font-bold text-slate-900">Configuración</h1>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
-        <nav className="flex flex-col gap-1 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+        <nav id="configuracion-nav" className="flex flex-col gap-1 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
           {SECTIONS.map((s) => (
             <button
               key={s.key}
@@ -45,7 +45,7 @@ export default function Configuracion() {
             </button>
           ))}
         </nav>
-        <div>
+        <div id="configuracion-contenido">
           {section === 'formatos' ? (
             <FormatosPanel />
           ) : section === 'notificaciones' ? (

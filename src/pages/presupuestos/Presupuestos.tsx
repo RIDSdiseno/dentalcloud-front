@@ -58,9 +58,10 @@ export default function Presupuestos() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
+      <div id="presupuestos-header" className="flex items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-slate-800">Presupuesto</h1>
         <button
+          id="presupuestos-nuevo-btn"
           type="button"
           onClick={() => setShowPicker(true)}
           className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700"
@@ -83,7 +84,7 @@ export default function Presupuestos() {
       )}
 
       {plans.length > 0 && (
-        <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+        <div id="presupuestos-tabla" className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-100 text-xs font-semibold uppercase tracking-wide text-slate-400">
               <tr>

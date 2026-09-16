@@ -67,7 +67,7 @@ export default function PagosConsulta() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div>
+      <div id="pagos-header">
         <h1 className="text-2xl font-bold text-slate-900">Pagos de Consulta</h1>
         <p className="mt-1 text-sm text-slate-500">
           Registro de quién pagó su consulta antes de ser atendido. Es solo informativo — el personal decide con esta
@@ -75,7 +75,7 @@ export default function PagosConsulta() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <form id="pagos-form" onSubmit={handleSubmit} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 className="mb-4 text-sm font-semibold text-slate-800">Registrar pago</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="flex flex-col gap-1.5">
@@ -153,7 +153,7 @@ export default function PagosConsulta() {
         </div>
       </form>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div id="pagos-tabla" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 className="mb-4 text-sm font-semibold text-slate-800">Pagos registrados</h2>
         {error && <p className="mb-3 text-xs text-red-600">{error}</p>}
         {loading ? (

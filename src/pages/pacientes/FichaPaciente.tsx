@@ -1127,7 +1127,7 @@ export default function FichaPaciente() {
         Volver a pacientes
       </button>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div id="ficha-header-card" className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div className="flex items-center gap-4">
           <div className="group relative h-16 w-16 shrink-0">
             {patient.photoUrl ? (
@@ -1188,6 +1188,7 @@ export default function FichaPaciente() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            id="ficha-nueva-cita-btn"
             type="button"
             onClick={() => setShowNewAppointment(true)}
             className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-1.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
@@ -1196,6 +1197,7 @@ export default function FichaPaciente() {
             Nueva cita
           </button>
           <button
+            id="ficha-editar-btn"
             type="button"
             onClick={() => setShowEditForm(true)}
             className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
@@ -1214,7 +1216,7 @@ export default function FichaPaciente() {
           onSelectStep={(step: EstheticStepKey) => setActiveTab(step)}
         />
       ) : (
-        <div className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+        <div id="ficha-tabs-dental" className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;

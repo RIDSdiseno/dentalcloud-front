@@ -54,7 +54,7 @@ export default function SillonesLibres() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div id="sillones-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Sillones libres</h1>
           <p className="mt-1 text-sm text-slate-500">{formatWeekRange(weekStart)}</p>
@@ -106,11 +106,11 @@ export default function SillonesLibres() {
         </p>
       )}
 
-      <div className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+      <div id="sillones-chair-tabs" className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
         <ChairTabs chairs={chairs} selectedChairId={selectedChairId} onSelect={setSelectedChairId} />
       </div>
 
-      <div className="min-h-0 flex-1">
+      <div id="sillones-grid" className="min-h-0 flex-1">
         <SillonesLibresGrid
           weekStart={weekStart}
           appointments={appointments}

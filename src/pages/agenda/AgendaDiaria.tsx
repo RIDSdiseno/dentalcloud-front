@@ -78,7 +78,7 @@ export default function AgendaDiaria() {
 
   return (
     <div className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-5">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div id="diaria-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Agenda diaria</h1>
           <p className="mt-1 text-sm text-slate-500">
@@ -90,6 +90,7 @@ export default function AgendaDiaria() {
             {appointments.length} cita{appointments.length === 1 ? '' : 's'}
           </span>
           <button
+            id="diaria-nueva-hora-btn"
             type="button"
             onClick={() => setShowNewOpenSlot(true)}
             className="flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
@@ -98,6 +99,7 @@ export default function AgendaDiaria() {
             Agregar horas disponibles
           </button>
           <button
+            id="diaria-nueva-cita-btn"
             type="button"
             onClick={() => setShowNewAppointment(true)}
             className="flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand-600/25 hover:bg-brand-700"
@@ -151,7 +153,7 @@ export default function AgendaDiaria() {
         </p>
       )}
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
+      <div id="diaria-timeline" className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
         {!isLoading && timeline.length === 0 && (
           <div className="flex flex-col items-center gap-2 rounded-2xl bg-white py-16 text-center shadow-sm ring-1 ring-slate-200">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">

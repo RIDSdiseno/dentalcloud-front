@@ -129,9 +129,9 @@ export default function Catalogo() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5">
-      <div>
+      <div id="catalogo-header">
         <h1 className="text-3xl font-bold text-slate-900">Catálogo</h1>
-        <div className="mt-3 flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+        <div id="catalogo-tabs" className="mt-3 flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -155,7 +155,7 @@ export default function Catalogo() {
 
       {tab === 'prestaciones' && (
         <>
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div id="catalogo-prestaciones-header" className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-slate-500">
           {prestaciones.length} {prestaciones.length === 1 ? 'prestación' : 'prestaciones'}
         </p>
@@ -167,6 +167,7 @@ export default function Catalogo() {
             onImportFile={handleImportFile}
           />
           <button
+            id="catalogo-nueva-prestacion-btn"
             type="button"
             onClick={() => {
               setEditing(null);
@@ -182,7 +183,7 @@ export default function Catalogo() {
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div id="catalogo-tabla" className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         {!isLoading && prestaciones.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
