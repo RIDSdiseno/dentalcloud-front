@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchAllPrestaciones, updatePrestacion, deletePrestacion, type Prestacion } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { formatCLP } from '../../utils/treatmentStatus';
-import { ClipboardIcon, EditIcon, PlusIcon, TrashIcon } from '../../components/icons';
+import { ClipboardIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
 import { FACIAL_ZONE_LABELS, type FacialZoneKey } from '../pacientes/facialZoneConfig';
 import { ODONTOGRAM_MODE_LABELS } from '../pacientes/odontogramConfig';
 import { PrestacionFormModal } from './PrestacionFormModal';
@@ -16,6 +16,15 @@ import { exportPrestacionesExcel } from '../../utils/exportPrestacionesExcel';
 import { importPrestacionesExcel, type ImportSummary } from '../../utils/importPrestacionesExcel';
 import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
 import { ImportSummaryModal } from '../../components/ImportSummaryModal';
+
+// Sin esto, buscar "acido" no encuentra "Ácido Hialurónico" — el usuario no
+// siempre tipea las tildes.
+function normalizeSearch(value: string): string {
+  return value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase();
+}
 
 function zonesSummary(allowedZones: string[]): string {
   if (allowedZones.length === 0) return 'Todas las zonas';
@@ -45,6 +54,8 @@ export default function Catalogo() {
   const showModeColumn = clinicaTipo !== 'estetica';
   const [tab, setTab] = useState<TabKey>('prestaciones');
   const [prestaciones, setPrestaciones] = useState<Prestacion[]>([]);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<'todas' | 'dental' | 'estetica'>('todas');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -113,6 +124,15 @@ export default function Catalogo() {
     }
   }
 
+  const filteredPrestaciones = useMemo(() => {
+    const term = normalizeSearch(search.trim());
+    return prestaciones.filter((p) => {
+      if (categoryFilter !== 'todas' && p.category !== categoryFilter) return false;
+      if (!term) return true;
+      return normalizeSearch(p.name).includes(term) || normalizeSearch(p.code ?? '').includes(term);
+    });
+  }, [prestaciones, search, categoryFilter]);
+
   async function handleDelete(prestacion: Prestacion) {
     if (!window.confirm(`¿Eliminar "${prestacion.name}" del catálogo?`)) return;
     setBusyId(prestacion.id);
@@ -157,7 +177,9 @@ export default function Catalogo() {
         <>
       <div id="catalogo-prestaciones-header" className="flex flex-wrap items-center justify-between gap-4">
         <p className="text-sm text-slate-500">
-          {prestaciones.length} {prestaciones.length === 1 ? 'prestación' : 'prestaciones'}
+          {filteredPrestaciones.length === prestaciones.length
+            ? `${prestaciones.length} ${prestaciones.length === 1 ? 'prestación' : 'prestaciones'}`
+            : `${filteredPrestaciones.length} de ${prestaciones.length} prestaciones`}
         </p>
         <div className="flex items-center gap-2">
           <ExcelImportExportBar
@@ -183,6 +205,34 @@ export default function Catalogo() {
 
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
+      <div id="catalogo-prestaciones-filtros" className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full max-w-xs">
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por nombre o código..."
+            className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          />
+        </div>
+        {showCategoryColumn && (
+          <div className="flex gap-1 rounded-lg bg-slate-100 p-1 text-xs font-semibold">
+            {(['todas', 'dental', 'estetica'] as const).map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategoryFilter(c)}
+                className={`rounded-md px-2.5 py-1.5 transition-colors ${
+                  categoryFilter === c ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {c === 'todas' ? 'Todas' : c === 'dental' ? 'Dental' : 'Estética'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div id="catalogo-tabla" className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
         {!isLoading && prestaciones.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
@@ -193,7 +243,16 @@ export default function Catalogo() {
           </div>
         )}
 
-        {prestaciones.length > 0 && (
+        {!isLoading && prestaciones.length > 0 && filteredPrestaciones.length === 0 && (
+          <div className="flex flex-col items-center gap-2 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+              <SearchIcon className="h-6 w-6" />
+            </div>
+            <p className="text-sm text-slate-500">No hay prestaciones que coincidan con la búsqueda.</p>
+          </div>
+        )}
+
+        {filteredPrestaciones.length > 0 && (
           <table className="w-full text-left text-sm">
             <thead className="sticky top-0 bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
               <tr>
@@ -208,7 +267,7 @@ export default function Catalogo() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {prestaciones.map((p) => (
+              {filteredPrestaciones.map((p) => (
                 <tr key={p.id} className={`hover:bg-slate-50 ${!p.active ? 'opacity-50' : ''}`}>
                   <td className="px-4 py-3 font-medium text-slate-800">
                     {p.name}
