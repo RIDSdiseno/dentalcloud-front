@@ -25,6 +25,7 @@ import { ReasonModal } from '../../components/ReasonModal';
 import { RichTextEditor } from '../../components/RichTextEditor';
 import { ActivityIcon, CalendarIcon, EyeIcon, EyeOffIcon, PrinterIcon, TrashIcon, UploadIcon } from '../../components/icons';
 import { PHOTO_LABELS, missingRequiredProductFields, type PhotoLabel } from './photoLabels';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 
 const STATUS_TABS: { key: EnabledFilter; label: string }[] = [
   { key: 'true', label: 'Habilitadas' },
@@ -95,7 +96,7 @@ function EvolutionCard({
           {evolution.productExpiresAt && ` · Vence: ${new Date(evolution.productExpiresAt).toLocaleDateString('es-CL')}`}
         </p>
       )}
-      <div className="prose-sm text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: evolution.content }} />
+      <div className="prose-sm text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(evolution.content) }} />
       {evolution.photos.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {evolution.photos.map((photo) => (
@@ -582,7 +583,7 @@ export function EvolucionesTab({
 
         {showPreview ? (
           <div className="min-h-[10rem] rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
-            <div dangerouslySetInnerHTML={{ __html: content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }} />
           </div>
         ) : (
           <RichTextEditor value={content} onChange={setContent} />

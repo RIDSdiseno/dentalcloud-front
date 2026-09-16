@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { AlignCenterIcon, AlignLeftIcon, AlignRightIcon, BulletListIcon, NumberedListIcon } from './icons';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 
 type RichTextEditorProps = {
   value: string;
@@ -26,6 +27,19 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
   function exec(command: string, arg?: string) {
     editorRef.current?.focus();
     document.execCommand(command, false, arg);
+    if (editorRef.current) onChange(editorRef.current.innerHTML);
+  }
+
+  // Sin esto, HTML pegado desde Word/una web (con <script>, atributos on*,
+  // etc.) entra directo al innerHTML del editor y de ahí a onChange sin
+  // ningún filtro — se limpia acá antes de insertarlo.
+  function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const html = e.clipboardData.getData('text/html');
+    const clean = html
+      ? sanitizeHtml(html)
+      : e.clipboardData.getData('text/plain').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
+    document.execCommand('insertHTML', false, clean);
     if (editorRef.current) onChange(editorRef.current.innerHTML);
   }
 
@@ -108,6 +122,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           ref={editorRef}
           contentEditable
           onInput={() => onChange(editorRef.current?.innerHTML ?? '')}
+          onPaste={handlePaste}
           className="min-h-[10rem] px-3 py-3 text-sm text-slate-700 outline-none"
           suppressContentEditableWarning
         />
