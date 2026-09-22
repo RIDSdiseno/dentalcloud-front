@@ -7,17 +7,27 @@ import {
   type ProductoMarca,
 } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { PlusIcon, TrashIcon } from '../../components/icons';
+import { exportProductosMarcaExcel } from '../../utils/exportProductosMarcaExcel';
+import { importProductosMarcaExcel } from '../../utils/importProductosMarcaExcel';
+import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
+import { ImportSummaryModal } from '../../components/ImportSummaryModal';
+import type { ImportSummary } from '../../utils/importPrestacionesExcel';
 
 function formatCLP(value: number) {
   return value.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 }
 
 export function ProductosMarcaTab() {
+  const { user } = useAuth();
   const [productos, setProductos] = useState<ProductoMarca[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
   const [newNombre, setNewNombre] = useState('');
   const [newMarca, setNewMarca] = useState('');
@@ -83,6 +93,36 @@ export function ProductosMarcaTab() {
     }
   }
 
+  async function handleExport() {
+    setIsExporting(true);
+    setError(null);
+    try {
+      await exportProductosMarcaExcel(productos, user?.clinicaName ?? undefined);
+    } catch {
+      setError('No se pudo generar el Excel del catálogo');
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleImportFile(file: File) {
+    setIsImporting(true);
+    setError(null);
+    try {
+      const summary = await importProductosMarcaExcel(file);
+      setImportSummary(summary);
+      if (summary.created > 0) {
+        fetchAllProductosMarca()
+          .then(setProductos)
+          .catch((err) => setError(getErrorMessage(err, 'No se pudo recargar el catálogo')));
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo leer el archivo Excel');
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
   async function handleDelete(producto: ProductoMarca) {
     if (!window.confirm(`¿Eliminar "${producto.marca}" (${producto.nombreGenerico})?`)) return;
     setBusyId(producto.id);
@@ -99,6 +139,15 @@ export function ProductosMarcaTab() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <ExcelImportExportBar
+          isExporting={isExporting}
+          isImporting={isImporting}
+          onExport={handleExport}
+          onImportFile={handleImportFile}
+        />
+      </div>
+
       {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
 
       <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3">
@@ -275,6 +324,8 @@ export function ProductosMarcaTab() {
           </table>
         )}
       </div>
+
+      {importSummary && <ImportSummaryModal summary={importSummary} onClose={() => setImportSummary(null)} />}
     </div>
   );
 }

@@ -156,7 +156,15 @@ export function parseNumber(value: unknown): number {
 export type ParsedRecord = Record<string, string>;
 
 /** Nombre de la hoja de datos que escribe cada plantilla — sirve para detectar cuando el cliente sube la plantilla de otra pestaña por error. */
-export const TEMPLATE_SHEET_NAMES = ['Prestaciones', 'Convenios', 'Previsiones', 'Clínicas', 'Inventario', 'Pacientes'] as const;
+export const TEMPLATE_SHEET_NAMES = [
+  'Prestaciones',
+  'Convenios',
+  'Previsiones',
+  'Clínicas',
+  'Inventario',
+  'Pacientes',
+  'Productos y Marcas',
+] as const;
 
 /**
  * Lee un .xlsx (la plantilla exportada, con Instrucciones + título/subtítulo en
