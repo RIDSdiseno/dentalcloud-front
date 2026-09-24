@@ -4,12 +4,17 @@ import axios from 'axios';
 import { fetchPublicAppointment, confirmPublicAppointment, type PublicAppointment } from '../../api/publicAppointment';
 import { CalendarIcon, ShieldIcon } from '../../components/icons';
 
-type ViewState = 'loading' | 'ready' | 'confirming' | 'confirmed' | 'not_found' | 'cancelled' | 'error';
+type ViewState = 'loading' | 'ready' | 'confirming' | 'confirmed' | 'not_found' | 'cancelled' | 'expired' | 'error';
 
 function statusFromError(err: unknown): ViewState {
   if (axios.isAxiosError(err)) {
     if (err.response?.status === 404) return 'not_found';
-    if (err.response?.status === 410) return 'cancelled';
+    if (err.response?.status === 410) {
+      // Mismo código para dos casos distintos — se distingue por el mensaje
+      // que manda el backend, en vez de agregar un campo nuevo a la respuesta.
+      const message = (err.response?.data as { error?: string } | undefined)?.error;
+      return message === 'Este link ya venció' ? 'expired' : 'cancelled';
+    }
   }
   return 'error';
 }
@@ -74,6 +79,14 @@ export default function ConfirmarCitaPublico() {
     return (
       <Shell>
         <p className="text-sm text-amber-600">Esta cita fue cancelada.</p>
+      </Shell>
+    );
+  }
+
+  if (state === 'expired') {
+    return (
+      <Shell>
+        <p className="text-sm text-amber-600">Este link ya venció. Si tu cita sigue en pie, comunícate directamente con la clínica.</p>
       </Shell>
     );
   }
