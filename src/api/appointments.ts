@@ -19,6 +19,7 @@ export type Appointment = {
   motivoUrgencia: string | null;
   triageLevel: string | null;
   receivedByUserId: string | null;
+  patientConfirmedAt: string | null;
   createdAt: string;
   updatedAt: string;
   patient: Pick<Patient, 'id' | 'rut' | 'firstName' | 'lastName' | 'phone'>;

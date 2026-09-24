@@ -9,7 +9,7 @@ import {
   deleteAppointment,
   type Appointment,
 } from '../../api/appointments';
-import { AlertTriangleIcon, ChairIcon, ClockIcon, UsersIcon } from '../../components/icons';
+import { AlertTriangleIcon, ChairIcon, CheckIcon, ClockIcon, UsersIcon } from '../../components/icons';
 import { formatTime } from './dateUtils';
 import { STATUS_LABEL, STATUS_BADGE_CLASS } from './appointmentStatusStyles';
 
@@ -120,6 +120,13 @@ export function AppointmentActionModal({
               {appointment.chair?.name || `Sillón ${appointment.chair?.number ?? '—'}`}
             </span>
           </div>
+
+          <p className={`mt-2 flex items-center gap-1 text-xs font-medium ${appointment.patientConfirmedAt ? 'text-emerald-600' : 'text-slate-400'}`}>
+            <CheckIcon className="h-3.5 w-3.5" />
+            {appointment.patientConfirmedAt
+              ? `El paciente confirmó su asistencia (${new Date(appointment.patientConfirmedAt).toLocaleDateString('es-CL')})`
+              : 'El paciente aún no confirmó su asistencia por correo'}
+          </p>
 
           {appointment.type === 'urgencia' && (
             <div className="mt-2 flex flex-col gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">

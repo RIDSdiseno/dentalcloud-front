@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Appointment } from '../../api/appointments';
 import type { Chair } from '../../api/chairs';
-import { ChairIcon, TrashIcon } from '../../components/icons';
+import { ChairIcon, CheckIcon, TrashIcon } from '../../components/icons';
 import { STATUS_DOT_CLASS } from './appointmentStatusStyles';
 import {
   formatTime,
@@ -139,6 +139,12 @@ export function ChairAgendaGrid({
                       }`}
                     />
                     {covering.appt.patient.firstName} {covering.appt.patient.lastName}
+                    {covering.appt.patientConfirmedAt && (
+                      <CheckIcon
+                        className="h-3 w-3 shrink-0 text-emerald-600"
+                        aria-label="El paciente confirmó su asistencia"
+                      />
+                    )}
                   </span>
                   <span className="truncate text-[11px] text-brand-700">
                     {formatTime(covering.start)}–{formatTime(covering.end)}

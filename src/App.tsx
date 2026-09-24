@@ -13,6 +13,7 @@ import Configuracion from './pages/configuracion/Configuracion';
 import PagosConsulta from './pages/pagos/PagosConsulta';
 import Presupuestos from './pages/presupuestos/Presupuestos';
 import ConsentimientoPublico from './pages/consentimiento/ConsentimientoPublico';
+import ConfirmarCitaPublico from './pages/citas/ConfirmarCitaPublico';
 import Clinicas from './pages/superadmin/Clinicas';
 import ClinicaDetail from './pages/superadmin/ClinicaDetail';
 import ModuloConsumo from './pages/superadmin/ModuloConsumo';
@@ -26,6 +27,7 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/consentimiento/:token" element={<ConsentimientoPublico />} />
+      <Route path="/confirmar-cita/:token" element={<ConfirmarCitaPublico />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
