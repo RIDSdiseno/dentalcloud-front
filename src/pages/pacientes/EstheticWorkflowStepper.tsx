@@ -113,6 +113,15 @@ const TOUR_STEPS: DriveStep[] = [
     },
   },
   {
+    element: '#imagenes-marcadas-card',
+    popover: {
+      title: '2 · Examen estético — Marcar sobre la foto (opcional)',
+      description:
+        'Toca "Marcar" en cualquier foto ya tomada para dibujar encima con la simbología estándar: punto = botox, línea punteada = ojeras, línea continua = filler o hilos. No reemplaza la foto original — la marcación queda como una imagen nueva acá abajo, con su propio botón para borrarla si sale mal.',
+      side: 'bottom',
+    },
+  },
+  {
     element: '#registro-video-card',
     popover: {
       title: '2 · Examen estético — Registro de video (obligatorio)',
@@ -211,6 +220,7 @@ const TOUR_STEP_KEYS: (EstheticStepKey | null)[] = [
   'datos',
   'datos',
   'datos',
+  'examen',
   'examen',
   'examen',
   'examen',
