@@ -1529,6 +1529,8 @@ export function TreatmentPlanTab({
 
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
+        {isLoading && <p className="py-8 text-center text-sm text-slate-400">Cargando presupuestos...</p>}
+
         {plans.length > 3 && (
           <input
             value={planSearch}
