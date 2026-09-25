@@ -219,6 +219,40 @@ export async function uploadExamPhoto(
   return data.examPhotos;
 }
 
+// Etapa 07 (marcación sobre la foto, 25/09): dibujo del médico aplanado
+// sobre una copia de una ExamPhoto — nunca reemplaza la foto original, queda
+// como su propia imagen en una lista aparte ("Imágenes marcadas").
+export type ExamPhotoMarkup = {
+  id: string;
+  examPhotoId: string;
+  patientId: string;
+  url: string;
+  createdAt: string;
+};
+
+export async function fetchExamPhotoMarkups(patientId: string) {
+  const { data } = await api.get<{ examPhotoMarkups: ExamPhotoMarkup[] }>(`/patients/${patientId}/exam-photo-markups`);
+  return data.examPhotoMarkups;
+}
+
+export async function uploadExamPhotoMarkup(patientId: string, examPhotoId: string, image: Blob) {
+  const formData = new FormData();
+  formData.append('photo', image, 'marcacion.png');
+  const { data } = await api.post<{ examPhotoMarkups: ExamPhotoMarkup[] }>(
+    `/patients/${patientId}/exam-photo/${examPhotoId}/markup`,
+    formData,
+    { headers: { 'Content-Type': 'multipart/form-data' } }
+  );
+  return data.examPhotoMarkups;
+}
+
+export async function deleteExamPhotoMarkup(patientId: string, markupId: string) {
+  const { data } = await api.delete<{ examPhotoMarkups: ExamPhotoMarkup[] }>(
+    `/patients/${patientId}/exam-photo-markups/${markupId}`
+  );
+  return data.examPhotoMarkups;
+}
+
 // Registro de video (14/09): mismo esquema de rondas que ExamPhoto (antes /
 // avance N), pero un solo video por ronda — no hay "slot" de ángulo.
 export type ExamVideo = {

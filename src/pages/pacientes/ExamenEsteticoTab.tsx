@@ -5,17 +5,22 @@ import {
   fetchExamPhotos,
   uploadExamVideo,
   fetchExamVideos,
+  fetchExamPhotoMarkups,
+  uploadExamPhotoMarkup,
+  deleteExamPhotoMarkup,
   type ExamPhoto,
   type ExamPhotoArea,
   type ExamPhotoMoment,
   type ExamPhotoSlot,
+  type ExamPhotoMarkup,
   type ExamVideo,
   type Patient,
 } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
-import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon, RefreshIcon } from '../../components/icons';
+import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon, RefreshIcon, PenIcon, TrashIcon } from '../../components/icons';
 import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
 import { VideoCaptureModal } from '../../components/VideoCaptureModal';
+import { PhotoAnnotationModal } from './PhotoAnnotationModal';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
 
 // Mismo code que usa el backend (ver src/lib/consentTypes.ts) para exigir
@@ -175,6 +180,7 @@ function PhotoRoundGrid({
   fileInputs,
   onOpenCamera,
   onFileChange,
+  onMark,
   disabled,
 }: {
   area: ExamPhotoArea;
@@ -185,13 +191,14 @@ function PhotoRoundGrid({
   fileInputs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
   onOpenCamera: (slot: ExamPhotoSlot) => void;
   onFileChange: (slot: ExamPhotoSlot, file: File | null) => void;
+  onMark: (photo: ExamPhoto) => void;
   disabled?: boolean;
 }) {
   const bySlot = latestBySlot(photos, area, moment, round);
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {PHOTO_SLOTS_BY_AREA[area].map((slot) => {
-        const url = bySlot.get(slot.key)?.url ?? null;
+        const photo = bySlot.get(slot.key) ?? null;
         const inputKey = `${area}-${moment}-${round}-${slot.key}`;
         return (
           <div key={slot.key} className="flex flex-col items-center gap-2">
@@ -203,8 +210,8 @@ function PhotoRoundGrid({
             >
               {uploadingSlot === slot.key ? (
                 <span className="text-xs">Subiendo...</span>
-              ) : url ? (
-                <img src={url} alt={slot.label} className="h-full w-full object-cover" />
+              ) : photo ? (
+                <img src={photo.url} alt={slot.label} className="h-full w-full object-cover" />
               ) : (
                 <span className="flex flex-col items-center gap-1 text-slate-400">
                   <CameraIcon className="h-6 w-6" />
@@ -213,6 +220,17 @@ function PhotoRoundGrid({
               )}
             </button>
             <span className="text-xs font-semibold text-slate-600">{slot.label}</span>
+            {photo && (
+              <button
+                type="button"
+                onClick={() => onMark(photo)}
+                disabled={disabled}
+                className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <PenIcon className="h-3 w-3" />
+                Marcar
+              </button>
+            )}
             <input
               ref={(el) => {
                 fileInputs.current[inputKey] = el;
@@ -291,6 +309,12 @@ export function ExamenEsteticoTab({
   const [photoConsentSigned, setPhotoConsentSigned] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  // Etapa 07 — marcación sobre la foto: imágenes derivadas, nunca reemplazan
+  // la foto original (ver PhotoAnnotationModal).
+  const [examPhotoMarkups, setExamPhotoMarkups] = useState<ExamPhotoMarkup[]>([]);
+  const [annotatingPhoto, setAnnotatingPhoto] = useState<ExamPhoto | null>(null);
+  const [deletingMarkupId, setDeletingMarkupId] = useState<string | null>(null);
+
   // Registro de video — mismo esquema de rondas que las fotos, pero
   // independiente (su propio contador de "Avance").
   const [examVideos, setExamVideos] = useState<ExamVideo[]>([]);
@@ -307,7 +331,30 @@ export function ExamenEsteticoTab({
     fetchExamVideos(patient.id)
       .then(setExamVideos)
       .catch((err) => setSaveError(getErrorMessage(err, 'No se pudo cargar el registro de video')));
+    fetchExamPhotoMarkups(patient.id)
+      .then(setExamPhotoMarkups)
+      .catch(() => undefined);
   }, [patient.id]);
+
+  async function handleConfirmMarkup(blob: Blob) {
+    if (!annotatingPhoto) return;
+    const updated = await uploadExamPhotoMarkup(patient.id, annotatingPhoto.id, blob);
+    setExamPhotoMarkups(updated);
+    setAnnotatingPhoto(null);
+  }
+
+  async function handleDeleteMarkup(markupId: string) {
+    if (!window.confirm('¿Borrar esta imagen marcada?')) return;
+    setDeletingMarkupId(markupId);
+    try {
+      const updated = await deleteExamPhotoMarkup(patient.id, markupId);
+      setExamPhotoMarkups(updated);
+    } catch (err) {
+      setSaveError(getErrorMessage(err, 'No se pudo borrar la imagen marcada'));
+    } finally {
+      setDeletingMarkupId(null);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -333,6 +380,12 @@ export function ExamenEsteticoTab({
       cancelled = true;
     };
   }, [patient.id]);
+
+  // Solo las marcaciones cuya foto de origen es del área activa (Rostro/
+  // Cuerpo) — así el switch de arriba no mezcla marcaciones de una con fotos
+  // de la otra.
+  const areaPhotoIds = new Set(examPhotos.filter((p) => p.area === photoArea).map((p) => p.id));
+  const areaMarkups = examPhotoMarkups.filter((m) => areaPhotoIds.has(m.examPhotoId));
 
   const antesDone = roundComplete(examPhotos, photoArea, 'antes', 1);
   const avanceRoundsWithPhotos = Array.from(
@@ -589,6 +642,7 @@ export function ExamenEsteticoTab({
             disabled={!photoConsentSigned}
             onOpenCamera={(slot) => setCameraTarget({ slot, moment: latestRound.moment, round: latestRound.round })}
             onFileChange={(slot, file) => handlePhotoChange(slot, latestRound.moment, latestRound.round, file)}
+            onMark={setAnnotatingPhoto}
           />
         </div>
 
@@ -617,6 +671,7 @@ export function ExamenEsteticoTab({
                       disabled={!photoConsentSigned}
                       onOpenCamera={(slot) => setCameraTarget({ slot, moment: r.moment, round: r.round })}
                       onFileChange={(slot, file) => handlePhotoChange(slot, r.moment, r.round, file)}
+                      onMark={setAnnotatingPhoto}
                     />
                   </div>
                 ))}
@@ -625,6 +680,45 @@ export function ExamenEsteticoTab({
           </>
         )}
       </div>
+
+      <div id="imagenes-marcadas-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800">Imágenes marcadas</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Marcaciones guardadas sobre alguna foto de arriba (toca "Marcar" en una foto para crear una) — no reemplazan la
+          foto original.
+        </p>
+        {areaMarkups.length === 0 ? (
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">Todavía no hay imágenes marcadas.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {areaMarkups.map((markup) => (
+              <div key={markup.id} className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-slate-200">
+                <a href={markup.url} target="_blank" rel="noreferrer">
+                  <img src={markup.url} alt="Foto marcada" className="h-full w-full object-cover" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteMarkup(markup.id)}
+                  disabled={deletingMarkupId === markup.id}
+                  aria-label="Borrar imagen marcada"
+                  title="Borrar imagen marcada"
+                  className="absolute top-1.5 right-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <TrashIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {annotatingPhoto && (
+        <PhotoAnnotationModal
+          photoUrl={annotatingPhoto.url}
+          onClose={() => setAnnotatingPhoto(null)}
+          onConfirm={handleConfirmMarkup}
+        />
+      )}
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
         {canStartNewAvance ? (

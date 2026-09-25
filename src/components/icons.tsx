@@ -584,6 +584,25 @@ export function CircleToolIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+// Herramienta "Punto" de la marcación sobre foto (Etapa 07) — sello de botox,
+// a diferencia de CircleToolIcon (contorno vacío) este va relleno.
+export function DotToolIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <circle cx={12} cy={12} r={5} />
+    </svg>
+  );
+}
+
+// Herramienta "Línea punteada" de la marcación sobre foto (Etapa 07) — ojeras.
+export function DashedLineToolIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
+      <path d="M5 19 19 5" strokeLinecap="round" strokeDasharray="3.2 2.6" />
+    </svg>
+  );
+}
+
 export function EraserIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} {...props}>
