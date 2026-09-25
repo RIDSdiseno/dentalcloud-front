@@ -50,26 +50,26 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
     .filter(Boolean).length;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-300 focus-within:border-brand-500 focus-within:ring-3 focus-within:ring-brand-500/15">
-      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5">
+    <div className="overflow-hidden rounded-lg border border-slate-300 focus-within:border-brand-500 focus-within:ring-3 focus-within:ring-brand-500/15 dark:border-slate-700">
+      <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-700 dark:bg-slate-800">
         {TOOLBAR_BUTTONS.map((btn) => (
           <button
             key={btn.command}
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => exec(btn.command)}
-            className={`flex h-7 w-7 items-center justify-center rounded text-sm text-slate-600 hover:bg-slate-200 ${btn.className}`}
+            className={`flex h-7 w-7 items-center justify-center rounded text-sm text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700 ${btn.className}`}
           >
             {btn.label}
           </button>
         ))}
-        <span className="mx-1 h-4 w-px bg-slate-300" />
+        <span className="mx-1 h-4 w-px bg-slate-300 dark:bg-slate-700" />
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => exec('insertUnorderedList')}
           aria-label="Lista con viñetas"
-          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200"
+          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           <BulletListIcon className="h-4 w-4" />
         </button>
@@ -78,17 +78,17 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => exec('insertOrderedList')}
           aria-label="Lista numerada"
-          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200"
+          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           <NumberedListIcon className="h-4 w-4" />
         </button>
-        <span className="mx-1 h-4 w-px bg-slate-300" />
+        <span className="mx-1 h-4 w-px bg-slate-300 dark:bg-slate-700" />
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => exec('justifyLeft')}
           aria-label="Alinear izquierda"
-          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200"
+          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           <AlignLeftIcon className="h-4 w-4" />
         </button>
@@ -97,7 +97,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => exec('justifyCenter')}
           aria-label="Centrar"
-          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200"
+          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           <AlignCenterIcon className="h-4 w-4" />
         </button>
@@ -106,7 +106,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => exec('justifyRight')}
           aria-label="Alinear derecha"
-          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200"
+          className="flex h-7 w-7 items-center justify-center rounded text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700"
         >
           <AlignRightIcon className="h-4 w-4" />
         </button>
@@ -114,7 +114,7 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
 
       <div className="relative">
         {isEmpty && (
-          <p className="pointer-events-none absolute left-3 top-3 text-sm text-slate-400">
+          <p className="pointer-events-none absolute left-3 top-3 text-sm text-slate-400 dark:text-slate-500">
             {placeholder ?? 'Clic aquí para editar'}
           </p>
         )}
@@ -123,12 +123,12 @@ export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorP
           contentEditable
           onInput={() => onChange(editorRef.current?.innerHTML ?? '')}
           onPaste={handlePaste}
-          className="min-h-[10rem] px-3 py-3 text-sm text-slate-700 outline-none"
+          className="min-h-[10rem] px-3 py-3 text-sm text-slate-700 outline-none dark:text-slate-200"
           suppressContentEditableWarning
         />
       </div>
 
-      <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1 text-xs text-slate-400">
+      <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-3 py-1 text-xs text-slate-400 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-500">
         {wordCount} {wordCount === 1 ? 'palabra' : 'palabras'}
       </div>
     </div>

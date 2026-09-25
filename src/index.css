@@ -1,6 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* Modo oscuro por clase (Tailwind v4 es CSS-first, no hay `darkMode` en config
+   JS) — ThemeContext agrega/quita `.dark` en <html>. No confundir con
+   `theme.ts`, que es la paleta de marca por tipo de clínica (dental/estética),
+   un concepto aparte que sigue funcionando igual con esto. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Poppins', ui-sans-serif, system-ui, -apple-system, sans-serif;
 
@@ -28,6 +34,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark body {
+  color: var(--color-slate-100);
+  background: var(--color-slate-950);
 }
 
 ::selection {
@@ -35,9 +47,18 @@ body {
   color: var(--color-brand-950);
 }
 
+.dark ::selection {
+  background: var(--color-brand-700);
+  color: var(--color-brand-50);
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-slate-300) transparent;
+}
+
+.dark * {
+  scrollbar-color: var(--color-slate-700) transparent;
 }
 
 *::-webkit-scrollbar {

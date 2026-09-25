@@ -36,20 +36,20 @@ export function ReasonModal({
   return (
     <Modal title={title} onClose={onClose} maxWidth="max-w-md">
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-slate-600">{description}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">{description}</p>
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={4}
           autoFocus
           placeholder={placeholder}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
         />
         <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

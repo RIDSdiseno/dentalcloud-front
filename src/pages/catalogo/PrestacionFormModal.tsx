@@ -129,28 +129,28 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
     <Modal title={prestacion ? 'Editar prestación' : 'Nueva prestación'} onClose={onClose} maxWidth="max-w-xl">
       <div className="flex flex-col gap-4">
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Nombre <span className="text-red-500">*</span>
           </label>
           <input
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="Ej: Ácido Hialurónico"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         {showCategoryPicker && (
           <div>
-            <label className="text-sm font-medium text-slate-700">Tipo de prestación</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Tipo de prestación</label>
             <div className="mt-1 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setCategory('dental')}
                 className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                   category === 'dental'
-                    ? 'border-brand-500 bg-brand-50 text-brand-700'
-                    : 'border-slate-300 text-slate-500 hover:bg-slate-50'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400'
+                    : 'border-slate-300 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`}
               >
                 Dental
@@ -160,8 +160,8 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
                 onClick={() => setCategory('estetica')}
                 className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
                   category === 'estetica'
-                    ? 'border-brand-500 bg-brand-50 text-brand-700'
-                    : 'border-slate-300 text-slate-500 hover:bg-slate-50'
+                    ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400'
+                    : 'border-slate-300 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`}
               >
                 Estética
@@ -172,16 +172,16 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-slate-700">Código</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Código</label>
             <input
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Ej: AH-01"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Precio <span className="text-red-500">*</span>
             </label>
             <input
@@ -190,22 +190,22 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
               value={basePrice}
               onChange={(e) => setBasePrice(e.target.value)}
               placeholder="0"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
 
         {!isEstetica && (
           <div>
-            <label className="text-sm font-medium text-slate-700">Modo de selección en el odontograma</label>
-            <p className="mt-0.5 text-xs text-slate-400">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Modo de selección en el odontograma</label>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
               Sugerido automáticamente por el nombre — cámbialo si esta prestación no se elige por pieza (ej. flúor
               se aplica a toda la boca, una resina se elige por cara).
             </p>
             <select
               value={odontogramMode}
               onChange={(e) => handleModeChange(e.target.value as PrestacionOdontogramMode)}
-              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               {ODONTOGRAM_MODES.map((mode) => (
                 <option key={mode} value={mode}>
@@ -218,16 +218,16 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
 
         {isEstetica && (
           <div>
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
               <input
                 type="checkbox"
                 checked={requiresProductTracking}
                 onChange={(e) => setRequiresProductTracking(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700"
               />
               Requiere registrar producto y lote (ej. Ácido Hialurónico, Toxina Botulínica)
             </label>
-            <p className="mt-0.5 text-xs text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
               Si se marca, el sistema recordará al profesional completar el producto/lote y subir las fotos de sticker
               al agregar esta prestación a un presupuesto.
             </p>
@@ -236,16 +236,16 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
 
         {isEstetica && (
           <div>
-            <label className="flex items-center gap-2 text-sm text-slate-600">
+            <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
               <input
                 type="checkbox"
                 checked={appliesToWholeFace}
                 onChange={(e) => setAppliesToWholeFace(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700"
               />
               Aplica siempre a todo el rostro (ej. limpieza facial)
             </label>
-            <p className="mt-0.5 text-xs text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
               Si se marca, al agregar esta prestación a un presupuesto no hará falta marcar ninguna zona en el mapa
               facial — se aplica directo. No tiene sentido combinarlo con zonas restringidas, así que se ignoran.
             </p>
@@ -254,19 +254,19 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
 
         {isEstetica && !appliesToWholeFace && (
           <div>
-            <label className="text-sm font-medium text-slate-700">Zonas donde puede aplicarse</label>
-            <p className="mt-0.5 text-xs text-slate-400">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Zonas donde puede aplicarse</label>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
               Elige "Sin restricción" si un mismo implemento (ej. una jeringa) puede aplicarse en cualquier zona según
               el caso. Elige "Zonas específicas" si este tratamiento va sí o sí en una o más zonas puntuales (ej.
               Rinoplastía → solo Nariz) — esas zonas se preseleccionan solas al usarlo en un presupuesto.
             </p>
 
-            <div className="mt-2 flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+            <div className="mt-2 flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium dark:bg-slate-800">
               <button
                 type="button"
                 onClick={() => setUnrestricted(true)}
                 className={`rounded-md px-3 py-1.5 transition-colors ${
-                  unrestricted ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  unrestricted ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 Sin restricción
@@ -275,7 +275,7 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
                 type="button"
                 onClick={() => setUnrestricted(false)}
                 className={`rounded-md px-3 py-1.5 transition-colors ${
-                  !unrestricted ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  !unrestricted ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 Zonas específicas
@@ -283,14 +283,14 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
             </div>
 
             {!unrestricted && (
-              <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-lg bg-slate-50 p-3 sm:grid-cols-3">
+              <div className="mt-2 grid grid-cols-2 gap-1.5 rounded-lg bg-slate-50 p-3 sm:grid-cols-3 dark:bg-slate-800/60">
                 {FACIAL_ZONES.map((zone) => (
-                  <label key={zone} className="flex items-center gap-1.5 text-sm text-slate-600">
+                  <label key={zone} className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
                     <input
                       type="checkbox"
                       checked={selectedZones.has(zone)}
                       onChange={() => toggleZone(zone)}
-                      className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                      className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700"
                     />
                     {FACIAL_ZONE_LABELS[zone]}
                   </label>
@@ -298,20 +298,20 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
               </div>
             )}
             {!unrestricted && selectedZones.size === 0 && (
-              <p className="mt-1 text-xs font-medium text-amber-600">
+              <p className="mt-1 text-xs font-medium text-amber-600 dark:text-amber-400">
                 Selecciona al menos una zona, o vuelve a "Sin restricción" arriba.
               </p>
             )}
 
             {!unrestricted && selectedZones.size > 1 && (
-              <div className="mt-3 rounded-lg bg-slate-50 p-3">
-                <p className="text-xs font-medium text-slate-500">Al usar esta prestación en un presupuesto...</p>
-                <div className="mt-1.5 flex w-fit gap-1 rounded-lg bg-slate-200/70 p-1 text-sm font-medium">
+              <div className="mt-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Al usar esta prestación en un presupuesto...</p>
+                <div className="mt-1.5 flex w-fit gap-1 rounded-lg bg-slate-200/70 p-1 text-sm font-medium dark:bg-slate-800">
                   <button
                     type="button"
                     onClick={() => setZonesApplyTogether(false)}
                     className={`rounded-md px-3 py-1.5 text-left transition-colors ${
-                      !zonesApplyTogether ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      !zonesApplyTogether ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     El profesional elige cuáles aplican
@@ -320,7 +320,7 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
                     type="button"
                     onClick={() => setZonesApplyTogether(true)}
                     className={`rounded-md px-3 py-1.5 text-left transition-colors ${
-                      zonesApplyTogether ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      zonesApplyTogether ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Se aplican todas juntas, sin elegir
@@ -330,14 +330,14 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
             )}
 
             {!unrestricted && selectedZones.size > 1 && (
-              <div className="mt-3 rounded-lg bg-slate-50 p-3">
-                <p className="text-xs font-medium text-slate-500">Precio</p>
-                <div className="mt-1.5 flex w-fit gap-1 rounded-lg bg-slate-200/70 p-1 text-sm font-medium">
+              <div className="mt-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Precio</p>
+                <div className="mt-1.5 flex w-fit gap-1 rounded-lg bg-slate-200/70 p-1 text-sm font-medium dark:bg-slate-800">
                   <button
                     type="button"
                     onClick={() => setUsePerZonePrice(false)}
                     className={`rounded-md px-3 py-1.5 transition-colors ${
-                      !usePerZonePrice ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      !usePerZonePrice ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Mismo precio para todas
@@ -346,7 +346,7 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
                     type="button"
                     onClick={() => setUsePerZonePrice(true)}
                     className={`rounded-md px-3 py-1.5 transition-colors ${
-                      usePerZonePrice ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      usePerZonePrice ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Precio distinto por zona
@@ -357,14 +357,14 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
                   <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {Array.from(selectedZones).map((zone) => (
                       <div key={zone}>
-                        <label className="text-xs text-slate-500">{FACIAL_ZONE_LABELS[zone as keyof typeof FACIAL_ZONE_LABELS] ?? zone}</label>
+                        <label className="text-xs text-slate-500 dark:text-slate-400">{FACIAL_ZONE_LABELS[zone as keyof typeof FACIAL_ZONE_LABELS] ?? zone}</label>
                         <input
                           type="number"
                           min={0}
                           value={zonePriceInputs[zone] ?? ''}
                           onChange={(e) => setZonePriceInputs((prev) => ({ ...prev, [zone]: e.target.value }))}
                           placeholder={basePrice || '0'}
-                          className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                          className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                         />
                       </div>
                     ))}
@@ -375,13 +375,13 @@ export function PrestacionFormModal({ prestacion, clinicaTipo, onClose, onSaved 
           </div>
         )}
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

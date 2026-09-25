@@ -3,7 +3,7 @@ import { fetchEmailSettings, updateEmailSettings, sendTestEmail, type EmailSetti
 import { getErrorMessage } from '../../api/client';
 
 const inputClass =
-  'mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white';
+  'mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900';
 
 // Presets de proveedores de correo comunes — al elegir uno se completan
 // servidor/puerto/TLS automáticamente y el campo de servidor queda
@@ -125,27 +125,27 @@ export function EmailSettingsPanel() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <p className="text-sm text-slate-400">Cargando...</p>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <p className="text-sm text-slate-400 dark:text-slate-500">Cargando...</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Correo saliente</h2>
-        <p className="mb-4 text-xs text-slate-500">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Correo saliente</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Configura el correo desde el que se envían las confirmaciones de citas a tus pacientes. Si no configuras
           nada, los correos se siguen enviando desde el remitente por defecto de fordentcloud.
         </p>
 
-        {error && <p className="mb-3 text-xs text-red-600">{error}</p>}
-        {notice && <p className="mb-3 text-xs text-emerald-600">{notice}</p>}
+        {error && <p className="mb-3 text-xs text-red-600 dark:text-red-400">{error}</p>}
+        {notice && <p className="mb-3 text-xs text-emerald-600 dark:text-emerald-400">{notice}</p>}
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor="es-from-name" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-from-name" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Nombre del remitente
             </label>
             <input
@@ -158,7 +158,7 @@ export function EmailSettingsPanel() {
             />
           </div>
           <div>
-            <label htmlFor="es-from-email" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-from-email" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Correo remitente
             </label>
             <input
@@ -173,7 +173,7 @@ export function EmailSettingsPanel() {
           </div>
 
           <div>
-            <label htmlFor="es-provider" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-provider" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Proveedor
             </label>
             <select id="es-provider" value="smtp" disabled className={inputClass}>
@@ -181,19 +181,19 @@ export function EmailSettingsPanel() {
             </select>
           </div>
           <div className="flex items-end pb-2.5">
-            <label className="flex items-center gap-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
               <input
                 type="checkbox"
                 checked={enabled}
                 onChange={(e) => setEnabled(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 dark:border-slate-700 dark:bg-slate-800"
               />
               Habilitar correo propio de esta clínica
             </label>
           </div>
 
           <div className="sm:col-span-2">
-            <label htmlFor="es-host-preset" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-host-preset" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Servidor SMTP
             </label>
             <select
@@ -220,7 +220,7 @@ export function EmailSettingsPanel() {
             )}
           </div>
           <div>
-            <label htmlFor="es-smtp-port" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-smtp-port" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Puerto
             </label>
             <input
@@ -237,7 +237,7 @@ export function EmailSettingsPanel() {
           </div>
 
           <div>
-            <label htmlFor="es-smtp-username" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-smtp-username" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Usuario SMTP
             </label>
             <input
@@ -250,23 +250,23 @@ export function EmailSettingsPanel() {
             />
           </div>
           <div className="flex items-end pb-2.5">
-            <label className="flex items-center gap-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
               <input
                 type="checkbox"
                 checked={smtpSecure}
                 onChange={(e) => setSmtpSecure(e.target.checked)}
                 disabled={hostPreset !== 'custom'}
-                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800"
               />
               Conexión segura (TLS)
               {hostPreset !== 'custom' && (
-                <span className="text-xs font-normal text-slate-400">(según el proveedor elegido)</span>
+                <span className="text-xs font-normal text-slate-400 dark:text-slate-500">(según el proveedor elegido)</span>
               )}
             </label>
           </div>
 
           <div className="sm:col-span-2">
-            <label htmlFor="es-smtp-password" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-smtp-password" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Contraseña SMTP
             </label>
             <input
@@ -277,7 +277,7 @@ export function EmailSettingsPanel() {
               placeholder={settings?.hasPassword ? '••••••••••••' : ''}
               className={inputClass}
             />
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
               {settings?.hasPassword
                 ? 'Deja vacío para mantener la contraseña actual.'
                 : 'Requerida la primera vez que configuras esta clínica.'}
@@ -296,15 +296,15 @@ export function EmailSettingsPanel() {
         </form>
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Enviar correo de prueba</h2>
-        <p className="mb-4 text-xs text-slate-500">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Enviar correo de prueba</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Guarda la configuración primero — la prueba usa lo que ya quedó guardado, no lo que hay sin guardar en el
           formulario de arriba.
         </p>
         <form onSubmit={handleTest} className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[220px]">
-            <label htmlFor="es-test-email" className="text-xs font-semibold text-slate-600">
+            <label htmlFor="es-test-email" className="text-xs font-semibold text-slate-600 dark:text-slate-300">
               Correo de destino
             </label>
             <input
@@ -320,12 +320,12 @@ export function EmailSettingsPanel() {
           <button
             type="submit"
             disabled={isTesting}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             {isTesting ? 'Enviando...' : 'Enviar prueba'}
           </button>
         </form>
-        {testResult && <p className="mt-3 text-xs text-slate-600">{testResult}</p>}
+        {testResult && <p className="mt-3 text-xs text-slate-600 dark:text-slate-300">{testResult}</p>}
       </div>
     </div>
   );

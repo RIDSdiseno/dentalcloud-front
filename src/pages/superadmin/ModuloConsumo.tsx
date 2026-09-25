@@ -79,10 +79,10 @@ function Toggle({
 
 function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-slate-400">{hint}</p>}
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+      {hint && <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">{hint}</p>}
     </div>
   );
 }
@@ -99,22 +99,22 @@ function BarList({
   const max = Math.max(1, ...rows.map((r) => r.value));
 
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <p className="mb-4 text-sm font-bold text-slate-700">{title}</p>
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <p className="mb-4 text-sm font-bold text-slate-700 dark:text-slate-200">{title}</p>
       <div className="flex flex-col gap-3">
         {rows.map((row) => (
           <div key={row.key} className="flex items-center gap-3">
-            <span className="flex w-36 shrink-0 items-center gap-1 truncate text-sm text-slate-600" title={row.label}>
+            <span className="flex w-36 shrink-0 items-center gap-1 truncate text-sm text-slate-600 dark:text-slate-300" title={row.label}>
               {row.crowned && <StarIcon className="h-3.5 w-3.5 shrink-0 fill-amber-400 text-amber-500" />}
               <span className="truncate">{row.label}</span>
             </span>
-            <div className="h-5 flex-1 rounded-full bg-slate-100">
+            <div className="h-5 flex-1 rounded-full bg-slate-100 dark:bg-slate-800">
               <div
                 className="h-5 rounded-full bg-brand-600 transition-[width]"
                 style={{ width: `${(row.value / max) * 100}%` }}
               />
             </div>
-            <span className="w-12 shrink-0 text-right text-sm font-semibold text-slate-700">
+            <span className="w-12 shrink-0 text-right text-sm font-semibold text-slate-700 dark:text-slate-200">
               {formatValue(row.value)}
             </span>
           </div>
@@ -147,23 +147,23 @@ function DetailTable<T extends { id: string }>({
   }, [rows, search, filterFn]);
 
   return (
-    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
-        <p className="text-sm font-bold text-slate-700">{title}</p>
+    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{title}</p>
         <div className="relative">
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={searchPlaceholder}
-            className="rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10"
+            className="rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
       </div>
       <div className="max-h-[420px] overflow-auto">
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 bg-slate-50 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+          <thead className="sticky top-0 bg-slate-50 text-xs font-semibold tracking-wide text-slate-400 uppercase dark:bg-slate-800/60 dark:text-slate-400">
             <tr>
               {columns.map((col) => (
                 <th key={col.key} className="px-4 py-3">
@@ -172,7 +172,7 @@ function DetailTable<T extends { id: string }>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {filtered.map((row) => (
               <tr key={row.id}>
                 {columns.map((col) => (
@@ -185,7 +185,7 @@ function DetailTable<T extends { id: string }>({
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-slate-400">
+          <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
             {search ? 'Sin resultados para la búsqueda.' : emptyLabel}
           </p>
         )}
@@ -195,10 +195,10 @@ function DetailTable<T extends { id: string }>({
 }
 
 const PATIENT_CONSENT_STYLES: Record<AdminPatient['privacyConsentStatus'], { label: string; className: string }> = {
-  pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
-  firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-  rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200' },
-  expirado: { label: 'Expirado', className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20' },
+  firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' },
+  rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20' },
+  expirado: { label: 'Expirado', className: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700' },
 };
 
 function isPatientNotSent(patient: AdminPatient) {
@@ -215,7 +215,7 @@ function withCrown<T extends { value: number }>(rows: T[]): (T & { crowned: bool
 function PatientConsentBadge({ patient }: { patient: AdminPatient }) {
   if (isPatientNotSent(patient)) {
     return (
-      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
         No enviado
       </span>
     );
@@ -253,7 +253,7 @@ function useAdminList<T>(fetcher: () => Promise<T[]>): { rows: T[]; isLoading: b
 function DashboardShell({ error, children }: { error: string | null; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-5">
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
       {children}
     </div>
   );
@@ -336,17 +336,17 @@ function PacientesDashboard({ clinicas }: { clinicas: Clinica[] }) {
           p.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500 dark:text-slate-400">{p.clinicaName}</span> },
           {
             key: 'paciente',
             label: 'Paciente',
             render: (p) => (
-              <span className="font-medium text-slate-800">
+              <span className="font-medium text-slate-800 dark:text-slate-100">
                 {p.firstName} {p.lastName}
               </span>
             ),
           },
-          { key: 'rut', label: 'RUT', render: (p) => <span className="text-slate-500">{formatRut(p.rut)}</span> },
+          { key: 'rut', label: 'RUT', render: (p) => <span className="text-slate-500 dark:text-slate-400">{formatRut(p.rut)}</span> },
           { key: 'consentimiento', label: 'Consentimiento', render: (p) => <PatientConsentBadge patient={p} /> },
         ]}
       />
@@ -410,12 +410,12 @@ function ConsentimientosDashboard({ clinicas }: { clinicas: Clinica[] }) {
           p.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
+          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500 dark:text-slate-400">{p.clinicaName}</span> },
           {
             key: 'paciente',
             label: 'Paciente',
             render: (p) => (
-              <span className="font-medium text-slate-800">
+              <span className="font-medium text-slate-800 dark:text-slate-100">
                 {p.firstName} {p.lastName}
               </span>
             ),
@@ -425,7 +425,7 @@ function ConsentimientosDashboard({ clinicas }: { clinicas: Clinica[] }) {
             key: 'fecha',
             label: 'Fecha',
             render: (p) => (
-              <span className="text-slate-500">
+              <span className="text-slate-500 dark:text-slate-400">
                 {formatDateTime(p.privacyConsentAt ?? p.privacyConsentSentAt ?? p.createdAt)}
               </span>
             ),
@@ -477,10 +477,10 @@ function AgendaDashboard({ clinicas }: { clinicas: Clinica[] }) {
         emptyLabel="Aún no hay citas registradas."
         filterFn={(a, term) => a.patientName.toLowerCase().includes(term) || a.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Holding', render: (a) => <span className="text-slate-500">{a.clinicaName}</span> },
-          { key: 'paciente', label: 'Paciente', render: (a) => <span className="font-medium text-slate-800">{a.patientName}</span> },
-          { key: 'fecha', label: 'Fecha', render: (a) => <span className="text-slate-500">{formatDateTime(a.startAt)}</span> },
-          { key: 'tipo', label: 'Tipo', render: (a) => <span className="text-slate-500 capitalize">{a.type}</span> },
+          { key: 'clinica', label: 'Holding', render: (a) => <span className="text-slate-500 dark:text-slate-400">{a.clinicaName}</span> },
+          { key: 'paciente', label: 'Paciente', render: (a) => <span className="font-medium text-slate-800 dark:text-slate-100">{a.patientName}</span> },
+          { key: 'fecha', label: 'Fecha', render: (a) => <span className="text-slate-500 dark:text-slate-400">{formatDateTime(a.startAt)}</span> },
+          { key: 'tipo', label: 'Tipo', render: (a) => <span className="text-slate-500 capitalize dark:text-slate-400">{a.type}</span> },
           {
             key: 'estado',
             label: 'Estado',
@@ -488,8 +488,8 @@ function AgendaDashboard({ clinicas }: { clinicas: Clinica[] }) {
               <span
                 className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
                   a.status === 'cancelada'
-                    ? 'bg-red-50 text-red-700 ring-red-200'
-                    : 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                    ? 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20'
+                    : 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20'
                 }`}
               >
                 {a.status === 'cancelada' ? 'Cancelada' : 'Activa'}
@@ -562,16 +562,16 @@ function TratamientosDashboard({ clinicas }: { clinicas: Clinica[] }) {
         emptyLabel="Aún no hay presupuestos registrados."
         filterFn={(p, term) => p.patientName.toLowerCase().includes(term) || p.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500">{p.clinicaName}</span> },
-          { key: 'paciente', label: 'Paciente', render: (p) => <span className="font-medium text-slate-800">{p.patientName}</span> },
-          { key: 'nombre', label: 'Plan', render: (p) => <span className="text-slate-500">{p.name ?? '—'}</span> },
+          { key: 'clinica', label: 'Holding', render: (p) => <span className="text-slate-500 dark:text-slate-400">{p.clinicaName}</span> },
+          { key: 'paciente', label: 'Paciente', render: (p) => <span className="font-medium text-slate-800 dark:text-slate-100">{p.patientName}</span> },
+          { key: 'nombre', label: 'Plan', render: (p) => <span className="text-slate-500 dark:text-slate-400">{p.name ?? '—'}</span> },
           {
             key: 'estado',
             label: 'Estado',
-            render: (p) => <span className="text-slate-500">{TREATMENT_STATUS_LABELS[p.status] ?? p.status}</span>,
+            render: (p) => <span className="text-slate-500 dark:text-slate-400">{TREATMENT_STATUS_LABELS[p.status] ?? p.status}</span>,
           },
-          { key: 'monto', label: 'Monto', render: (p) => <span className="font-medium text-slate-700">{formatCLP(p.amount)}</span> },
-          { key: 'fecha', label: 'Fecha', render: (p) => <span className="text-slate-500">{formatDateTime(p.createdAt)}</span> },
+          { key: 'monto', label: 'Monto', render: (p) => <span className="font-medium text-slate-700 dark:text-slate-200">{formatCLP(p.amount)}</span> },
+          { key: 'fecha', label: 'Fecha', render: (p) => <span className="text-slate-500 dark:text-slate-400">{formatDateTime(p.createdAt)}</span> },
         ]}
       />
     </DashboardShell>
@@ -617,11 +617,11 @@ function DocumentosDashboard({ clinicas }: { clinicas: Clinica[] }) {
         emptyLabel="Aún no hay documentos registrados."
         filterFn={(d, term) => d.patientName.toLowerCase().includes(term) || d.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Holding', render: (d) => <span className="text-slate-500">{d.clinicaName}</span> },
-          { key: 'paciente', label: 'Paciente', render: (d) => <span className="font-medium text-slate-800">{d.patientName}</span> },
-          { key: 'categoria', label: 'Categoría', render: (d) => <span className="text-slate-500">{d.category}</span> },
-          { key: 'archivo', label: 'Archivo', render: (d) => <span className="text-slate-500">{d.fileName}</span> },
-          { key: 'fecha', label: 'Fecha', render: (d) => <span className="text-slate-500">{formatDateTime(d.createdAt)}</span> },
+          { key: 'clinica', label: 'Holding', render: (d) => <span className="text-slate-500 dark:text-slate-400">{d.clinicaName}</span> },
+          { key: 'paciente', label: 'Paciente', render: (d) => <span className="font-medium text-slate-800 dark:text-slate-100">{d.patientName}</span> },
+          { key: 'categoria', label: 'Categoría', render: (d) => <span className="text-slate-500 dark:text-slate-400">{d.category}</span> },
+          { key: 'archivo', label: 'Archivo', render: (d) => <span className="text-slate-500 dark:text-slate-400">{d.fileName}</span> },
+          { key: 'fecha', label: 'Fecha', render: (d) => <span className="text-slate-500 dark:text-slate-400">{formatDateTime(d.createdAt)}</span> },
         ]}
       />
     </DashboardShell>
@@ -681,12 +681,12 @@ function CartolaDashboard({ clinicas }: { clinicas: Clinica[] }) {
         emptyLabel="Aún no hay movimientos registrados."
         filterFn={(m, term) => m.patientName.toLowerCase().includes(term) || m.clinicaName.toLowerCase().includes(term)}
         columns={[
-          { key: 'clinica', label: 'Holding', render: (m) => <span className="text-slate-500">{m.clinicaName}</span> },
-          { key: 'paciente', label: 'Paciente', render: (m) => <span className="font-medium text-slate-800">{m.patientName}</span> },
-          { key: 'tipo', label: 'Tipo', render: (m) => <span className="text-slate-500 capitalize">{m.type}</span> },
-          { key: 'debe', label: 'Debe', render: (m) => <span className="text-slate-500">{m.debe > 0 ? formatCLP(m.debe) : '—'}</span> },
-          { key: 'haber', label: 'Haber', render: (m) => <span className="text-slate-500">{m.haber > 0 ? formatCLP(m.haber) : '—'}</span> },
-          { key: 'fecha', label: 'Fecha', render: (m) => <span className="text-slate-500">{formatDateTime(m.createdAt)}</span> },
+          { key: 'clinica', label: 'Holding', render: (m) => <span className="text-slate-500 dark:text-slate-400">{m.clinicaName}</span> },
+          { key: 'paciente', label: 'Paciente', render: (m) => <span className="font-medium text-slate-800 dark:text-slate-100">{m.patientName}</span> },
+          { key: 'tipo', label: 'Tipo', render: (m) => <span className="text-slate-500 capitalize dark:text-slate-400">{m.type}</span> },
+          { key: 'debe', label: 'Debe', render: (m) => <span className="text-slate-500 dark:text-slate-400">{m.debe > 0 ? formatCLP(m.debe) : '—'}</span> },
+          { key: 'haber', label: 'Haber', render: (m) => <span className="text-slate-500 dark:text-slate-400">{m.haber > 0 ? formatCLP(m.haber) : '—'}</span> },
+          { key: 'fecha', label: 'Fecha', render: (m) => <span className="text-slate-500 dark:text-slate-400">{formatDateTime(m.createdAt)}</span> },
         ]}
       />
     </DashboardShell>
@@ -734,11 +734,11 @@ function EvolucionesDashboard({ clinicas }: { clinicas: Clinica[] }) {
           e.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Holding', render: (e) => <span className="text-slate-500">{e.clinicaName}</span> },
-          { key: 'paciente', label: 'Paciente', render: (e) => <span className="font-medium text-slate-800">{e.patientName}</span> },
-          { key: 'profesional', label: 'Profesional', render: (e) => <span className="text-slate-500">{e.professionalName}</span> },
-          { key: 'resumen', label: 'Resumen', render: (e) => <span className="text-slate-500">{e.summary}</span> },
-          { key: 'fecha', label: 'Fecha', render: (e) => <span className="text-slate-500">{formatDateTime(e.createdAt)}</span> },
+          { key: 'clinica', label: 'Holding', render: (e) => <span className="text-slate-500 dark:text-slate-400">{e.clinicaName}</span> },
+          { key: 'paciente', label: 'Paciente', render: (e) => <span className="font-medium text-slate-800 dark:text-slate-100">{e.patientName}</span> },
+          { key: 'profesional', label: 'Profesional', render: (e) => <span className="text-slate-500 dark:text-slate-400">{e.professionalName}</span> },
+          { key: 'resumen', label: 'Resumen', render: (e) => <span className="text-slate-500 dark:text-slate-400">{e.summary}</span> },
+          { key: 'fecha', label: 'Fecha', render: (e) => <span className="text-slate-500 dark:text-slate-400">{formatDateTime(e.createdAt)}</span> },
         ]}
       />
     </DashboardShell>
@@ -786,11 +786,11 @@ function ObservacionesDashboard({ clinicas }: { clinicas: Clinica[] }) {
           o.clinicaName.toLowerCase().includes(term)
         }
         columns={[
-          { key: 'clinica', label: 'Holding', render: (o) => <span className="text-slate-500">{o.clinicaName}</span> },
-          { key: 'paciente', label: 'Paciente', render: (o) => <span className="font-medium text-slate-800">{o.patientName}</span> },
-          { key: 'profesional', label: 'Profesional', render: (o) => <span className="text-slate-500">{o.professionalName}</span> },
-          { key: 'resumen', label: 'Resumen', render: (o) => <span className="text-slate-500">{o.summary}</span> },
-          { key: 'fecha', label: 'Fecha', render: (o) => <span className="text-slate-500">{formatDateTime(o.createdAt)}</span> },
+          { key: 'clinica', label: 'Holding', render: (o) => <span className="text-slate-500 dark:text-slate-400">{o.clinicaName}</span> },
+          { key: 'paciente', label: 'Paciente', render: (o) => <span className="font-medium text-slate-800 dark:text-slate-100">{o.patientName}</span> },
+          { key: 'profesional', label: 'Profesional', render: (o) => <span className="text-slate-500 dark:text-slate-400">{o.professionalName}</span> },
+          { key: 'resumen', label: 'Resumen', render: (o) => <span className="text-slate-500 dark:text-slate-400">{o.summary}</span> },
+          { key: 'fecha', label: 'Fecha', render: (o) => <span className="text-slate-500 dark:text-slate-400">{formatDateTime(o.createdAt)}</span> },
         ]}
       />
     </DashboardShell>
@@ -855,7 +855,7 @@ function ConsumptionCell({ moduleKey, clinica }: { moduleKey: ModuleRouteKey; cl
         </span>
       );
     case 'rx':
-      return <span className="text-slate-400">No disponible aún</span>;
+      return <span className="text-slate-400 dark:text-slate-500">No disponible aún</span>;
     default:
       return null;
   }
@@ -888,13 +888,13 @@ function ClinicaRow({
   }
 
   return (
-    <tr className="border-t border-slate-100">
+    <tr className="border-t border-slate-100 dark:border-slate-800">
       <td className="px-4 py-3">
-        <div className="font-semibold text-slate-800">{clinica.name}</div>
-        {!clinica.active && <div className="text-xs text-red-500">Holding desactivado</div>}
-        {error && <div className="text-xs text-red-500">{error}</div>}
+        <div className="font-semibold text-slate-800 dark:text-slate-100">{clinica.name}</div>
+        {!clinica.active && <div className="text-xs text-red-500 dark:text-red-400">Holding desactivado</div>}
+        {error && <div className="text-xs text-red-500 dark:text-red-400">{error}</div>}
       </td>
-      <td className="px-4 py-3 text-sm text-slate-600">
+      <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
         <ConsumptionCell moduleKey={moduleKey} clinica={clinica} />
       </td>
       <td className="px-4 py-3">
@@ -935,24 +935,24 @@ export default function ModuloConsumo() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
       <div>
-        <Link to="/admin/clinicas" className="mb-2 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
+        <Link to="/admin/clinicas" className="mb-2 flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
           <ArrowLeftIcon className="h-4 w-4" />
           Volver al resumen
         </Link>
-        <h1 className="text-2xl font-bold text-slate-900">{meta.label}</h1>
-        <p className="mt-1 text-sm text-slate-500">{meta.description}</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{meta.label}</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{meta.description}</p>
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
       {!isLoading && <ModuleDashboard moduleKey={moduleKey} clinicas={clinicas} />}
 
       {!isLoading && (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-          <p className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-700">Habilitar por holding</p>
+        <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+          <p className="border-b border-slate-100 px-4 py-3 text-sm font-bold text-slate-700 dark:border-slate-800 dark:text-slate-200">Habilitar por holding</p>
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-slate-50 text-xs font-semibold tracking-wide text-slate-400 uppercase">
+              <tr className="bg-slate-50 text-xs font-semibold tracking-wide text-slate-400 uppercase dark:bg-slate-800/60 dark:text-slate-400">
                 <th className="px-4 py-3">Holding</th>
                 <th className="px-4 py-3">Consumo</th>
                 <th className="px-4 py-3">Habilitado</th>
@@ -965,7 +965,7 @@ export default function ModuloConsumo() {
             </tbody>
           </table>
           {clinicas.length === 0 && (
-            <p className="px-4 py-8 text-center text-sm text-slate-400">Aún no hay holdings registrados.</p>
+            <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">Aún no hay holdings registrados.</p>
           )}
         </div>
       )}

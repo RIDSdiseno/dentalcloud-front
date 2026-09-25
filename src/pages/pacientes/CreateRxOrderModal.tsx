@@ -34,8 +34,8 @@ function emptyExamDraft(): ExamDraft {
 
 function SectionCard({ icon: Icon, title, children }: { icon: typeof InfoCircleIcon; title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      <div className="mb-3 flex items-center gap-2 text-xs font-bold tracking-wide text-brand-700 uppercase">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+      <div className="mb-3 flex items-center gap-2 text-xs font-bold tracking-wide text-brand-700 uppercase dark:text-brand-400">
         <Icon className="h-4 w-4" />
         {title}
       </div>
@@ -46,14 +46,14 @@ function SectionCard({ icon: Icon, title, children }: { icon: typeof InfoCircleI
 
 function FieldLabel({ children, required }: { children: ReactNode; required?: boolean }) {
   return (
-    <label className="text-sm font-medium text-slate-700">
+    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
       {children} {required && <span className="text-red-500">*</span>}
     </label>
   );
 }
 
 const selectClassName =
-  'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15';
+  'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500';
 
 function ExamCatalogPicker({
   examTypes,
@@ -85,9 +85,9 @@ function ExamCatalogPicker({
     if (tabs.length > 0 && !tabs.includes(activeTab)) setActiveTab(tabs[0]);
   }, [tabs, activeTab]);
 
-  if (isLoading) return <p className="text-sm text-slate-400">Cargando catálogo de exámenes...</p>;
+  if (isLoading) return <p className="text-sm text-slate-400 dark:text-slate-500">Cargando catálogo de exámenes...</p>;
   if (examTypes.length === 0) {
-    return <p className="text-sm text-slate-400">No hay exámenes disponibles para tu clínica todavía.</p>;
+    return <p className="text-sm text-slate-400 dark:text-slate-500">No hay exámenes disponibles para tu clínica todavía.</p>;
   }
 
   const groupsForTab = examGroups.filter((g) => g.tab === activeTab);
@@ -101,14 +101,14 @@ function ExamCatalogPicker({
   return (
     <div>
       {tabs.length > 1 && (
-        <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+        <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
           {tabs.map((tab) => (
             <button
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
               className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-white'
+                activeTab === tab ? 'bg-brand-600 text-white' : 'text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-900'
               }`}
             >
               {tab}
@@ -121,14 +121,14 @@ function ExamCatalogPicker({
         {columns.map((group) => {
           const exams = examsForColumn(group);
           return (
-            <div key={group.id} className="rounded-lg border border-slate-200 p-3">
-              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <div key={group.id} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <InfoCircleIcon className="h-3.5 w-3.5" />
                 {group.nombre}
               </p>
               <div className="flex max-h-52 flex-col gap-1.5 overflow-y-auto">
                 {exams.map((exam) => (
-                  <label key={exam.id} className="flex items-center gap-2 text-sm text-slate-700">
+                  <label key={exam.id} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                     <input
                       type="checkbox"
                       checked={selectedExamIds.includes(exam.id)}
@@ -138,7 +138,7 @@ function ExamCatalogPicker({
                     {exam.descripcion}
                   </label>
                 ))}
-                {exams.length === 0 && <p className="text-xs text-slate-400">Sin exámenes en esta categoría.</p>}
+                {exams.length === 0 && <p className="text-xs text-slate-400 dark:text-slate-500">Sin exámenes en esta categoría.</p>}
               </div>
             </div>
           );
@@ -310,7 +310,7 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
                 <input
                   value={`${user?.name ?? ''} (yo mismo)`}
                   disabled
-                  className={`${selectClassName} cursor-not-allowed bg-slate-100 text-slate-500`}
+                  className={`${selectClassName} cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400`}
                 />
               )}
             </div>
@@ -320,7 +320,7 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
               <input
                 value={`${patient.firstName} ${patient.lastName} · ${formatRut(patient.rut)}`}
                 disabled
-                className={`${selectClassName} cursor-not-allowed bg-slate-100 text-slate-500`}
+                className={`${selectClassName} cursor-not-allowed bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400`}
               />
             </div>
 
@@ -339,7 +339,7 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
 
         <SectionCard icon={EditIcon} title="Diagnóstico clínico">
           <div className="flex flex-col gap-4">
-            <label className="flex items-center gap-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
               <input
                 type="checkbox"
                 checked={sinDiagnostico}
@@ -356,7 +356,7 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
                 disabled={sinDiagnostico}
                 rows={3}
                 placeholder="Describe el diagnóstico clínico..."
-                className={`${selectClassName} resize-y disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
+                className={`${selectClassName} resize-y disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500`}
               />
             </div>
             <div>
@@ -390,30 +390,30 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
                 const draft = examDrafts[kindId];
                 if (!draft) return null;
                 return (
-                  <div key={kindId} className="rounded-lg border border-slate-200 p-3">
-                    <p className="mb-2 text-sm font-semibold text-slate-700">{exam?.descripcion ?? `Examen #${kindId}`}</p>
+                  <div key={kindId} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                    <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{exam?.descripcion ?? `Examen #${kindId}`}</p>
 
                     <div className="flex flex-col gap-2">
                       <div>
-                        <label className="text-xs font-medium text-slate-600">Observación / URL del examen (opcional)</label>
+                        <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Observación / URL del examen (opcional)</label>
                         <input
                           value={draft.urlTexto}
                           onChange={(e) => updateExamDraft(kindId, { urlTexto: e.target.value })}
                           placeholder="Ej: link de imagen externa, nota puntual del examen..."
-                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                         />
                       </div>
 
                       <div>
-                        <label className="text-xs font-medium text-slate-600">Archivos (opcional)</label>
+                        <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Archivos (opcional)</label>
                         <input
                           type="file"
                           multiple
                           onChange={(e) => updateExamDraft(kindId, { files: Array.from(e.target.files ?? []) })}
-                          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-brand-600 hover:file:bg-brand-100"
+                          className="mt-1 block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-brand-50 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-brand-600 hover:file:bg-brand-100 dark:text-slate-300 dark:file:bg-brand-500/10 dark:file:text-brand-400 dark:hover:file:bg-brand-500/20"
                         />
                         {draft.files.length > 0 && (
-                          <p className="mt-1 text-xs text-slate-400">{draft.files.length} archivo(s) seleccionado(s)</p>
+                          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{draft.files.length} archivo(s) seleccionado(s)</p>
                         )}
                       </div>
 
@@ -426,7 +426,7 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
                       </button>
 
                       {draft.showPiezas && (
-                        <div className="rounded-lg bg-slate-50 p-2">
+                        <div className="rounded-lg bg-slate-50 p-2 dark:bg-slate-800/60">
                           <Odontogram
                             mode="extraction"
                             selection={draft.selection}
@@ -442,13 +442,13 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
           </SectionCard>
         )}
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>
@@ -456,7 +456,7 @@ export function CreateRxOrderModal({ patient, onClose, onCreated }: CreateRxOrde
             type="button"
             onClick={() => handleSubmit('draft')}
             disabled={isSubmitting}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             {submitMode === 'draft' ? 'Guardando...' : 'Guardar borrador'}
           </button>

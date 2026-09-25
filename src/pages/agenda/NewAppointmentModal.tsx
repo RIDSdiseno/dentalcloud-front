@@ -124,7 +124,7 @@ export function NewAppointmentModal({
         <button
           type="button"
           onClick={() => setUseOpenSlot((v) => !v)}
-          className="w-fit text-xs font-semibold text-brand-600 hover:underline"
+          className="w-fit text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400"
         >
           {useOpenSlot ? '← Elegir sillón y hora a mano' : 'Seleccionar cita ya postulada →'}
         </button>
@@ -133,7 +133,7 @@ export function NewAppointmentModal({
           <>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="new-appt-date" className="text-sm font-medium text-slate-700">
+                <label htmlFor="new-appt-date" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Fecha
                 </label>
                 <input
@@ -142,11 +142,11 @@ export function NewAppointmentModal({
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <label htmlFor="new-appt-time" className="text-sm font-medium text-slate-700">
+                <label htmlFor="new-appt-time" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Hora
                 </label>
                 <input
@@ -155,14 +155,14 @@ export function NewAppointmentModal({
                   value={time}
                   onChange={(e) => setTime(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="new-appt-chair" className="text-sm font-medium text-slate-700">
+                <label htmlFor="new-appt-chair" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Sillón
                 </label>
                 <select
@@ -170,7 +170,7 @@ export function NewAppointmentModal({
                   value={chairId}
                   onChange={(e) => setChairId(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 >
                   {chairs.map((chair) => (
                     <option key={chair.id} value={chair.id}>
@@ -180,14 +180,14 @@ export function NewAppointmentModal({
                 </select>
               </div>
               <div>
-                <label htmlFor="new-appt-duration" className="text-sm font-medium text-slate-700">
+                <label htmlFor="new-appt-duration" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Duración
                 </label>
                 <select
                   id="new-appt-duration"
                   value={duration}
                   onChange={(e) => setDuration(Number(e.target.value))}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 >
                   {DURATION_OPTIONS.map((minutes) => (
                     <option key={minutes} value={minutes}>
@@ -203,7 +203,7 @@ export function NewAppointmentModal({
         {useOpenSlot && (
           <div>
             <div className="mb-2 flex items-center justify-between gap-3">
-              <label htmlFor="new-appt-open-slot-date" className="text-sm font-medium text-slate-700">
+              <label htmlFor="new-appt-open-slot-date" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Fecha a revisar
               </label>
               <input
@@ -211,13 +211,13 @@ export function NewAppointmentModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
 
-            {isLoadingOpenSlots && <p className="text-sm text-slate-400">Buscando horas publicadas...</p>}
+            {isLoadingOpenSlots && <p className="text-sm text-slate-400 dark:text-slate-500">Buscando horas publicadas...</p>}
             {!isLoadingOpenSlots && openSlots.length === 0 && (
-              <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-400">
+              <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-400 dark:bg-slate-800 dark:text-slate-500">
                 No hay horas publicadas ese día. Prueba otra fecha, o publica una desde "Agregar horas disponibles".
               </p>
             )}
@@ -229,14 +229,14 @@ export function NewAppointmentModal({
                   onClick={() => setSelectedOpenSlot(slot)}
                   className={`rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                     selectedOpenSlot?.id === slot.id
-                      ? 'border-brand-500 bg-brand-50 text-brand-700'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
                   }`}
                 >
                   <p className="font-semibold">
                     {new Date(slot.startAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                   </p>
-                  <p className="text-xs text-slate-400">{slot.professional.name}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">{slot.professional.name}</p>
                 </button>
               ))}
             </div>
@@ -245,14 +245,14 @@ export function NewAppointmentModal({
 
         {isAdmin && (
           <div>
-            <label htmlFor="new-appt-professional" className="text-sm font-medium text-slate-700">
+            <label htmlFor="new-appt-professional" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Profesional
             </label>
             <select
               id="new-appt-professional"
               value={professionalId}
               onChange={(e) => setProfessionalId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               <option value="">Yo mismo ({user?.name})</option>
               {professionals
@@ -267,7 +267,7 @@ export function NewAppointmentModal({
         )}
 
         <div>
-          <label htmlFor="new-appt-notes" className="text-sm font-medium text-slate-700">
+          <label htmlFor="new-appt-notes" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Motivo / notas
           </label>
           <textarea
@@ -275,17 +275,17 @@ export function NewAppointmentModal({
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

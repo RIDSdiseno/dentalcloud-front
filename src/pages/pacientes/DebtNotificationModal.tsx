@@ -75,29 +75,29 @@ export function DebtNotificationModal({
   return (
     <Modal title="Saldo pendiente" onClose={onClose} maxWidth="max-w-md">
       <div className="flex flex-col gap-4">
-        <div className="flex items-start gap-3 rounded-lg bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
-          <AlertTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <p className="text-sm text-amber-800">
+        <div className="flex items-start gap-3 rounded-lg bg-amber-50 px-4 py-3 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/30">
+          <AlertTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-sm text-amber-800 dark:text-amber-400">
             Este paciente tiene un saldo pendiente de <strong>{formatCLP(saldoTotal)}</strong>.
           </p>
         </div>
 
         {!patientEmail && (
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             Este paciente no tiene correo registrado, así que no se le puede enviar un recordatorio por email.
           </p>
         )}
 
         {sent && (
-          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Recordatorio enviado.</p>
+          <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">Recordatorio enviado.</p>
         )}
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="flex flex-wrap justify-end gap-2">
           <button
             type="button"
             onClick={onViewCartola}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Ver cartola
           </button>

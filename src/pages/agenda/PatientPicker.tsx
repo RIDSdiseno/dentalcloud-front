@@ -32,36 +32,36 @@ export function PatientPicker({ value, onChange }: PatientPickerProps) {
 
   return (
     <div>
-      <label className="text-sm font-medium text-slate-700">Paciente</label>
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Paciente</label>
 
       {value ? (
-        <div className="mt-1 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+        <div className="mt-1 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800">
           <div>
-            <p className="text-sm font-semibold text-slate-800">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
               {value.firstName} {value.lastName}
             </p>
-            <p className="text-xs text-slate-500">{formatRut(value.rut)}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{formatRut(value.rut)}</p>
           </div>
           <button
             type="button"
             onClick={() => onChange(null)}
             aria-label="Quitar paciente seleccionado"
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-600"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
           >
             <CloseIcon className="h-4 w-4" />
           </button>
         </div>
       ) : (
         <div className="relative mt-1">
-          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar por nombre o RUT..."
-            className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
           {results.length > 0 && (
-            <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+            <div className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
               {results.map((patient) => (
                 <button
                   type="button"
@@ -71,12 +71,12 @@ export function PatientPicker({ value, onChange }: PatientPickerProps) {
                     setQuery('');
                     setResults([]);
                   }}
-                  className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50"
+                  className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <span className="text-sm font-medium text-slate-800">
+                  <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
                     {patient.firstName} {patient.lastName}
                   </span>
-                  <span className="text-xs text-slate-500">{formatRut(patient.rut)}</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">{formatRut(patient.rut)}</span>
                 </button>
               ))}
             </div>

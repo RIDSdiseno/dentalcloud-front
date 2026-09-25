@@ -81,7 +81,7 @@ export function PermisosPerfilPanel() {
     return (
       <div className="overflow-x-auto">
         <table className="w-full min-w-[420px] text-left text-sm">
-          <thead className="text-xs font-semibold tracking-wide text-slate-400 uppercase">
+          <thead className="text-xs font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
             <tr>
               <th className="py-2 pr-3">{columnLabel}</th>
               {PERMISSIONED_ROLES.map((role) => (
@@ -91,10 +91,10 @@ export function PermisosPerfilPanel() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {order.map((key) => (
               <tr key={key}>
-                <td className="py-2 pr-3 text-slate-700">{PERMISSION_LABELS[key]}</td>
+                <td className="py-2 pr-3 text-slate-700 dark:text-slate-200">{PERMISSION_LABELS[key]}</td>
                 {PERMISSIONED_ROLES.map((role) => {
                   const cellId = `${role}-${key}`;
                   return (
@@ -104,7 +104,7 @@ export function PermisosPerfilPanel() {
                         checked={perms[role][key]}
                         disabled={busyCell === cellId}
                         onChange={(e) => toggle(role, key, e.target.checked)}
-                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50"
+                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800"
                       />
                     </td>
                   );
@@ -119,20 +119,20 @@ export function PermisosPerfilPanel() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Permisos por perfil</h2>
-        <p className="mb-4 text-xs text-slate-500">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Permisos por perfil</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Qué puede ver cada perfil dentro de este holding. Los administradores siempre tienen acceso completo.
         </p>
 
-        {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
+        {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         {renderTable(PERMISSION_ORDER, 'Módulo')}
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Permisos generales</h2>
-        <p className="mb-4 text-xs text-slate-500">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Permisos generales</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Qué puede editar cada perfil DENTRO de la ficha del paciente. "Motivo de consulta" parte apagado para
           Operador de fábrica — solo el profesional lo completa durante la atención.
         </p>

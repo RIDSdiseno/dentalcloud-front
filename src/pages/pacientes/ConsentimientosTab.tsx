@@ -73,38 +73,38 @@ function ConsentTypeFormModal({
   return (
     <Modal title={initial ? 'Editar consentimiento' : 'Nuevo consentimiento'} onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           {initial
             ? 'Cambia el nombre o el texto legal que ven el paciente y el equipo al firmar.'
             : 'Crea un tipo de consentimiento propio de esta clínica, además del catálogo estándar.'}
         </p>
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Nombre</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             placeholder='Ej. "Uso de peeling químico"'
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Texto legal</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Texto legal</span>
           <textarea
             value={legalText}
             onChange={(e) => setLegalText(e.target.value)}
             required
             rows={8}
             placeholder="Texto que el paciente lee y firma..."
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
           />
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>
@@ -122,10 +122,10 @@ function ConsentTypeFormModal({
 }
 
 const STATUS_STYLES: Record<ConsentStatus, { label: string; className: string }> = {
-  pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
-  firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-  rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200' },
-  expirado: { label: 'Expirado', className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400' },
+  firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400' },
+  rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-400' },
+  expirado: { label: 'Expirado', className: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-800' },
 };
 
 function formatDateTime(value: string | null) {
@@ -239,13 +239,13 @@ function ConsentTypeCard({
   }
 
   return (
-    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
           <ShieldIcon className="h-5 w-5 text-brand-500" />
           {consentType.name}
           {!SYSTEM_CONSENT_CODES.has(consentType.code) && (
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               Propio de la clínica
             </span>
           )}
@@ -254,7 +254,7 @@ function ConsentTypeCard({
               type="button"
               onClick={onEdit}
               aria-label="Editar consentimiento"
-              className="text-slate-400 hover:text-brand-600"
+              className="text-slate-400 hover:text-brand-600 dark:text-slate-500"
             >
               <EditIcon className="h-3.5 w-3.5" />
             </button>
@@ -266,14 +266,14 @@ function ConsentTypeCard({
       </div>
 
       {!patient.email && (
-        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
           Este paciente no tiene correo registrado. Agrega uno en "Editar" para poder enviar el consentimiento.
         </p>
       )}
 
       {isAdmin && (
-        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
-          <span className="font-medium text-slate-500">
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:ring-slate-800">
+          <span className="font-medium text-slate-500 dark:text-slate-400">
             {consentType.pdfUrl ? 'PDF propio de la clínica en uso' : 'Usando texto legal por defecto'}
           </span>
           <input
@@ -309,24 +309,24 @@ function ConsentTypeCard({
         </div>
       )}
 
-      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
       <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-slate-500">Último envío</dt>
-          <dd className="font-medium text-slate-800">{formatDateTime(consent?.sentAt ?? null)}</dd>
+          <dt className="text-slate-500 dark:text-slate-400">Último envío</dt>
+          <dd className="font-medium text-slate-800 dark:text-slate-100">{formatDateTime(consent?.sentAt ?? null)}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Vence</dt>
-          <dd className="font-medium text-slate-800">{formatDateTime(consent?.expiresAt ?? null)}</dd>
+          <dt className="text-slate-500 dark:text-slate-400">Vence</dt>
+          <dd className="font-medium text-slate-800 dark:text-slate-100">{formatDateTime(consent?.expiresAt ?? null)}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Respondido</dt>
-          <dd className="font-medium text-slate-800">{formatDateTime(consent?.respondedAt ?? null)}</dd>
+          <dt className="text-slate-500 dark:text-slate-400">Respondido</dt>
+          <dd className="font-medium text-slate-800 dark:text-slate-100">{formatDateTime(consent?.respondedAt ?? null)}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Firmante</dt>
-          <dd className="font-medium text-slate-800">
+          <dt className="text-slate-500 dark:text-slate-400">Firmante</dt>
+          <dd className="font-medium text-slate-800 dark:text-slate-100">
             {consent?.signerName ? `${consent.signerName} (${formatRut(consent.signerRut ?? '')})` : '—'}
           </dd>
         </div>
@@ -338,7 +338,7 @@ function ConsentTypeCard({
             type="button"
             onClick={handleDownloadPdf}
             disabled={isDownloading}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             {isDownloading ? 'Generando...' : 'Descargar PDF'}
           </button>
@@ -346,7 +346,7 @@ function ConsentTypeCard({
         <button
           type="button"
           onClick={() => setShowPreview(true)}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           Ver / Firmar consentimiento
         </button>
@@ -448,7 +448,7 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
   if (isLoading) return null;
 
   if (error) {
-    return <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>;
+    return <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>;
   }
 
   return (
@@ -457,7 +457,7 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
         <button
           type="button"
           onClick={() => setFormModal({ mode: 'create' })}
-          className="flex w-fit items-center gap-2 rounded-lg border-2 border-dashed border-brand-300 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50"
+          className="flex w-fit items-center gap-2 rounded-lg border-2 border-dashed border-brand-300 px-4 py-2 text-sm font-semibold text-brand-600 hover:bg-brand-50 dark:border-brand-500/30 dark:text-brand-400 dark:hover:bg-brand-500/10"
         >
           <PlusIcon className="h-4 w-4" />
           Nuevo consentimiento

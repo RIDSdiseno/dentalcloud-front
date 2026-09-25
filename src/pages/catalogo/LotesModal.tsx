@@ -13,10 +13,10 @@ type LotesModalProps = {
 };
 
 const EXPIRATION_BADGE: Record<InventoryLot['expirationStatus'], string> = {
-  ACTIVE: 'bg-emerald-50 text-emerald-700',
-  EXPIRING: 'bg-amber-50 text-amber-700',
-  EXPIRED: 'bg-red-50 text-red-700',
-  NO_EXPIRATION: 'bg-slate-100 text-slate-500',
+  ACTIVE: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+  EXPIRING: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+  EXPIRED: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400',
+  NO_EXPIRATION: 'bg-slate-100 text-slate-500 dark:bg-slate-800',
 };
 
 export function LotesModal({ supply, onClose, onSupplyChanged }: LotesModalProps) {
@@ -56,8 +56,8 @@ export function LotesModal({ supply, onClose, onSupplyChanged }: LotesModalProps
     <Modal title={`Lotes — ${supply.name}`} onClose={onClose} maxWidth="max-w-2xl">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500">
-            Stock total: <span className="font-semibold text-slate-700">{supply.currentStock ?? 0}</span>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Stock total: <span className="font-semibold text-slate-700 dark:text-slate-200">{supply.currentStock ?? 0}</span>
           </p>
           <button
             type="button"
@@ -72,18 +72,18 @@ export function LotesModal({ supply, onClose, onSupplyChanged }: LotesModalProps
           </button>
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         {!isLoading && lotes.length === 0 && (
-          <p className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+          <p className="rounded-lg bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">
             Este insumo todavía no tiene lotes registrados.
           </p>
         )}
 
         {lotes.length > 0 && (
-          <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
+          <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-800">
             <table className="w-full min-w-140 text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+              <thead className="bg-slate-50 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-slate-800/60 dark:text-slate-400">
                 <tr>
                   <th className="px-3 py-2">Lote</th>
                   <th className="px-3 py-2">Vencimiento</th>
@@ -92,17 +92,17 @@ export function LotesModal({ supply, onClose, onSupplyChanged }: LotesModalProps
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {lotes.map((lote) => (
-                  <tr key={lote.id} className="hover:bg-slate-50">
-                    <td className="px-3 py-2 font-medium text-slate-800">
+                  <tr key={lote.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <td className="px-3 py-2 font-medium text-slate-800 dark:text-slate-100">
                       {lote.lotNumber}
-                      {lote.manufacturer && <p className="text-xs text-slate-400">{lote.manufacturer}</p>}
+                      {lote.manufacturer && <p className="text-xs text-slate-400 dark:text-slate-500">{lote.manufacturer}</p>}
                     </td>
-                    <td className="px-3 py-2 text-slate-500">
+                    <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
                       {lote.expirationDate ? lote.expirationDate.slice(0, 10) : 'Sin vencimiento'}
                     </td>
-                    <td className="px-3 py-2 text-slate-700">{lote.currentQuantity}</td>
+                    <td className="px-3 py-2 text-slate-700 dark:text-slate-200">{lote.currentQuantity}</td>
                     <td className="px-3 py-2">
                       <span className={`rounded-full px-2 py-1 text-xs font-semibold ${EXPIRATION_BADGE[lote.expirationStatus]}`}>
                         {lote.expirationStatusLabel}
@@ -113,7 +113,7 @@ export function LotesModal({ supply, onClose, onSupplyChanged }: LotesModalProps
                         <button
                           type="button"
                           onClick={() => setMovementLote(lote)}
-                          className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                          className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                         >
                           Movimiento
                         </button>
@@ -124,7 +124,7 @@ export function LotesModal({ supply, onClose, onSupplyChanged }: LotesModalProps
                             setEditingLote(lote);
                             setShowForm(true);
                           }}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                         >
                           <EditIcon className="h-3.5 w-3.5" />
                         </button>

@@ -93,16 +93,16 @@ export function SignaturePad({
           onPointerLeave={handlePointerUp}
           onPointerCancel={handlePointerUp}
           style={{ height, touchAction: 'none' }}
-          className="w-full cursor-crosshair rounded-lg border border-slate-300 bg-white"
+          className="w-full cursor-crosshair rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
         />
       </div>
       <div className="mt-1.5 flex items-center justify-between">
-        <span className="text-xs text-slate-400">Firma aquí con el dedo, mouse o lápiz óptico</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">Firma aquí con el dedo, mouse o lápiz óptico</span>
         <button
           type="button"
           onClick={handleClear}
           disabled={isEmpty}
-          className="text-xs font-semibold text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="text-xs font-semibold text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:text-slate-200"
         >
           Borrar
         </button>

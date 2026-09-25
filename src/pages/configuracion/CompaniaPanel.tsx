@@ -3,7 +3,7 @@ import { fetchCompanyInfo, updateCompanyInfo, uploadCompanyLogo, type CompanyInf
 import { getErrorMessage } from '../../api/client';
 
 const inputClass =
-  'mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white';
+  'mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900';
 
 function Field({
   label,
@@ -20,7 +20,7 @@ function Field({
 }) {
   return (
     <label className="flex flex-col">
-      <span className="text-xs font-semibold text-slate-600">{label}</span>
+      <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{label}</span>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={inputClass} />
     </label>
   );
@@ -131,21 +131,21 @@ export function CompaniaPanel() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <p className="text-sm text-slate-400">Cargando...</p>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <p className="text-sm text-slate-400 dark:text-slate-500">Cargando...</p>
       </div>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="mb-4 flex items-center gap-4">
           <button
             type="button"
             onClick={() => logoInputRef.current?.click()}
             disabled={isUploadingLogo}
-            className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400 hover:bg-slate-100 disabled:opacity-60"
+            className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400 hover:bg-slate-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-slate-700"
           >
             {isUploadingLogo ? (
               'Subiendo...'
@@ -166,13 +166,13 @@ export function CompaniaPanel() {
             }}
           />
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">Información Compañía</h2>
-            <p className="text-xs text-slate-500">Se usa en el encabezado de los documentos que genera el sistema.</p>
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Información Compañía</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Se usa en el encabezado de los documentos que genera el sistema.</p>
           </div>
         </div>
 
-        {error && <p className="mb-3 text-xs text-red-600">{error}</p>}
-        {notice && <p className="mb-3 text-xs text-emerald-600">{notice}</p>}
+        {error && <p className="mb-3 text-xs text-red-600 dark:text-red-400">{error}</p>}
+        {notice && <p className="mb-3 text-xs text-emerald-600 dark:text-emerald-400">{notice}</p>}
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Nombre" value={name} onChange={setName} placeholder="Clínica Dental Providencia" />
@@ -185,9 +185,9 @@ export function CompaniaPanel() {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Información legal</h2>
-        <p className="mb-4 text-xs text-slate-500">Para emisión de documentos tributarios — solo si difiere de lo de arriba.</p>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Información legal</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">Para emisión de documentos tributarios — solo si difiere de lo de arriba.</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Razón social" value={legalName} onChange={setLegalName} />
           <Field label="Dirección" value={legalAddress} onChange={setLegalAddress} />
@@ -197,9 +197,9 @@ export function CompaniaPanel() {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Información de contacto</h2>
-        <p className="mb-4 text-xs text-slate-500">El contacto principal del sistema.</p>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Información de contacto</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">El contacto principal del sistema.</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Nombre" value={contactName} onChange={setContactName} />
           <Field label="Email personal" value={contactEmail} onChange={setContactEmail} type="email" />

@@ -423,7 +423,7 @@ export function EstheticWorkflowStepper({
     <div className="flex flex-col gap-2">
       <div
         id="etapa-stepper"
-        className="flex items-center gap-1 overflow-x-auto rounded-2xl bg-white p-3 shadow-sm ring-1 ring-brand-200"
+        className="flex items-center gap-1 overflow-x-auto rounded-2xl bg-white p-3 shadow-sm ring-1 ring-brand-200 dark:bg-slate-900"
       >
         {tabs.map((tab, index) => {
           const Icon = tab.icon;
@@ -432,7 +432,7 @@ export function EstheticWorkflowStepper({
           const isOptional = !REQUIRED_KEYS.has(tab.key);
           return (
             <div key={tab.key} className="flex shrink-0 items-center">
-              {index > 0 && <div className="mx-1 h-px w-6 shrink-0 bg-slate-200" />}
+              {index > 0 && <div className="mx-1 h-px w-6 shrink-0 bg-slate-200 dark:bg-slate-700" />}
               <button
                 type="button"
                 id={`etapa-step-${tab.key}`}
@@ -441,19 +441,19 @@ export function EstheticWorkflowStepper({
                   isActive
                     ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
                     : isDone
-                      ? 'text-brand-700 hover:bg-brand-50'
-                      : 'text-slate-500 hover:bg-slate-100'
+                      ? 'text-brand-700 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10'
+                      : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
                 }`}
               >
                 <span
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
-                    isActive ? 'bg-white/25 text-white' : isDone ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-500'
+                    isActive ? 'bg-white/25 text-white' : isDone ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
                   }`}
                 >
                   {isDone ? <CheckIcon className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
                 </span>
                 {tab.label}
-                {isOptional && <span className="text-[10px] font-normal uppercase tracking-wide text-slate-400">Opcional</span>}
+                {isOptional && <span className="text-[10px] font-normal uppercase tracking-wide text-slate-400 dark:text-slate-500">Opcional</span>}
               </button>
             </div>
           );
@@ -470,7 +470,7 @@ export function EstheticWorkflowStepper({
       </div>
 
       {warning && (
-        <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm font-medium text-amber-800 ring-1 ring-amber-200">
+        <div className="flex items-start gap-2 rounded-lg bg-amber-50 px-3.5 py-2.5 text-sm font-medium text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20">
           <span>⚠️</span>
           <span className="flex-1">{warning.text}</span>
           <TourButton
@@ -479,7 +479,7 @@ export function EstheticWorkflowStepper({
             forceStartAt={tourIndexFor(warning.jumpKey)}
             onNavigate={handleTourNavigate}
             label="Ver instrucciones"
-            className="shrink-0 flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
+            className="shrink-0 flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-slate-900 dark:text-amber-400 dark:hover:bg-amber-500/10"
           />
         </div>
       )}

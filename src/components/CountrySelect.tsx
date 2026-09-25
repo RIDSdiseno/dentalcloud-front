@@ -25,15 +25,15 @@ export function CountrySelect({ value, onChange }: CountrySelectProps) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex shrink-0 items-center gap-1.5 rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition-colors hover:bg-slate-100 focus:border-brand-500"
+        className="flex shrink-0 items-center gap-1.5 rounded-l-lg border border-r-0 border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none transition-colors hover:bg-slate-100 focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
       >
         <img src={flagUrl(selected.code)} alt="" className="h-3.5 w-5 rounded-sm object-cover" />
-        <span className="text-slate-600">{selected.dialCode}</span>
-        <ChevronDownIcon className={`h-3.5 w-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <span className="text-slate-600 dark:text-slate-300">{selected.dialCode}</span>
+        <ChevronDownIcon className={`h-3.5 w-3.5 text-slate-400 transition-transform dark:text-slate-500 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-20 mt-1 max-h-56 w-56 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute top-full left-0 z-20 mt-1 max-h-56 w-56 overflow-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
           {COUNTRIES.map((country) => (
             <button
               type="button"
@@ -42,13 +42,13 @@ export function CountrySelect({ value, onChange }: CountrySelectProps) {
                 onChange(country.dialCode);
                 setOpen(false);
               }}
-              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 ${
-                country.dialCode === selected.dialCode ? 'bg-brand-50 text-brand-700' : 'text-slate-700'
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800 ${
+                country.dialCode === selected.dialCode ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' : 'text-slate-700 dark:text-slate-200'
               }`}
             >
               <img src={flagUrl(country.code)} alt="" className="h-3.5 w-5 shrink-0 rounded-sm object-cover" />
               <span className="flex-1 truncate">{country.name}</span>
-              <span className="text-slate-400">{country.dialCode}</span>
+              <span className="text-slate-400 dark:text-slate-500">{country.dialCode}</span>
             </button>
           ))}
         </div>

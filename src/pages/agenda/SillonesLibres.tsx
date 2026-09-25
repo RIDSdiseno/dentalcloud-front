@@ -56,8 +56,8 @@ export default function SillonesLibres() {
     <div className="flex h-full min-h-0 flex-col gap-5">
       <div id="sillones-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Sillones libres</h1>
-          <p className="mt-1 text-sm text-slate-500">{formatWeekRange(weekStart)}</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Sillones libres</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{formatWeekRange(weekStart)}</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -65,7 +65,7 @@ export default function SillonesLibres() {
           <button
             type="button"
             onClick={() => setShowChairForm(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <PlusIcon className="h-4 w-4" />
             Sillón
@@ -74,7 +74,7 @@ export default function SillonesLibres() {
             type="button"
             onClick={() => setWeekStart(addDays(weekStart, -7))}
             aria-label="Semana anterior"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </button>
@@ -82,7 +82,7 @@ export default function SillonesLibres() {
             type="button"
             onClick={() => setWeekStart(startOfWeek(new Date()))}
             disabled={isCurrentWeek}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-default disabled:opacity-50"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-default disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Hoy
           </button>
@@ -90,7 +90,7 @@ export default function SillonesLibres() {
             type="button"
             onClick={() => setWeekStart(addDays(weekStart, 7))}
             aria-label="Semana siguiente"
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
@@ -98,7 +98,7 @@ export default function SillonesLibres() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
+        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
           {error}
           <button type="button" className="ml-2 font-semibold underline" onClick={() => setError(null)}>
             Cerrar
@@ -106,7 +106,7 @@ export default function SillonesLibres() {
         </p>
       )}
 
-      <div id="sillones-chair-tabs" className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+      <div id="sillones-chair-tabs" className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <ChairTabs chairs={chairs} selectedChairId={selectedChairId} onSelect={setSelectedChairId} />
       </div>
 

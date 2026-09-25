@@ -95,25 +95,25 @@ export default function Login() {
 
       <div className="relative w-full max-w-sm">
         <form
-          className="flex w-full flex-col gap-1.5 rounded-2xl bg-white/95 p-8 shadow-2xl shadow-slate-900/25 ring-1 ring-black/5 backdrop-blur-sm sm:p-10"
+          className="flex w-full flex-col gap-1.5 rounded-2xl bg-white/95 p-8 shadow-2xl shadow-slate-900/25 ring-1 ring-black/5 backdrop-blur-sm sm:p-10 dark:bg-slate-900/95 dark:ring-white/10"
           onSubmit={handleSubmit}
         >
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-lg shadow-brand-600/30">
             <ToothCloudIcon className="h-8 w-8" />
           </div>
 
-          <h1 className="text-center text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-center text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
             fordent<span className="text-brand-500">cloud</span>
           </h1>
-          <p className="mb-5 text-center text-sm text-slate-500">
+          <p className="mb-5 text-center text-sm text-slate-500 dark:text-slate-400">
             Inicia sesión para continuar
           </p>
 
-          <label htmlFor="email" className="text-sm font-medium text-slate-700">
+          <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Correo electrónico
           </label>
           <div className="relative mb-3">
-            <MailIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <MailIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               id="email"
               type="email"
@@ -122,15 +122,15 @@ export default function Login() {
               autoComplete="username"
               required
               placeholder="tu@correo.com"
-              className="w-full rounded-lg border border-slate-300 py-2.5 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="w-full rounded-lg border border-slate-300 py-2.5 pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
 
-          <label htmlFor="password" className="text-sm font-medium text-slate-700">
+          <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Contraseña
           </label>
           <div className="relative">
-            <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <LockIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
@@ -139,20 +139,20 @@ export default function Login() {
               autoComplete="current-password"
               required
               placeholder="••••••••"
-              className="w-full rounded-lg border border-slate-300 py-2.5 pl-9 pr-10 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="w-full rounded-lg border border-slate-300 py-2.5 pl-9 pr-10 text-sm outline-none transition-colors placeholder:text-slate-400 focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
               aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             >
               {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
             </button>
           </div>
 
           {error && (
-            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
               {error}
             </p>
           )}

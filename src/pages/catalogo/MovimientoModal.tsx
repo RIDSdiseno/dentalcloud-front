@@ -55,18 +55,20 @@ export function MovimientoModal({ supplyId, lote, onClose, onSaved }: Movimiento
   return (
     <Modal title={`Movimiento — Lote ${lote.lotNumber}`} onClose={onClose} maxWidth="max-w-md">
       <div className="flex flex-col gap-4">
-        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+        <p className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
           Stock actual del lote: <span className="font-semibold">{lote.currentQuantity}</span>
         </p>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Tipo de movimiento</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Tipo de movimiento</label>
           <div className="mt-1.5 flex flex-col gap-1.5">
             {(Object.keys(MOVEMENT_LABELS) as MovementType[]).map((type) => (
               <label
                 key={type}
                 className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-colors ${
-                  movementType === type ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  movementType === type
+                    ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400'
+                    : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
                 <input
@@ -83,7 +85,7 @@ export function MovimientoModal({ supplyId, lote, onClose, onSaved }: Movimiento
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {movementType === 'ADJUSTMENT' ? 'Cantidad final del lote' : 'Cantidad'} <span className="text-red-500">*</span>
           </label>
           <input
@@ -91,29 +93,29 @@ export function MovimientoModal({ supplyId, lote, onClose, onSaved }: Movimiento
             min={0}
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Motivo {movementType === 'ADJUSTMENT' && <span className="text-red-500">*</span>}
           </label>
           <input
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder={movementType === 'ADJUSTMENT' ? 'Ej: conteo físico, producto dañado...' : 'Opcional'}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

@@ -818,7 +818,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
     >
       <div className="flex flex-col gap-5">
         {editingPlan ? (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Sucursal, convenio, previsión y forma de pago quedan fijos — acá solo se agregan prestaciones nuevas.
           </p>
         ) : (
@@ -831,17 +831,17 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                       step === s.key
                         ? 'bg-brand-600 text-white'
                         : step > s.key
-                          ? 'bg-brand-100 text-brand-600'
-                          : 'bg-slate-100 text-slate-400'
+                          ? 'bg-brand-100 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400'
+                          : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500'
                     }`}
                   >
                     {step > s.key ? <CheckIcon className="h-3.5 w-3.5" /> : s.key}
                   </span>
-                  <span className={`text-xs font-medium ${step === s.key ? 'text-slate-800' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-medium ${step === s.key ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}`}>
                     {s.label}
                   </span>
                 </div>
-                {idx < STEPS.length - 1 && <div className="h-px flex-1 bg-slate-200" />}
+                {idx < STEPS.length - 1 && <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />}
               </div>
             ))}
           </div>
@@ -851,10 +851,10 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
           <div className="flex flex-col gap-4">
             {clinicaOfreceAmbas && (
               <div>
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Tipo de diagrama <span className="text-red-500">*</span>
                 </label>
-                <div className="mt-1 inline-flex rounded-lg border border-slate-300 p-1">
+                <div className="mt-1 inline-flex rounded-lg border border-slate-300 p-1 dark:border-slate-700">
                   {(
                     [
                       { value: 'dental' as const, label: 'Odontograma' },
@@ -868,27 +868,27 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                       onClick={() => setDiagramType(opt.value)}
                       title={items.length > 0 ? 'No se puede cambiar con prestaciones ya agregadas' : undefined}
                       className={`rounded-md px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                        diagramType === opt.value ? 'bg-brand-600 text-white' : 'text-slate-500 hover:bg-slate-50'
+                        diagramType === opt.value ? 'bg-brand-600 text-white' : 'text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
                       }`}
                     >
                       {opt.label}
                     </button>
                   ))}
                 </div>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                   Este holding ofrece ambos tipos de atención — elige qué diagrama usará este presupuesto.
                 </p>
               </div>
             )}
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Clínica <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={sucursalId}
                   onChange={(e) => setSucursalId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 >
                   <option value="">Selecciona...</option>
                   {sucursales.map((s) => (
@@ -900,11 +900,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
               </div>
 
               <div>
-                <label className="text-sm font-medium text-slate-700">Previsión</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Previsión</label>
                 <select
                   value={previsionId}
                   onChange={(e) => setPrevisionId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 >
                   <option value="">Sin especificar</option>
                   {previsiones.map((p) => (
@@ -916,13 +916,13 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
               </div>
 
               <div>
-                <label className="text-sm font-medium text-slate-700">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Convenio <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={convenioId}
                   onChange={(e) => setConvenioId(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 >
                   <option value="">Selecciona...</option>
                   {convenios.map((c) => (
@@ -935,11 +935,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
 
               {isAdmin && (
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Profesional</label>
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Profesional</label>
                   <select
                     value={professionalId}
                     onChange={(e) => setProfessionalId(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                   >
                     <option value="">Yo mismo ({user?.name})</option>
                     {professionals
@@ -960,12 +960,12 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
             <div className="flex flex-col gap-4 lg:col-span-3">
               {isEstetica && (
-                <div className="flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium">
+                <div className="flex w-fit gap-1 rounded-lg bg-slate-100 p-1 text-sm font-medium dark:bg-slate-800">
                   <button
                     type="button"
                     onClick={() => setPrestacionesTab('prestaciones')}
                     className={`rounded-md px-3 py-1.5 transition-colors ${
-                      prestacionesTab === 'prestaciones' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      prestacionesTab === 'prestaciones' ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Tratamiento
@@ -974,7 +974,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     type="button"
                     onClick={() => setPrestacionesTab('plantilla')}
                     className={`rounded-md px-3 py-1.5 transition-colors ${
-                      prestacionesTab === 'plantilla' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                      prestacionesTab === 'plantilla' ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     Plantilla fotográfica
@@ -985,14 +985,14 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
               {isEstetica && prestacionesTab === 'plantilla' ? (
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Estas fotos se subirán junto con el presupuesto al presionar "Crear presupuesto".
                     </p>
                     <div className="flex flex-wrap items-center gap-2">
                       <select
                         value={pendingPhotoZone}
                         onChange={(e) => setPendingPhotoZone(e.target.value as FacialZoneKey)}
-                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500"
+                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                       >
                         {FACIAL_ZONES.map((zone) => (
                           <option key={zone} value={zone}>
@@ -1000,14 +1000,14 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                           </option>
                         ))}
                       </select>
-                      <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+                      <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-800">
                         {(['Antes', 'Después'] as const).map((l) => (
                           <button
                             key={l}
                             type="button"
                             onClick={() => setPendingPhotoMoment(l)}
                             className={`rounded-md px-2 py-0.5 transition-colors ${
-                              pendingPhotoMoment === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                              pendingPhotoMoment === l ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                             }`}
                           >
                             {l}
@@ -1018,7 +1018,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                   </div>
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
                     {pendingPhotos.map((photo) => (
-                      <div key={photo.key} className="group relative aspect-square overflow-hidden rounded-lg ring-1 ring-slate-200">
+                      <div key={photo.key} className="group relative aspect-square overflow-hidden rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
                         <img src={photo.previewUrl} alt={photo.label} className="h-full w-full object-cover" />
                         <span className="absolute bottom-1 left-1 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
                           {photo.label}
@@ -1053,7 +1053,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     <button
                       type="button"
                       onClick={() => setPhotoCameraOpen(true)}
-                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600"
+                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600 dark:border-slate-700 dark:text-slate-500"
                     >
                       <CameraIcon className="h-5 w-5" />
                       <span className="text-[11px] font-medium">Agregar ({FACIAL_ZONE_LABELS[pendingPhotoZone]})</span>
@@ -1092,24 +1092,24 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
               ) : (
                 <>
               <div className="relative">
-                <label className="text-sm font-medium text-slate-700">Buscar prestación</label>
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Buscar prestación</label>
                 <div className="mt-1 flex items-center gap-2">
                   <div className="relative flex-1">
-                    <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <input
                       value={prestacionSearch}
                       onChange={(e) => setPrestacionSearch(e.target.value)}
                       placeholder={
                         isEstetica ? 'Ej: botox, ácido hialurónico, rinomodelación...' : 'Ej: destartraje, resina, corona...'
                       }
-                      className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                   </div>
                   <button
                     type="button"
                     disabled
                     title="Próximamente"
-                    className="shrink-0 cursor-not-allowed rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400"
+                    className="shrink-0 cursor-not-allowed rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-500"
                   >
                     Avanzada
                   </button>
@@ -1117,22 +1117,22 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     type="button"
                     disabled
                     title="Próximamente"
-                    className="shrink-0 cursor-not-allowed rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400"
+                    className="shrink-0 cursor-not-allowed rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-500"
                   >
                     Plantillas
                   </button>
                 </div>
                 {filteredPrestaciones.length > 0 && prestacionSearch !== activePrestacion?.name && (
-                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                  <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
                     {filteredPrestaciones.map((p) => (
                       <button
                         key={p.id}
                         type="button"
                         onClick={() => handlePickPrestacion(p)}
-                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50"
+                        className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50 dark:hover:bg-slate-800"
                       >
-                        <span className="text-slate-700">{p.name}</span>
-                        <span className="text-slate-500">{p.zonePrices ? 'Precio según zona' : formatCLP(p.basePrice)}</span>
+                        <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
+                        <span className="text-slate-500 dark:text-slate-400">{p.zonePrices ? 'Precio según zona' : formatCLP(p.basePrice)}</span>
                       </button>
                     ))}
                   </div>
@@ -1140,7 +1140,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
               </div>
 
               {conflictingAllergies.length > 0 && (
-                <div className="rounded-lg bg-red-50 px-3 py-2.5 text-xs text-red-700 ring-1 ring-red-200">
+                <div className="rounded-lg bg-red-50 px-3 py-2.5 text-xs text-red-700 ring-1 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20">
                   <p className="flex items-center gap-1.5 font-semibold">
                     <AlertTriangleIcon className="h-4 w-4 shrink-0" />
                     Este paciente es alérgico a: {conflictingAllergies.map((a) => ALLERGY_LABEL[a]).join(', ')}. Verifica antes de continuar.
@@ -1150,7 +1150,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
               )}
 
               {showActiveBanner && activePrestacion && activeMode && (
-                <div className="rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-700">
+                <div className="rounded-lg bg-amber-50 px-3 py-2.5 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
                   <p className="font-semibold">Prestación seleccionada: {activePrestacion.name}</p>
                   <p className="mt-0.5">
                     {isEstetica ? MODE_INSTRUCTIONS_ESTETICA[activeMode] : MODE_INSTRUCTIONS[activeMode]}
@@ -1158,16 +1158,16 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                   {draftSelection.length > 0 && (
                     <p className="mt-1 font-medium">{selectionLabel(isEstetica, activeMode, draftSelection)}</p>
                   )}
-                  {draftError && <p className="mt-1 font-medium text-red-600">{draftError}</p>}
+                  {draftError && <p className="mt-1 font-medium text-red-600 dark:text-red-400">{draftError}</p>}
                   {activePrestacion.requiresProductTracking && !selectedLot && (
-                    <p className="mt-1 flex items-center gap-1 font-semibold text-red-600">
+                    <p className="mt-1 flex items-center gap-1 font-semibold text-red-600 dark:text-red-400">
                       <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
                       Esta prestación requiere seleccionar un lote real del inventario (trazabilidad).
                     </p>
                   )}
                   <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     {selectedLot ? (
-                      <div className="col-span-full flex items-center justify-between gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-xs text-emerald-800">
+                      <div className="col-span-full flex items-center justify-between gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-xs text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400">
                         <span>
                           <span className="font-semibold">{selectedLot.productName ?? 'Producto sin nombre'}</span>
                           {' — Lote '}
@@ -1184,7 +1184,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                         <button
                           type="button"
                           onClick={clearSelectedLot}
-                          className="shrink-0 rounded px-1.5 py-0.5 text-emerald-700 underline hover:bg-emerald-100"
+                          className="shrink-0 rounded px-1.5 py-0.5 text-emerald-700 underline hover:bg-emerald-100 dark:text-emerald-400 dark:hover:bg-emerald-500/20"
                         >
                           Cambiar
                         </button>
@@ -1195,29 +1195,29 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                           value={lotSearchQuery}
                           onChange={(e) => setLotSearchQuery(e.target.value)}
                           placeholder="Buscar lote real por producto o N° de lote (ej. Ácido Hialurónico, L-2451)..."
-                          className="w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                          className="w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-amber-500/30 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                         />
-                        {lotSearchLoading && <p className="mt-1 text-slate-500">Buscando lotes en el inventario...</p>}
+                        {lotSearchLoading && <p className="mt-1 text-slate-500 dark:text-slate-400">Buscando lotes en el inventario...</p>}
                         {!lotSearchLoading && lotSearchQuery.trim().length >= 2 && lotResults.length === 0 && (
-                          <p className="mt-1 text-slate-500">
+                          <p className="mt-1 text-slate-500 dark:text-slate-400">
                             {lotFederationAvailable
                               ? 'No se encontraron lotes con stock para esa búsqueda.'
                               : 'No se pudo conectar con el inventario (Dental-Demo-Back) ahora mismo.'}
                           </p>
                         )}
                         {lotResults.length > 0 && (
-                          <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-700 shadow-lg">
+                          <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-slate-700 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
                             {lotResults.map((lot) => (
                               <button
                                 key={lot.id}
                                 type="button"
                                 onClick={() => pickLot(lot)}
-                                className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-brand-50"
+                                className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-brand-50 dark:hover:bg-slate-800"
                               >
                                 <span>
                                   {lot.productName ?? 'Producto sin nombre'} — Lote {lot.lotNumber}
                                 </span>
-                                <span className="text-slate-500">
+                                <span className="text-slate-500 dark:text-slate-400">
                                   Stock: {lot.stock}
                                   {lot.expiresAt ? ` · Vence: ${lot.expiresAt.slice(0, 10)}` : ''}
                                 </span>
@@ -1231,20 +1231,20 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                       value={draftProductQuantity}
                       onChange={(e) => setDraftProductQuantity(e.target.value)}
                       placeholder="Cantidad aplicada (ej. 1 jeringa 1ml)"
-                      className="col-span-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 sm:col-span-1"
+                      className="col-span-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 sm:col-span-1 dark:border-amber-500/30 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                   </div>
 
                   {productosMarca.length > 0 && (
-                    <div className="mt-2 rounded-md border border-amber-200 bg-white p-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <div className="mt-2 rounded-md border border-amber-200 bg-white p-2 dark:border-amber-500/30 dark:bg-slate-800">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         Producto del catálogo (opcional — calcula el precio solo)
                       </p>
                       <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
                         <select
                           value={draftProductoMarcaId}
                           onChange={(e) => setDraftProductoMarcaId(e.target.value)}
-                          className="col-span-2 rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                          className="col-span-2 rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                         >
                           <option value="">Sin producto (usar precio de catálogo)</option>
                           {productosMarca.map((p) => (
@@ -1260,11 +1260,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                           disabled={!draftProductoMarcaId}
                           onChange={(e) => setDraftProductUnitQuantity(e.target.value)}
                           placeholder="Cantidad"
-                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-slate-50"
+                          className="rounded-md border border-slate-300 px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:disabled:bg-slate-800"
                         />
                       </div>
                       {draftProductoMarcaId && (
-                        <p className="mt-1.5 text-xs font-semibold text-emerald-700">
+                        <p className="mt-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                           Precio calculado:{' '}
                           {formatCLP(
                             (productosMarca.find((p) => p.id === draftProductoMarcaId)?.precioVenta ?? 0) *
@@ -1280,13 +1280,13 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     onChange={(e) => setDraftNotes(e.target.value)}
                     placeholder="Notas clínicas (ej. reacción del paciente)..."
                     rows={2}
-                    className="mt-2 w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    className="mt-2 w-full rounded-md border border-amber-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-amber-500/30 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                   />
                   <div className="mt-2 flex gap-2">
                     <button
                       type="button"
                       onClick={handleCancelActive}
-                      className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+                      className="rounded-md border border-amber-200 bg-white px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-slate-800 dark:text-amber-400 dark:hover:bg-amber-500/20"
                     >
                       Cancelar
                     </button>
@@ -1302,19 +1302,19 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
               )}
 
               {isEstetica && activeMode === 'tooth' && (
-                <div id="tercio-quick-pick" className="flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 p-2.5">
-                  <span className="text-xs font-semibold text-brand-700">Elegir por tercio:</span>
+                <div id="tercio-quick-pick" className="flex flex-wrap items-center gap-2 rounded-lg bg-brand-50 p-2.5 dark:bg-brand-500/10">
+                  <span className="text-xs font-semibold text-brand-700 dark:text-brand-400">Elegir por tercio:</span>
                   {TERCIOS.map((tercio) => (
                     <button
                       key={tercio}
                       type="button"
                       onClick={() => handlePickTercio(tercio)}
-                      className="rounded-md border border-brand-200 bg-white px-2.5 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100"
+                      className="rounded-md border border-brand-200 bg-white px-2.5 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-100 dark:border-brand-500/30 dark:bg-slate-900 dark:text-brand-400 dark:hover:bg-brand-500/20"
                     >
                       {TERCIO_LABEL[tercio]}
                     </button>
                   ))}
-                  <span className="text-[11px] text-brand-600/80">No es necesario marcar zona por zona.</span>
+                  <span className="text-[11px] text-brand-600/80 dark:text-brand-400/80">No es necesario marcar zona por zona.</span>
                 </div>
               )}
 
@@ -1350,50 +1350,50 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
             </div>
 
             <div className="flex flex-col gap-3 lg:col-span-1">
-              <div className="rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Convenio actual</p>
-                <p className="text-sm font-semibold text-slate-700">
+              <div className="rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-800">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Convenio actual</p>
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                   {selectedConvenio ? selectedConvenio.name : 'Sin convenio'}
                   {selectedConvenio && selectedConvenio.discountPercent > 0 && (
-                    <span className="ml-1.5 text-xs font-medium text-brand-600">-{selectedConvenio.discountPercent}%</span>
+                    <span className="ml-1.5 text-xs font-medium text-brand-600 dark:text-brand-400">-{selectedConvenio.discountPercent}%</span>
                   )}
                 </p>
               </div>
 
-              <div className="overflow-hidden rounded-xl ring-1 ring-slate-200">
-                <p className="bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <div className="overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800">
+                <p className="bg-slate-50 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                   Prestaciones agregadas
                 </p>
 
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-slate-100 dark:divide-slate-800">
                   {items.length === 0 && (
-                    <p className="px-3 py-6 text-center text-sm text-slate-400">Aún no hay prestaciones agregadas.</p>
+                    <p className="px-3 py-6 text-center text-sm text-slate-400 dark:text-slate-500">Aún no hay prestaciones agregadas.</p>
                   )}
                   {items.map((item) => (
                     <div
                       key={item.key}
                       onClick={() => setLastAddedKeys([item.key])}
                       className={`flex cursor-pointer flex-col gap-2 px-3 py-2.5 transition-colors ${
-                        lastAddedKeys.includes(item.key) ? 'bg-amber-100' : 'hover:bg-slate-50'
+                        lastAddedKeys.includes(item.key) ? 'bg-amber-100 dark:bg-amber-500/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                             {areaLabelFor(isEstetica, item.odontogramMode)}
                             {item.existing && (
-                              <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-slate-500">
+                              <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 Ya en el presupuesto
                               </span>
                             )}
                           </p>
-                          <p className="break-words text-sm font-medium text-slate-700">
+                          <p className="break-words text-sm font-medium text-slate-700 dark:text-slate-200">
                             {item.description}
                             {item.convenioDiscountPercent > 0 && (
-                              <span className="ml-1 text-xs text-brand-600">-{item.convenioDiscountPercent}%</span>
+                              <span className="ml-1 text-xs text-brand-600 dark:text-brand-400">-{item.convenioDiscountPercent}%</span>
                             )}
                           </p>
-                          <p className="mt-0.5 break-words text-xs text-slate-400">{detailLabel(item, isEstetica)}</p>
+                          <p className="mt-0.5 break-words text-xs text-slate-400 dark:text-slate-500">{detailLabel(item, isEstetica)}</p>
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                           {item.existing && (
@@ -1404,7 +1404,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                                 handleEditExistingItem(item.key);
                               }}
                               aria-label="Editar"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                             >
                               <EditIcon className="h-3.5 w-3.5" />
                             </button>
@@ -1417,7 +1417,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                               else removeItem(item.key);
                             }}
                             aria-label="Quitar"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                           >
                             <TrashIcon className="h-3.5 w-3.5" />
                           </button>
@@ -1431,16 +1431,16 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                         title={item.productoMarcaId ? 'Calculado automáticamente por el producto elegido' : undefined}
                         onClick={(e) => e.stopPropagation()}
                         onChange={(e) => updateItemCost(item.key, e.target.value)}
-                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-slate-50 disabled:text-slate-400"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-2 py-1 text-right text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:bg-slate-50 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:disabled:bg-slate-800/60 dark:disabled:text-slate-500"
                       />
                     </div>
                   ))}
                 </div>
 
                 {items.length > 0 && (
-                  <div className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-2">
-                    <span className="text-sm font-semibold text-slate-600">Total</span>
-                    <span className="text-sm font-bold text-brand-600">{formatCLP(total)}</span>
+                  <div className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-2 dark:bg-slate-800">
+                    <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Total</span>
+                    <span className="text-sm font-bold text-brand-600 dark:text-brand-400">{formatCLP(total)}</span>
                   </div>
                 )}
               </div>
@@ -1450,9 +1450,9 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
 
         {step === 3 && !editingPlan && (
           <div className="flex flex-col gap-4">
-            <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
+            <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-800">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                   <tr>
                     <th className="px-3 py-2 text-left">Prestación</th>
                     <th className="px-3 py-2 text-left">Área</th>
@@ -1461,28 +1461,28 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     <th className="px-3 py-2 text-right">Total</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {items.map((item) => (
                     <tr key={item.key}>
-                      <td className="px-3 py-2 text-slate-700">{item.description}</td>
-                      <td className="px-3 py-2 text-slate-500">
+                      <td className="px-3 py-2 text-slate-700 dark:text-slate-200">{item.description}</td>
+                      <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
                         {areaLabelFor(isEstetica, item.odontogramMode)}
-                        <div className="text-xs text-slate-400">{detailLabel(item, isEstetica)}</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-500">{detailLabel(item, isEstetica)}</div>
                       </td>
-                      <td className="px-3 py-2 text-right text-slate-500">{formatCLP(item.listPrice)}</td>
-                      <td className="px-3 py-2 text-right text-slate-500">
+                      <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">{formatCLP(item.listPrice)}</td>
+                      <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">
                         {item.convenioDiscountPercent > 0 ? `-${item.convenioDiscountPercent}%` : '—'}
                       </td>
-                      <td className="px-3 py-2 text-right font-semibold text-slate-800">{formatCLP(item.cost)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-slate-800 dark:text-slate-100">{formatCLP(item.cost)}</td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="bg-slate-50">
-                    <td colSpan={4} className="px-3 py-2 text-right text-sm font-semibold text-slate-600">
+                  <tr className="bg-slate-50 dark:bg-slate-800">
+                    <td colSpan={4} className="px-3 py-2 text-right text-sm font-semibold text-slate-600 dark:text-slate-300">
                       Total presupuesto
                     </td>
-                    <td className="px-3 py-2 text-right text-sm font-bold text-brand-600">{formatCLP(total)}</td>
+                    <td className="px-3 py-2 text-right text-sm font-bold text-brand-600 dark:text-brand-400">{formatCLP(total)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1490,7 +1490,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <label htmlFor="plan-name" className="text-sm font-medium text-slate-700">
+                <label htmlFor="plan-name" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Nombre del presupuesto
                 </label>
                 <input
@@ -1498,18 +1498,18 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ej: Plan rehabilitación oral"
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
               <div>
-                <label htmlFor="plan-payment" className="text-sm font-medium text-slate-700">
+                <label htmlFor="plan-payment" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Forma de pago
                 </label>
                 <select
                   id="plan-payment"
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 >
                   {PAYMENT_METHODS.map((m) => (
                     <option key={m} value={m}>
@@ -1519,7 +1519,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                 </select>
               </div>
               <div className="sm:col-span-2 lg:col-span-1">
-                <label htmlFor="plan-notes" className="text-sm font-medium text-slate-700">
+                <label htmlFor="plan-notes" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Observaciones generales
                 </label>
                 <textarea
@@ -1527,20 +1527,20 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={1}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
             </div>
           </div>
         )}
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-        <div className="flex justify-between gap-2 border-t border-slate-100 pt-4">
+        <div className="flex justify-between gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <button
             type="button"
             onClick={() => (step === 1 || editingPlan ? onClose() : setStep((s) => ((s - 1) as 1 | 2 | 3)))}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             {step === 1 || editingPlan ? 'Cancelar' : 'Prev'}
           </button>

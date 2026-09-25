@@ -119,14 +119,14 @@ function VideoRoundTile({
         type="button"
         onClick={() => (video ? setViewing(true) : onOpenCamera())}
         disabled={disabled || uploading}
-        className="relative flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50"
+        className="relative flex h-32 w-full max-w-xs items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-slate-800 disabled:opacity-50"
       >
         {uploading ? (
           <span className="text-xs">Subiendo...</span>
         ) : video ? (
           <video src={video.url} className="h-full w-full object-cover" muted />
         ) : (
-          <span className="flex flex-col items-center gap-1 text-slate-400">
+          <span className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500">
             <CameraIcon className="h-6 w-6" />
             <span className="text-xs">Click para grabar</span>
           </span>
@@ -206,26 +206,26 @@ function PhotoRoundGrid({
               type="button"
               onClick={() => onOpenCamera(slot.key)}
               disabled={disabled || uploadingSlot === slot.key}
-              className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 disabled:opacity-50"
+              className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-slate-800 disabled:opacity-50"
             >
               {uploadingSlot === slot.key ? (
                 <span className="text-xs">Subiendo...</span>
               ) : photo ? (
                 <img src={photo.url} alt={slot.label} className="h-full w-full object-cover" />
               ) : (
-                <span className="flex flex-col items-center gap-1 text-slate-400">
+                <span className="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500">
                   <CameraIcon className="h-6 w-6" />
                   <span className="text-xs">Click para capturar</span>
                 </span>
               )}
             </button>
-            <span className="text-xs font-semibold text-slate-600">{slot.label}</span>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{slot.label}</span>
             {photo && (
               <button
                 type="button"
                 onClick={() => onMark(photo)}
                 disabled={disabled}
-                className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <PenIcon className="h-3 w-3" />
                 Marcar
@@ -251,14 +251,14 @@ function PhotoRoundGrid({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</span>
       {children}
     </label>
   );
 }
 
 const selectClass =
-  'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10';
+  'w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:bg-slate-900';
 
 export function ExamenEsteticoTab({
   patient,
@@ -510,8 +510,8 @@ export function ExamenEsteticoTab({
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-      <div id="examen-estetico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-        <h2 className="mb-4 text-sm font-semibold text-slate-800">Evaluación estética</h2>
+      <div id="examen-estetico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+        <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Evaluación estética</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Tipo de piel">
             <select className={selectClass} value={skinType} onChange={(e) => setSkinType(e.target.value)}>
@@ -528,7 +528,7 @@ export function ExamenEsteticoTab({
               value={skinQuality}
               onChange={(e) => setSkinQuality(e.target.value)}
               placeholder="Ej: hidratación, textura, poros..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             />
           </Field>
           <Field label="Fototipo Fitzpatrick">
@@ -589,37 +589,37 @@ export function ExamenEsteticoTab({
               rows={2}
               value={asymmetryNotes}
               onChange={(e) => setAsymmetryNotes(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             />
           </Field>
         </div>
       </div>
 
-      <div id="registro-fotografico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div id="registro-fotografico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
         <div className="mb-1 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-slate-800">Registro fotográfico — {PHOTO_AREA_LABEL[photoArea]}</h2>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Registro fotográfico — {PHOTO_AREA_LABEL[photoArea]}</h2>
           <button
             type="button"
             onClick={handleToggleArea}
             title={`Cambiar a registro de ${PHOTO_AREA_LABEL[photoArea === 'facial' ? 'corporal' : 'facial']}`}
-            className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <RefreshIcon className={`h-4 w-4 transition-transform duration-400 ${areaFlipping ? 'rotate-[360deg]' : ''}`} />
             {PHOTO_AREA_LABEL[photoArea === 'facial' ? 'corporal' : 'facial']}
           </button>
         </div>
-        <p className="mb-4 text-xs text-slate-500">
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           {photoArea === 'facial'
             ? 'Máximo 4 fotos por ronda: Frontal, Perfil Derecho, 45° Derecha y 45° Izquierda.'
             : 'Máximo 4 fotos por ronda: Frontal, Espalda, Perfil Izquierdo y Perfil Derecho.'}
         </p>
 
         {!photoConsentChecked ? (
-          <p className="mb-4 text-xs text-slate-400">Verificando consentimiento...</p>
+          <p className="mb-4 text-xs text-slate-400 dark:text-slate-500">Verificando consentimiento...</p>
         ) : !photoConsentSigned ? (
-          <div className="mb-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+          <div className="mb-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 dark:bg-amber-500/10">
             <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <div className="text-xs text-amber-800">
+            <div className="text-xs text-amber-800 dark:text-amber-400">
               <p className="font-semibold">
                 El paciente debe firmar el consentimiento de uso de fotografías antes de poder tomar fotos.
               </p>
@@ -631,7 +631,7 @@ export function ExamenEsteticoTab({
         ) : null}
 
         <div className="mb-2">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{latestRound.label}</h3>
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{latestRound.label}</h3>
           <PhotoRoundGrid
             area={photoArea}
             moment={latestRound.moment}
@@ -651,16 +651,16 @@ export function ExamenEsteticoTab({
             <button
               type="button"
               onClick={() => setShowOlderPhotos((v) => !v)}
-              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
+              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
             >
               <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showOlderPhotos ? 'rotate-180' : ''}`} />
               {showOlderPhotos ? 'Ocultar fotos anteriores' : `Desplegar fotos anteriores (${olderRounds.length})`}
             </button>
             {showOlderPhotos && (
-              <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4">
+              <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4 dark:border-slate-800">
                 {olderRounds.map((r) => (
                   <div key={`${r.moment}-${r.round}`}>
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{r.label}</h3>
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{r.label}</h3>
                     <PhotoRoundGrid
                       area={photoArea}
                       moment={r.moment}
@@ -681,18 +681,18 @@ export function ExamenEsteticoTab({
         )}
       </div>
 
-      <div id="imagenes-marcadas-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Imágenes marcadas</h2>
-        <p className="mb-4 text-xs text-slate-500">
+      <div id="imagenes-marcadas-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Imágenes marcadas</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Marcaciones guardadas sobre alguna foto de arriba (toca "Marcar" en una foto para crear una) — no reemplazan la
           foto original.
         </p>
         {areaMarkups.length === 0 ? (
-          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400">Todavía no hay imágenes marcadas.</p>
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-400 dark:bg-slate-800 dark:text-slate-500">Todavía no hay imágenes marcadas.</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {areaMarkups.map((markup) => (
-              <div key={markup.id} className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-slate-200">
+              <div key={markup.id} className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800">
                 <a href={markup.url} target="_blank" rel="noreferrer">
                   <img src={markup.url} alt="Foto marcada" className="h-full w-full object-cover" />
                 </a>
@@ -720,19 +720,19 @@ export function ExamenEsteticoTab({
         />
       )}
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
         {canStartNewAvance ? (
           <button
             type="button"
             onClick={() => setPendingAvanceRound(lastAvanceRound + 1)}
             disabled={!photoConsentSigned}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <CameraIcon className="h-4 w-4" />
             + Agregar Avance {lastAvanceRound + 1}
           </button>
         ) : (
-          <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-3 text-sm font-medium text-slate-400">
+          <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-3 text-sm font-medium text-slate-400 dark:border-slate-700 dark:text-slate-500">
             <LockIcon className="h-4 w-4" />
             {antesDone
               ? 'Completa las 4 fotos del Avance actual para poder agregar uno nuevo'
@@ -741,16 +741,16 @@ export function ExamenEsteticoTab({
         )}
       </div>
 
-      <div id="registro-video-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Registro de video</h2>
-        <p className="mb-4 text-xs text-slate-500">Un video por ronda — el mismo criterio de "Antes" y "Avance" que las fotos.</p>
+      <div id="registro-video-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Registro de video</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">Un video por ronda — el mismo criterio de "Antes" y "Avance" que las fotos.</p>
 
         {!photoConsentChecked ? (
-          <p className="mb-4 text-xs text-slate-400">Verificando consentimiento...</p>
+          <p className="mb-4 text-xs text-slate-400 dark:text-slate-500">Verificando consentimiento...</p>
         ) : !photoConsentSigned ? (
-          <div className="mb-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
+          <div className="mb-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 dark:bg-amber-500/10">
             <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <div className="text-xs text-amber-800">
+            <div className="text-xs text-amber-800 dark:text-amber-400">
               <p className="font-semibold">
                 El paciente debe firmar el consentimiento de uso de imágenes antes de poder grabar video.
               </p>
@@ -762,7 +762,7 @@ export function ExamenEsteticoTab({
         ) : null}
 
         <div className="mb-2">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{latestVideoRound.label}</h3>
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{latestVideoRound.label}</h3>
           <VideoRoundTile
             moment={latestVideoRound.moment}
             round={latestVideoRound.round}
@@ -782,16 +782,16 @@ export function ExamenEsteticoTab({
             <button
               type="button"
               onClick={() => setShowOlderVideos((v) => !v)}
-              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
+              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
             >
               <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showOlderVideos ? 'rotate-180' : ''}`} />
               {showOlderVideos ? 'Ocultar videos anteriores' : `Desplegar videos anteriores (${olderVideoRounds.length})`}
             </button>
             {showOlderVideos && (
-              <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4">
+              <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4 dark:border-slate-800">
                 {olderVideoRounds.map((r) => (
                   <div key={`${r.moment}-${r.round}`}>
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">{r.label}</h3>
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{r.label}</h3>
                     <VideoRoundTile
                       moment={r.moment}
                       round={r.round}
@@ -812,19 +812,19 @@ export function ExamenEsteticoTab({
         )}
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
         {canStartNewAvanceVideo ? (
           <button
             type="button"
             onClick={() => setPendingAvanceVideoRound(lastAvanceVideoRound + 1)}
             disabled={!photoConsentSigned}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 dark:text-brand-400 dark:hover:bg-brand-500/10 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <CameraIcon className="h-4 w-4" />
             + Agregar Avance {lastAvanceVideoRound + 1} (video)
           </button>
         ) : (
-          <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-3 text-sm font-medium text-slate-400">
+          <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-3 text-sm font-medium text-slate-400 dark:border-slate-700 dark:text-slate-500">
             <LockIcon className="h-4 w-4" />
             {antesVideoDone
               ? 'Completa el video del Avance actual para poder agregar uno nuevo'
@@ -871,9 +871,9 @@ export function ExamenEsteticoTab({
         />
       )}
 
-      <div id="diagnostico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div id="diagnostico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-800">Diagnóstico</h2>
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Diagnóstico</h2>
           <button
             type="button"
             onClick={handleDictate}
@@ -888,7 +888,7 @@ export function ExamenEsteticoTab({
           value={diagnosis}
           onChange={(e) => setDiagnosis(e.target.value)}
           placeholder="Escribe o dicta el diagnóstico con el micrófono..."
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
         />
         <div className="mt-3 flex items-center gap-3">
           <button
@@ -899,7 +899,7 @@ export function ExamenEsteticoTab({
           >
             {saving ? 'Guardando...' : 'Guardar examen'}
           </button>
-          {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+          {saveError && <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>}
         </div>
       </div>
     </div>

@@ -33,7 +33,7 @@ export function ChairFormModal({ nextNumber, onClose, onCreated }: ChairFormModa
     <Modal title="Agregar sillón" onClose={onClose} maxWidth="max-w-sm">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="number" className="text-sm font-medium text-slate-700">
+          <label htmlFor="number" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Número de sillón
           </label>
           <input
@@ -43,11 +43,11 @@ export function ChairFormModal({ nextNumber, onClose, onCreated }: ChairFormModa
             onChange={(e) => setNumber(e.target.value)}
             required
             min={1}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div>
-          <label htmlFor="name" className="text-sm font-medium text-slate-700">
+          <label htmlFor="name" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Nombre (opcional)
           </label>
           <input
@@ -55,17 +55,17 @@ export function ChairFormModal({ nextNumber, onClose, onCreated }: ChairFormModa
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={`Sillón ${number || nextNumber}`}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

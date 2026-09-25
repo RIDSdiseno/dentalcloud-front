@@ -87,9 +87,9 @@ function PlanPorTerciosSummary({ items }: { items: TreatmentItem[] }) {
   if (!hasAny) return null;
 
   return (
-    <div className="mt-4 border-t border-slate-100 pt-4">
-      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Plan por tercios faciales</h4>
-      <div className="overflow-hidden rounded-lg border border-slate-200">
+    <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+      <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Plan por tercios faciales</h4>
+      <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-800 text-white">
@@ -99,9 +99,9 @@ function PlanPorTerciosSummary({ items }: { items: TreatmentItem[] }) {
           </thead>
           <tbody>
             {TERCIOS.map((tercio, idx) => (
-              <tr key={tercio} className={idx % 2 === 1 ? 'bg-slate-50' : undefined}>
-                <td className="px-3 py-2 align-top font-semibold text-slate-700">{TERCIO_LABEL[tercio]}</td>
-                <td className="px-3 py-2 text-slate-600">
+              <tr key={tercio} className={idx % 2 === 1 ? 'bg-slate-50 dark:bg-slate-800' : undefined}>
+                <td className="px-3 py-2 align-top font-semibold text-slate-700 dark:text-slate-200">{TERCIO_LABEL[tercio]}</td>
+                <td className="px-3 py-2 text-slate-600 dark:text-slate-300">
                   {groups[tercio].length > 0
                     ? Array.from(new Set(groups[tercio].map((i) => i.description))).join(' · ')
                     : 'Sin diagnóstico'}
@@ -171,13 +171,13 @@ function PlantillaFotografica({
   return (
     <div onClick={(e) => e.stopPropagation()}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase">Plantilla fotográfica</p>
+        <p className="text-xs font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">Plantilla fotográfica</p>
         {!readOnly && (
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={pendingZone}
               onChange={(e) => setPendingZone(e.target.value as FacialZoneKey)}
-              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500"
+              className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               {FACIAL_ZONES.map((zone) => (
                 <option key={zone} value={zone}>
@@ -185,14 +185,16 @@ function PlantillaFotografica({
                 </option>
               ))}
             </select>
-            <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+            <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-700/70">
               {(['Antes', 'Después'] as const).map((l) => (
                 <button
                   key={l}
                   type="button"
                   onClick={() => setPendingMoment(l)}
                   className={`rounded-md px-2 py-0.5 transition-colors ${
-                    pendingMoment === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                    pendingMoment === l
+                      ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                   }`}
                 >
                   {l}
@@ -204,7 +206,7 @@ function PlantillaFotografica({
       </div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
         {plan.photos.map((photo) => (
-          <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg ring-1 ring-slate-200">
+          <div key={photo.id} className="group relative aspect-square overflow-hidden rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
             <a href={photo.url} target="_blank" rel="noreferrer">
               <img src={photo.url} alt={photo.label ?? 'Foto de plantilla'} className="h-full w-full object-cover" />
             </a>
@@ -232,7 +234,7 @@ function PlantillaFotografica({
               type="button"
               onClick={() => setCameraOpen(true)}
               disabled={isUploading}
-              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600 disabled:opacity-60"
+              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-600 disabled:opacity-60 dark:border-slate-700 dark:text-slate-500"
             >
               <CameraIcon className="h-5 w-5" />
               <span className="text-[11px] font-medium">
@@ -285,56 +287,56 @@ function ItemDetailsPanel({ item }: { item: TreatmentItem }) {
   const expiry = productExpiryStatus(item);
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-white/70 p-2.5" onClick={(e) => e.stopPropagation()}>
+    <div className="flex flex-col gap-2 rounded-lg bg-white/70 p-2.5 dark:bg-slate-900/70" onClick={(e) => e.stopPropagation()}>
       {item.completed && item.treatedBy && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-400 dark:text-slate-500">
           Tratado por {item.treatedBy.name}
           {item.treatedAt && ` · ${new Date(item.treatedAt).toLocaleDateString('es-CL')}`}
         </p>
       )}
 
       {(item.productName || item.productLot || item.productExpiresAt || item.productQuantity) && (
-        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-4">
-          <p><span className="text-slate-400">Producto:</span> {item.productName || '—'}</p>
-          <p><span className="text-slate-400">Lote:</span> {item.productLot || '—'}</p>
+        <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 sm:grid-cols-4 dark:text-slate-300">
+          <p><span className="text-slate-400 dark:text-slate-500">Producto:</span> {item.productName || '—'}</p>
+          <p><span className="text-slate-400 dark:text-slate-500">Lote:</span> {item.productLot || '—'}</p>
           <p>
-            <span className="text-slate-400">Vence:</span>{' '}
+            <span className="text-slate-400 dark:text-slate-500">Vence:</span>{' '}
             {item.productExpiresAt ? new Date(item.productExpiresAt).toLocaleDateString('es-CL') : '—'}
           </p>
-          <p><span className="text-slate-400">Cantidad:</span> {item.productQuantity || '—'}</p>
+          <p><span className="text-slate-400 dark:text-slate-500">Cantidad:</span> {item.productQuantity || '—'}</p>
         </div>
       )}
 
-      {item.notes && <p className="text-xs text-slate-600">{item.notes}</p>}
+      {item.notes && <p className="text-xs text-slate-600 dark:text-slate-300">{item.notes}</p>}
 
       {missingProduct && (
-        <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">
+        <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 dark:bg-red-500/10 dark:text-red-400">
           Esta prestación requiere registrar el producto y su lote — se completa al Evolucionar.
         </p>
       )}
 
       {expiry?.status === 'expired' && (
-        <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">
+        <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700 dark:bg-red-500/10 dark:text-red-400">
           El producto usado venció el {expiry.expiresAt.toLocaleDateString('es-CL')} — revisa el lote antes de
           continuar.
         </p>
       )}
       {expiry?.status === 'soon' && (
-        <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700">
+        <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
           El producto usado vence el {expiry.expiresAt.toLocaleDateString('es-CL')} ({expiry.daysUntil} día
           {expiry.daysUntil === 1 ? '' : 's'}).
         </p>
       )}
 
       {missingStickers.length > 0 && (
-        <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700">
+        <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
           Falta subir el sticker del producto para {missingStickers.join(' y ')} (se sube al Evolucionar).
         </p>
       )}
 
       {item.photos.length > 0 && (
         <div className="flex flex-col gap-1">
-          <span className="text-[11px] font-medium text-slate-400">Fotos del procedimiento</span>
+          <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Fotos del procedimiento</span>
           <div className="flex flex-wrap items-center gap-2">
             {item.photos.map((photo) => (
               <a
@@ -342,7 +344,7 @@ function ItemDetailsPanel({ item }: { item: TreatmentItem }) {
                 href={photo.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200"
+                className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200 dark:ring-slate-800"
               >
                 <img src={photo.url} alt={photo.label ?? 'Foto del procedimiento'} className="h-full w-full object-cover" />
                 {photo.label && (
@@ -419,7 +421,7 @@ function ReportFormatModal({ plan, onClose, onError }: { plan: TreatmentPlan; on
   return (
     <Modal title="Generar informe" onClose={onClose} maxWidth="max-w-sm">
       <div className="flex flex-col gap-3">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 dark:text-slate-300">
           Informe del presupuesto N° {plan.number}, con las prestaciones realizadas y las fotos registradas.
         </p>
         <div className="flex gap-3">
@@ -427,7 +429,7 @@ function ReportFormatModal({ plan, onClose, onError }: { plan: TreatmentPlan; on
             type="button"
             onClick={() => handleDownload('pdf')}
             disabled={isDownloading !== null}
-            className="flex flex-1 flex-col items-center gap-1.5 rounded-lg border border-slate-200 py-4 text-sm font-semibold text-slate-700 hover:border-brand-300 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex flex-1 flex-col items-center gap-1.5 rounded-lg border border-slate-200 py-4 text-sm font-semibold text-slate-700 hover:border-brand-300 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-brand-500/10"
           >
             <FileIcon className="h-6 w-6 text-brand-600" />
             {isDownloading === 'pdf' ? 'Generando...' : 'PDF'}
@@ -436,7 +438,7 @@ function ReportFormatModal({ plan, onClose, onError }: { plan: TreatmentPlan; on
             type="button"
             onClick={() => handleDownload('docx')}
             disabled={isDownloading !== null}
-            className="flex flex-1 flex-col items-center gap-1.5 rounded-lg border border-slate-200 py-4 text-sm font-semibold text-slate-700 hover:border-brand-300 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex flex-1 flex-col items-center gap-1.5 rounded-lg border border-slate-200 py-4 text-sm font-semibold text-slate-700 hover:border-brand-300 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-brand-500/10"
           >
             <FileIcon className="h-6 w-6 text-brand-600" />
             {isDownloading === 'docx' ? 'Generando...' : 'Word (.docx)'}
@@ -743,7 +745,7 @@ function PlanCard({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700">
       <div className="flex flex-wrap items-center gap-3 p-4">
         <select
           value={plan.status}
@@ -759,40 +761,40 @@ function PlanCard({
           ))}
         </select>
 
-        <span className="text-sm font-semibold text-slate-700">
+        <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           N° {plan.number}
-          {plan.name && <span className="font-normal text-slate-400"> · {plan.name}</span>}
+          {plan.name && <span className="font-normal text-slate-400 dark:text-slate-500"> · {plan.name}</span>}
         </span>
 
-        <span className="flex items-center gap-1 text-xs text-slate-500">
+        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
           <CalendarIcon className="h-3.5 w-3.5" />
           {new Date(plan.createdAt).toLocaleDateString('es-CL')}
         </span>
 
-        <span className="flex items-center gap-1 text-xs text-slate-500">
+        <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
           <UsersIcon className="h-3.5 w-3.5" />
           {plan.professional?.name ?? plan.remoteProfessionalName ?? 'Sin diagnosticador'}
         </span>
 
         {plan.sucursal && (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
             {plan.sucursal.name}
           </span>
         )}
         {plan.convenio && (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
             {plan.convenio.name}
           </span>
         )}
         {plan.prevision && (
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
             {plan.prevision.name}
           </span>
         )}
 
-        <span className="ml-auto text-sm font-semibold text-slate-800">{formatCLP(plan.amount)}</span>
+        <span className="ml-auto text-sm font-semibold text-slate-800 dark:text-slate-100">{formatCLP(plan.amount)}</span>
 
-        <span className="text-xs font-medium text-slate-500">
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
           {completedCount}/{plan.items.length} · {Math.round(percent)}%
         </span>
 
@@ -800,7 +802,7 @@ function PlanCard({
           <button
             type="button"
             onClick={handleClickModificar}
-            className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <EditIcon className="h-3.5 w-3.5" />
             Modificar
@@ -811,7 +813,7 @@ function PlanCard({
           <button
             type="button"
             onClick={handleClickEvolucionar}
-            className="flex shrink-0 items-center gap-1 rounded-lg border border-brand-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-brand-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/10"
           >
             <ActivityIcon className="h-3.5 w-3.5" />
             Evolucionar
@@ -823,7 +825,7 @@ function PlanCard({
             type="button"
             onClick={handleDeletePlan}
             aria-label="Eliminar presupuesto"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
           >
             <TrashIcon className="h-4 w-4" />
           </button>
@@ -833,7 +835,7 @@ function PlanCard({
           <button
             type="button"
             onClick={() => setShowReportModal(true)}
-            className="flex shrink-0 items-center gap-1 rounded-lg border border-brand-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+            className="flex shrink-0 items-center gap-1 rounded-lg border border-brand-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/10"
           >
             <DownloadIcon className="h-3.5 w-3.5" />
             Generar informe
@@ -844,13 +846,13 @@ function PlanCard({
           type="button"
           onClick={() => setExpanded((v) => !v)}
           aria-label={expanded ? 'Contraer' : 'Expandir'}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 dark:text-slate-500 dark:hover:bg-slate-800"
         >
           <ChevronDownIcon className={`h-4 w-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-1.5 text-[11px] text-slate-400">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-1.5 text-[11px] text-slate-400 dark:border-slate-800 dark:text-slate-500">
         <span>Creado por {plan.createdBy?.name ?? 'Sin registro'}</span>
         {plan.startedAt && (
           <span>
@@ -867,24 +869,24 @@ function PlanCard({
       </div>
 
       {expanded && (
-        <div className="border-t border-slate-100 p-4">
+        <div className="border-t border-slate-100 p-4 dark:border-slate-800">
           <div className="flex flex-col gap-2">
             {plan.items.map((item) => (
-              <div key={item.id} className="flex flex-col gap-1.5 rounded-lg bg-slate-50 px-3 py-2">
+              <div key={item.id} className="flex flex-col gap-1.5 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800">
                 <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     checked={item.completed}
                     onChange={(e) => handleToggleItem(item.id, e.target.checked)}
                     disabled={isAlta}
-                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="h-4 w-4 shrink-0 rounded border-slate-300 text-brand-600 focus:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700"
                   />
                   <span
-                    className={`flex-1 text-sm ${item.completed ? 'text-slate-400 line-through' : 'text-slate-700'}`}
+                    className={`flex-1 text-sm ${item.completed ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}
                   >
                     {item.description}
                     {item.toothNumber && (
-                      <span className="ml-1.5 text-xs text-slate-400">
+                      <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">
                         {/* toothNumber ya viene formateado y autodescriptivo desde el
                             odontograma ("Piezas: 4.2", "Cuadrante 1") — anteponerle
                             "Pieza:" quedaba duplicado ("Pieza: Piezas: 4.2"). Las zonas
@@ -904,7 +906,9 @@ function PlanCard({
                               : `Producto vence el ${expiry.expiresAt.toLocaleDateString('es-CL')}`
                           }
                           className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-                            expiry.status === 'expired' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                            expiry.status === 'expired'
+                              ? 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400'
+                              : 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
                           }`}
                         >
                           {expiry.status === 'expired' ? 'Producto vencido' : 'Producto por vencer'}
@@ -912,13 +916,13 @@ function PlanCard({
                       );
                     })()}
                   </span>
-                  <span className="text-sm text-slate-500">{formatCLP(item.cost)}</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">{formatCLP(item.cost)}</span>
                   {!isAlta && (
                     <button
                       type="button"
                       onClick={() => handleEditItem(item)}
                       aria-label="Editar procedimiento"
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                     >
                       <EditIcon className="h-3.5 w-3.5" />
                     </button>
@@ -928,7 +932,7 @@ function PlanCard({
                       type="button"
                       onClick={() => handleDeleteItem(item.id, item.description)}
                       aria-label="Eliminar procedimiento"
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                     >
                       <TrashIcon className="h-3.5 w-3.5" />
                     </button>
@@ -942,7 +946,7 @@ function PlanCard({
           {isEstetica && <PlanPorTerciosSummary items={plan.items} />}
 
           {isEstetica && (
-            <div className="mt-4 border-t border-slate-100 pt-4">
+            <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
               <PlantillaFotografica plan={plan} onUpdated={applyServerPlan} onError={onError} readOnly={isAlta} />
             </div>
           )}
@@ -953,7 +957,7 @@ function PlanCard({
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
                 placeholder="Nuevo procedimiento..."
-                className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
               <input
                 type="number"
@@ -961,7 +965,7 @@ function PlanCard({
                 value={newCost}
                 onChange={(e) => setNewCost(e.target.value)}
                 placeholder="Costo"
-                className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
               <button
                 type="button"
@@ -974,29 +978,29 @@ function PlanCard({
               </button>
             </div>
           ) : (
-            <div className="mt-3 flex flex-col gap-2.5 rounded-lg bg-slate-50 p-3">
+            <div className="mt-3 flex flex-col gap-2.5 rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
               {prestaciones.length > 0 && (
                 <div className="relative">
                   <div className="relative">
-                    <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                     <input
                       value={prestacionSearch}
                       onChange={(e) => setPrestacionSearch(e.target.value)}
                       placeholder="Buscar prestación del catálogo..."
-                      className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                      className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                   </div>
                   {filteredPrestaciones.length > 0 && (
-                    <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                    <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
                       {filteredPrestaciones.map((p) => (
                         <button
                           key={p.id}
                           type="button"
                           onClick={() => pickPrestacion(p)}
-                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50 dark:hover:bg-brand-500/10"
                         >
-                          <span className="text-slate-700">{p.name}</span>
-                          <span className="text-slate-500">{formatCLP(p.basePrice)}</span>
+                          <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
+                          <span className="text-slate-500 dark:text-slate-400">{formatCLP(p.basePrice)}</span>
                         </button>
                       ))}
                     </div>
@@ -1007,10 +1011,10 @@ function PlanCard({
               {entryMode !== null && (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       {entryMode === 'catalog' ? `Prestación del catálogo: ${pickedPrestacion?.name}` : 'Prestación fuera de catálogo'}
                     </span>
-                    <button type="button" onClick={resetEntry} className="text-xs font-semibold text-slate-500 underline hover:text-slate-700">
+                    <button type="button" onClick={resetEntry} className="text-xs font-semibold text-slate-500 underline hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                       Cancelar
                     </button>
                   </div>
@@ -1021,7 +1025,7 @@ function PlanCard({
                         value={newDescription}
                         onChange={(e) => setNewDescription(e.target.value)}
                         placeholder="Descripción del procedimiento"
-                        className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                        className="flex-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                       />
                       <input
                         type="number"
@@ -1029,12 +1033,12 @@ function PlanCard({
                         value={newCost}
                         onChange={(e) => setNewCost(e.target.value)}
                         placeholder="Costo"
-                        className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                        className="w-24 rounded-lg border border-slate-300 px-3 py-1.5 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                       />
                     </div>
                   )}
 
-                  {draftError && <p className="text-xs font-medium text-red-600">{draftError}</p>}
+                  {draftError && <p className="text-xs font-medium text-red-600 dark:text-red-400">{draftError}</p>}
 
                   <Odontogram
                     mode={draftMode ?? 'session'}
@@ -1058,7 +1062,7 @@ function PlanCard({
             </div>
           ))}
 
-          {plan.notes && <p className="mt-3 text-sm text-slate-500">{plan.notes}</p>}
+          {plan.notes && <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">{plan.notes}</p>}
         </div>
       )}
 
@@ -1116,11 +1120,11 @@ function PlanZonesHistoryCard({ plan }: { plan: TreatmentPlan }) {
   const treatedZones = treatedZonesOf(plan);
 
   return (
-    <div className="rounded-lg border border-slate-100 p-3">
+    <div className="rounded-lg border border-slate-100 p-3 dark:border-slate-800">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-slate-500">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
           Presupuesto N° {plan.number} · {new Date(plan.createdAt).toLocaleDateString('es-CL')}
-          {plan.name && <span className="font-normal text-slate-400"> · {plan.name}</span>}
+          {plan.name && <span className="font-normal text-slate-400 dark:text-slate-500"> · {plan.name}</span>}
         </p>
         <button
           type="button"
@@ -1148,17 +1152,17 @@ function PlanZonesHistoryCard({ plan }: { plan: TreatmentPlan }) {
                   <img
                     src={antesUrl}
                     alt={`Antes — ${item.toothNumber}`}
-                    className="h-10 w-10 rounded-lg object-cover ring-1 ring-slate-200"
+                    className="h-10 w-10 rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-800"
                   />
                 </a>
               ) : (
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[9px] text-slate-300 ring-1 ring-slate-200">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-[9px] text-slate-300 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-600 dark:ring-slate-800">
                   Sin foto
                 </div>
               )}
               <div className="min-w-0">
                 <p className="truncate text-xs font-medium text-brand-700">{item.toothNumber}</p>
-                <p className="truncate text-[11px] text-slate-500">{item.description}</p>
+                <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{item.description}</p>
               </div>
             </div>
           );
@@ -1188,48 +1192,48 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
       <div className="flex flex-col gap-5">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Fecha</p>
-            <p className="text-sm text-slate-700">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Fecha</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Estado</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Estado</p>
             <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${TREATMENT_STATUS_CLASSES[plan.status]}`}>
               {TREATMENT_STATUS_LABELS[plan.status]}
             </span>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Creado por</p>
-            <p className="text-sm text-slate-700">{plan.createdBy?.name ?? '—'}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Creado por</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200">{plan.createdBy?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Profesional</p>
-            <p className="text-sm text-slate-700">{plan.professional?.name ?? plan.remoteProfessionalName ?? 'Sin diagnosticador'}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Profesional</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200">{plan.professional?.name ?? plan.remoteProfessionalName ?? 'Sin diagnosticador'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Forma de pago</p>
-            <p className="text-sm text-slate-700">{plan.paymentMethod ?? '—'}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Forma de pago</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200">{plan.paymentMethod ?? '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Clínica</p>
-            <p className="text-sm text-slate-700">{plan.sucursal?.name ?? '—'}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Clínica</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200">{plan.sucursal?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Convenio</p>
-            <p className="text-sm text-slate-700">{plan.convenio?.name ?? '—'}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Convenio</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200">{plan.convenio?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Previsión</p>
-            <p className="text-sm text-slate-700">{plan.prevision?.name ?? '—'}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Previsión</p>
+            <p className="text-sm text-slate-700 dark:text-slate-200">{plan.prevision?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Total</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total</p>
             <p className="text-sm font-semibold text-brand-600">{formatCLP(plan.amount)}</p>
           </div>
         </div>
 
         {(zones.length > 0 || hasAnnotations) && (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Zonas intervenidas</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Zonas intervenidas</p>
             <FacialZonesHighlight
               gender={plan.facialGender ?? 'mujer'}
               zones={zones}
@@ -1240,34 +1244,34 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
         )}
 
         {plan.notes && (
-          <div className="rounded-lg bg-slate-50 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Observaciones generales</p>
-            <p className="mt-0.5 text-sm text-slate-600">{plan.notes}</p>
+          <div className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Observaciones generales</p>
+            <p className="mt-0.5 text-sm text-slate-600 dark:text-slate-300">{plan.notes}</p>
           </div>
         )}
 
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Procedimientos</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Procedimientos</p>
           <div className="flex flex-col gap-2">
             {plan.items.map((item) => (
-              <div key={item.id} className="rounded-lg border border-slate-100 p-3">
+              <div key={item.id} className="rounded-lg border border-slate-100 p-3 dark:border-slate-800">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-medium text-slate-700">{item.description}</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.description}</p>
                     {item.toothNumber && <p className="text-xs text-brand-600">{item.toothNumber}</p>}
                   </div>
-                  <span className="shrink-0 text-sm font-semibold text-slate-700">{formatCLP(item.cost)}</span>
+                  <span className="shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-200">{formatCLP(item.cost)}</span>
                 </div>
 
                 {item.completed && item.treatedBy && (
-                  <p className="mt-1.5 text-xs text-slate-400">
+                  <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
                     Tratado por {item.treatedBy.name}
                     {item.treatedAt && ` · ${new Date(item.treatedAt).toLocaleDateString('es-CL')}`}
                   </p>
                 )}
 
                 {(item.productName || item.productLot || item.productExpiresAt || item.productQuantity) && (
-                  <p className="mt-1.5 text-xs text-slate-500">
+                  <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                     {[
                       item.productName,
                       item.productLot && `Lote ${item.productLot}`,
@@ -1279,7 +1283,7 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
                   </p>
                 )}
 
-                {item.notes && <p className="mt-1.5 text-xs text-slate-500 italic">{item.notes}</p>}
+                {item.notes && <p className="mt-1.5 text-xs text-slate-500 italic dark:text-slate-400">{item.notes}</p>}
 
                 {item.photos.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -1288,7 +1292,7 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
                         <img
                           src={photo.url}
                           alt={photo.label ?? 'Foto del procedimiento'}
-                          className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200"
+                          className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-800"
                         />
                         {photo.label && (
                           <span className="absolute bottom-0.5 left-0.5 rounded bg-slate-900/60 px-1 py-0.5 text-[9px] font-medium text-white">
@@ -1306,14 +1310,14 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
 
         {plan.photos.length > 0 && (
           <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Plantilla fotográfica</p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Plantilla fotográfica</p>
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
               {plan.photos.map((photo) => (
                 <a key={photo.id} href={photo.url} target="_blank" rel="noreferrer" className="relative">
                   <img
                     src={photo.url}
                     alt={photo.label ?? 'Foto de plantilla'}
-                    className="aspect-square w-full rounded-lg object-cover ring-1 ring-slate-200"
+                    className="aspect-square w-full rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-800"
                   />
                   {photo.label && (
                     <span className="absolute bottom-1 left-1 rounded bg-slate-900/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
@@ -1339,15 +1343,15 @@ function PlanHistoryModal({ plans, onClose }: { plans: TreatmentPlan[]; onClose:
   return (
     <Modal title="Historial de presupuestos" onClose={onClose} maxWidth="max-w-2xl">
       <div className="flex max-h-[28rem] flex-col gap-2 overflow-y-auto">
-        {plans.length === 0 && <p className="py-6 text-center text-sm text-slate-400">Aún no hay presupuestos para este paciente.</p>}
+        {plans.length === 0 && <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">Aún no hay presupuestos para este paciente.</p>}
         {plans.map((plan) => (
-          <div key={plan.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2">
+          <div key={plan.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2 dark:border-slate-800">
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-slate-700">
+              <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">
                 N° {plan.number} · {new Date(plan.createdAt).toLocaleDateString('es-CL')}
-                {plan.name && <span className="text-slate-400"> · {plan.name}</span>}
+                {plan.name && <span className="text-slate-400 dark:text-slate-500"> · {plan.name}</span>}
               </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${TREATMENT_STATUS_CLASSES[plan.status]}`}>
                   {TREATMENT_STATUS_LABELS[plan.status]}
                 </span>
@@ -1438,14 +1442,14 @@ export function TreatmentPlanTab({
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
       <div className="flex flex-col gap-5">
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold text-slate-800">No tratado vs. tratado</h3>
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">No tratado vs. tratado</h3>
             {plans.length > 0 && (
               <select
                 value={selectedPlanId}
                 onChange={(e) => setSelectedPlanId(e.target.value)}
-                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 <option value="all">Todos los presupuestos</option>
                 {plans.map((p) => (
@@ -1457,17 +1461,17 @@ export function TreatmentPlanTab({
             )}
           </div>
           {chartItems.length === 0 ? (
-            <p className="text-sm text-slate-400">Aún no hay procedimientos registrados.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500">Aún no hay procedimientos registrados.</p>
           ) : (
             <div className="flex flex-col items-center gap-3">
               <Donut percent={percentTreated} />
-              <div className="flex items-center gap-4 text-xs text-slate-500">
+              <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                 <span className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-brand-500" />
                   Tratado ({completedCount})
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-200 dark:bg-slate-700" />
                   Sin tratar ({chartItems.length - completedCount})
                 </span>
               </div>
@@ -1475,17 +1479,17 @@ export function TreatmentPlanTab({
           )}
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <h3 className="mb-2 text-sm font-semibold text-slate-800">Abonado vs. no abonado</h3>
-          <p className="text-sm text-slate-400">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+          <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Abonado vs. no abonado</h3>
+          <p className="text-sm text-slate-400 dark:text-slate-500">
             Aún no hay abonos. Cuando registres pagos vas a ver acá el porcentaje abonado.
           </p>
         </div>
 
         {isEstetica && (
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
             <div className="mb-3 flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-slate-800">Historial de zonas tratadas</h3>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Historial de zonas tratadas</h3>
               {plans.length > 0 && (
                 <button
                   type="button"
@@ -1497,7 +1501,7 @@ export function TreatmentPlanTab({
               )}
             </div>
             {plansWithZones.length === 0 ? (
-              <p className="text-sm text-slate-400">Aún no hay zonas registradas para este paciente.</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">Aún no hay zonas registradas para este paciente.</p>
             ) : (
               <div className="flex flex-col gap-4">
                 {/* Solo el más reciente a modo de vistazo rápido — el resto (y
@@ -1509,9 +1513,9 @@ export function TreatmentPlanTab({
         )}
       </div>
 
-      <div id="tratamiento-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+      <div id="tratamiento-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2 dark:bg-slate-900 dark:ring-slate-800">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
             <ClipboardIcon className="h-5 w-5 text-brand-500" />
             Presupuestos
           </h2>
@@ -1527,26 +1531,26 @@ export function TreatmentPlanTab({
           )}
         </div>
 
-        {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-        {isLoading && <p className="py-8 text-center text-sm text-slate-400">Cargando presupuestos...</p>}
+        {isLoading && <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Cargando presupuestos...</p>}
 
         {plans.length > 3 && (
           <input
             value={planSearch}
             onChange={(e) => setPlanSearch(e.target.value)}
             placeholder="Buscar por N°, nombre o procedimiento..."
-            className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mb-3 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         )}
 
         {!isLoading && plans.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-400">
+          <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
             Este paciente aún no tiene presupuestos registrados.
           </p>
         )}
         {!isLoading && plans.length > 0 && filteredPlans.length === 0 && (
-          <p className="py-8 text-center text-sm text-slate-400">Ningún presupuesto coincide con "{planSearch}".</p>
+          <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Ningún presupuesto coincide con "{planSearch}".</p>
         )}
 
         <div className="flex flex-col gap-3">

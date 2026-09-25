@@ -65,14 +65,14 @@ export function LedgerMovementFormModal({ patientId, type, plans, onClose, onCre
     <Modal title={TYPE_TITLES[type]} onClose={onClose} maxWidth="max-w-md">
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="mov-plan" className="text-sm font-medium text-slate-700">
+          <label htmlFor="mov-plan" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Presupuesto {type === 'abono' && '(opcional, vacío = abono libre)'}
           </label>
           <select
             id="mov-plan"
             value={treatmentPlanId}
             onChange={(e) => setTreatmentPlanId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
             <option value="">Sin presupuesto asociado</option>
             {plans.map((p) => (
@@ -85,7 +85,7 @@ export function LedgerMovementFormModal({ patientId, type, plans, onClose, onCre
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="mov-amount" className="text-sm font-medium text-slate-700">
+            <label htmlFor="mov-amount" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Monto
             </label>
             <input
@@ -95,19 +95,19 @@ export function LedgerMovementFormModal({ patientId, type, plans, onClose, onCre
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           {type === 'ajuste' && (
             <div>
-              <label htmlFor="mov-direction" className="text-sm font-medium text-slate-700">
+              <label htmlFor="mov-direction" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Dirección
               </label>
               <select
                 id="mov-direction"
                 value={direction}
                 onChange={(e) => setDirection(e.target.value as 'debe' | 'haber')}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 <option value="debe">Debe (aumenta saldo)</option>
                 <option value="haber">Haber (disminuye saldo)</option>
@@ -116,14 +116,14 @@ export function LedgerMovementFormModal({ patientId, type, plans, onClose, onCre
           )}
           {type === 'abono' && (
             <div>
-              <label htmlFor="mov-payment" className="text-sm font-medium text-slate-700">
+              <label htmlFor="mov-payment" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Forma de pago
               </label>
               <select
                 id="mov-payment"
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 {PAYMENT_METHODS.map((m) => (
                   <option key={m} value={m}>
@@ -137,20 +137,20 @@ export function LedgerMovementFormModal({ patientId, type, plans, onClose, onCre
 
         {type === 'abono' && (
           <div>
-            <label htmlFor="mov-doc" className="text-sm font-medium text-slate-700">
+            <label htmlFor="mov-doc" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               N° documento
             </label>
             <input
               id="mov-doc"
               value={documentNumber}
               onChange={(e) => setDocumentNumber(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
         )}
 
         <div>
-          <label htmlFor="mov-description" className="text-sm font-medium text-slate-700">
+          <label htmlFor="mov-description" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Glosa
           </label>
           <input
@@ -158,12 +158,12 @@ export function LedgerMovementFormModal({ patientId, type, plans, onClose, onCre
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Descripción breve del movimiento"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label htmlFor="mov-notes" className="text-sm font-medium text-slate-700">
+          <label htmlFor="mov-notes" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Observación
           </label>
           <textarea
@@ -171,17 +171,17 @@ export function LedgerMovementFormModal({ patientId, type, plans, onClose, onCre
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

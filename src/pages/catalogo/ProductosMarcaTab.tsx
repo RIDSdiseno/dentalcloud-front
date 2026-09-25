@@ -148,48 +148,48 @@ export function ProductosMarcaTab() {
         />
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-      <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3">
+      <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
         <div className="flex-1 basis-40">
-          <label className="text-xs font-medium text-slate-500">Producto genérico</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Producto genérico</label>
           <input
             value={newNombre}
             onChange={(e) => setNewNombre(e.target.value)}
             placeholder="Ej: Toxina botulínica"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="flex-1 basis-32">
-          <label className="text-xs font-medium text-slate-500">Marca</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Marca</label>
           <input
             value={newMarca}
             onChange={(e) => setNewMarca(e.target.value)}
             placeholder="Ej: Dysport"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="w-24">
-          <label className="text-xs font-medium text-slate-500">Unidad</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Unidad</label>
           <input
             value={newUnidad}
             onChange={(e) => setNewUnidad(e.target.value)}
             placeholder="unidad"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="w-28">
-          <label className="text-xs font-medium text-slate-500">Costo por envase</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Costo por envase</label>
           <input
             type="number"
             min={0}
             value={newCosto}
             onChange={(e) => setNewCosto(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="w-24">
-          <label className="text-xs font-medium text-slate-500" title='Cuántas "unidad" rinde un envase (ej. 500 UI por vial)'>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400" title='Cuántas "unidad" rinde un envase (ej. 500 UI por vial)'>
             Rendimiento
           </label>
           <input
@@ -197,22 +197,22 @@ export function ProductosMarcaTab() {
             min={1}
             value={newRendimiento}
             onChange={(e) => setNewRendimiento(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="w-24">
-          <label className="text-xs font-medium text-slate-500">Margen %</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Margen %</label>
           <input
             type="number"
             min={0}
             value={newMargen}
             onChange={(e) => setNewMargen(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="w-28">
-          <label className="text-xs font-medium text-slate-500">Precio de venta</label>
-          <p className="mt-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200">
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Precio de venta</label>
+          <p className="mt-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800">
             {formatCLP(previewPrecio)}
           </p>
         </div>
@@ -227,13 +227,13 @@ export function ProductosMarcaTab() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         {!isLoading && productos.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-slate-400">Aún no hay productos en el catálogo multimarca.</p>
+          <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">Aún no hay productos en el catálogo multimarca.</p>
         )}
         {productos.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-slate-800/60 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Producto</th>
                 <th className="px-4 py-3">Marca</th>
@@ -246,12 +246,12 @@ export function ProductosMarcaTab() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {productos.map((p) => (
                 <tr key={p.id} className={!p.active ? 'opacity-50' : ''}>
-                  <td className="px-4 py-3 font-medium text-slate-800">{p.nombreGenerico}</td>
-                  <td className="px-4 py-3 text-slate-600">{p.marca}</td>
-                  <td className="px-4 py-3 text-slate-500">{p.unidad}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{p.nombreGenerico}</td>
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{p.marca}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{p.unidad}</td>
                   <td className="px-4 py-3 text-right">
                     <input
                       type="number"
@@ -262,7 +262,7 @@ export function ProductosMarcaTab() {
                         const value = Number(e.target.value) || 0;
                         if (value !== p.costo) handleUpdate(p, { costo: value });
                       }}
-                      className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500"
+                      className="w-24 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -275,7 +275,7 @@ export function ProductosMarcaTab() {
                         const value = Math.max(1, Number(e.target.value) || 1);
                         if (value !== p.rendimientoPorEnvase) handleUpdate(p, { rendimientoPorEnvase: value });
                       }}
-                      className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500"
+                      className="w-20 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     />
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -289,19 +289,21 @@ export function ProductosMarcaTab() {
                           const value = Number(e.target.value) || 0;
                           if (value !== p.margenPercent) handleUpdate(p, { margenPercent: value });
                         }}
-                        className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500"
+                        className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-right text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       />
-                      <span className="text-slate-400">%</span>
+                      <span className="text-slate-400 dark:text-slate-500">%</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-800">{formatCLP(p.precioVenta)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-slate-800 dark:text-slate-100">{formatCLP(p.precioVenta)}</td>
                   <td className="px-4 py-3">
                     <button
                       type="button"
                       disabled={busyId === p.id}
                       onClick={() => handleUpdate(p, { active: !p.active })}
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold disabled:opacity-60 ${
-                        p.active ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        p.active
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'
                       }`}
                     >
                       {p.active ? 'Activo' : 'Desactivado'}
@@ -313,7 +315,7 @@ export function ProductosMarcaTab() {
                       disabled={busyId === p.id}
                       onClick={() => handleDelete(p)}
                       aria-label={`Eliminar ${p.marca}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>

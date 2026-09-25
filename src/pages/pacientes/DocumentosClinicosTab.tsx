@@ -90,7 +90,7 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+      <div className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           const isActive = activeCategory === cat.key;
@@ -100,7 +100,7 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
               type="button"
               onClick={() => setActiveCategory(cat.key)}
               className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
-                isActive ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30' : 'text-slate-600 hover:bg-slate-100'
+                isActive ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -110,28 +110,28 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
         })}
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
           <activeMeta.icon className="h-5 w-5 text-brand-500" />
           {activeMeta.label}
         </h2>
 
-        <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 sm:flex-row sm:items-end dark:border-slate-700 dark:bg-slate-800">
           <div className="flex-1">
-            <label className="text-sm font-medium text-slate-700">Archivo</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Archivo</label>
             <input
               ref={fileInputRef}
               type="file"
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
           </div>
           <div className="flex-1">
-            <label className="text-sm font-medium text-slate-700">Descripción (opcional)</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Descripción (opcional)</label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej: Receta amoxicilina 500mg"
-              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           <button
@@ -145,19 +145,19 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
           </button>
         </div>
 
-        {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-5 flex flex-col gap-2">
           {!isLoading && documents.length === 0 && (
-            <p className="py-8 text-center text-sm text-slate-400">
+            <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
               Aún no se han subido archivos en {activeMeta.label}.
             </p>
           )}
           {documents.map((doc) => (
-            <div key={doc.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3">
+            <div key={doc.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-800/60">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-700">{doc.fileName}</p>
-                <p className="text-xs text-slate-400">
+                <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{doc.fileName}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   {formatBytes(doc.resourceType)} · {doc.uploadedBy.name} ·{' '}
                   {new Date(doc.createdAt).toLocaleDateString('es-CL')}
                   {doc.description && ` · ${doc.description}`}
@@ -169,7 +169,7 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
                   target="_blank"
                   rel="noreferrer"
                   aria-label="Descargar"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-brand-50 hover:text-brand-600"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-brand-50 hover:text-brand-600 dark:text-slate-500 dark:hover:bg-brand-500/10 dark:hover:text-brand-400"
                 >
                   <DownloadIcon className="h-4 w-4" />
                 </a>
@@ -178,7 +178,7 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
                     type="button"
                     onClick={() => handleDelete(doc.id)}
                     aria-label="Eliminar"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>

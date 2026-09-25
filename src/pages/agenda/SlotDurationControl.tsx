@@ -28,7 +28,7 @@ export function SlotDurationControl() {
 
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor="slot-duration" className="text-sm font-medium text-slate-500">
+      <label htmlFor="slot-duration" className="text-sm font-medium text-slate-500 dark:text-slate-400">
         Bloques de
       </label>
       <select
@@ -36,7 +36,7 @@ export function SlotDurationControl() {
         value={slotDurationMinutes}
         disabled={isSaving}
         onChange={(e) => handleChange(Number(e.target.value) as SlotDurationMinutes)}
-        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-800"
       >
         {SLOT_DURATION_OPTIONS.map((minutes) => (
           <option key={minutes} value={minutes}>
@@ -44,7 +44,7 @@ export function SlotDurationControl() {
           </option>
         ))}
       </select>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }

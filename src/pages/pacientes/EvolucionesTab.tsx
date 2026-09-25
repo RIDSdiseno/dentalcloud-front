@@ -49,10 +49,10 @@ function EvolutionCard({
   onRequestDelete: (evolution: Evolution) => void;
 }) {
   return (
-    <div className={`rounded-xl border p-4 ${evolution.enabled ? 'border-slate-200' : 'border-slate-100 bg-slate-50 opacity-70'}`}>
+    <div className={`rounded-xl border p-4 ${evolution.enabled ? 'border-slate-200 dark:border-slate-700' : 'border-slate-100 bg-slate-50 opacity-70 dark:border-slate-800 dark:bg-slate-800'}`}>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span className="font-semibold text-slate-700">{evolution.professional.name}</span>
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span className="font-semibold text-slate-700 dark:text-slate-200">{evolution.professional.name}</span>
           <span className="flex items-center gap-1">
             <CalendarIcon className="h-3.5 w-3.5" />
             {new Date(evolution.createdAt).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })}
@@ -62,7 +62,7 @@ function EvolutionCard({
           <button
             type="button"
             onClick={() => onToggle(evolution)}
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100"
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             {evolution.enabled ? (
               <>
@@ -77,30 +77,30 @@ function EvolutionCard({
           <button
             type="button"
             onClick={() => onRequestDelete(evolution)}
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50"
+            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
           >
             <TrashIcon className="h-3.5 w-3.5" /> Eliminar
           </button>
         </div>
       </div>
       {evolution.treatmentItem && (
-        <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+        <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
           Procedimiento realizado: {evolution.treatmentItem.description}
         </p>
       )}
       {evolution.productName && (
-        <p className="mb-2 text-xs text-slate-500">
-          Producto: <span className="font-medium text-slate-700">{evolution.productName}</span>
+        <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+          Producto: <span className="font-medium text-slate-700 dark:text-slate-200">{evolution.productName}</span>
           {evolution.productLot && ` · Lote: ${evolution.productLot}`}
           {evolution.productQuantity && ` · ${evolution.productQuantity}`}
           {evolution.productExpiresAt && ` · Vence: ${new Date(evolution.productExpiresAt).toLocaleDateString('es-CL')}`}
         </p>
       )}
-      <div className="prose-sm text-sm text-slate-700" dangerouslySetInnerHTML={{ __html: sanitizeHtml(evolution.content) }} />
+      <div className="prose-sm text-sm text-slate-700 dark:text-slate-200" dangerouslySetInnerHTML={{ __html: sanitizeHtml(evolution.content) }} />
       {evolution.photos.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {evolution.photos.map((photo) => (
-            <div key={photo.id} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200">
+            <div key={photo.id} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200 dark:ring-slate-800">
               <a href={photo.url} target="_blank" rel="noreferrer">
                 <img src={photo.url} alt={photo.label ?? 'Foto de la evolución'} className="h-full w-full object-cover" />
               </a>
@@ -382,36 +382,36 @@ export function EvolucionesTab({
 
   return (
     <div id="evoluciones-card" className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-      <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
+      <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setShowNewControl(true)}
-            className="rounded-full border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+            className="rounded-full border border-brand-200 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50 dark:border-brand-500/30 dark:text-brand-400 dark:hover:bg-brand-500/10"
           >
             Crear próximo control
           </button>
           <button
             type="button"
             onClick={handleOpenUpcomingControls}
-            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Próximos controles
           </button>
         </div>
 
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
           <ActivityIcon className="h-5 w-5 text-brand-500" />
           Crear nueva evolución
         </h2>
 
         {pendingItems.length > 0 && (
           <div>
-            <label className="text-sm font-medium text-slate-700">¿Documenta un procedimiento del presupuesto?</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">¿Documenta un procedimiento del presupuesto?</label>
             <select
               value={treatmentItemId}
               onChange={(e) => setTreatmentItemId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               <option value="">No, es una nota general</option>
               {pendingItems.map((item) => (
@@ -421,8 +421,8 @@ export function EvolucionesTab({
               ))}
             </select>
             {treatmentItemId && (
-              <div className="mt-2 rounded-lg bg-amber-50 p-2.5">
-                <p className="text-xs text-amber-700">
+              <div className="mt-2 rounded-lg bg-amber-50 p-2.5 dark:bg-amber-500/10">
+                <p className="text-xs text-amber-700 dark:text-amber-400">
                   Al grabar, este procedimiento quedará marcado como realizado — no hace falta tildarlo aparte en el
                   presupuesto.
                   {requiresProduct && ' Este procedimiento requiere registrar producto, lote, vencimiento y cantidad para poder grabar.'}
@@ -432,7 +432,7 @@ export function EvolucionesTab({
                     value={productName}
                     onChange={(e) => setProductName(e.target.value)}
                     placeholder="Producto (ej. Ácido Hialurónico)"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
                       requiresProduct && !productName.trim() ? 'border-red-300' : 'border-amber-200'
                     }`}
                   />
@@ -440,7 +440,7 @@ export function EvolucionesTab({
                     value={productLot}
                     onChange={(e) => setProductLot(e.target.value)}
                     placeholder="N° de lote"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
                       requiresProduct && !productLot.trim() ? 'border-red-300' : 'border-amber-200'
                     }`}
                   />
@@ -449,7 +449,7 @@ export function EvolucionesTab({
                     value={productExpiresAt}
                     onChange={(e) => setProductExpiresAt(e.target.value)}
                     title="Fecha de vencimiento"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
                       requiresProduct && !productExpiresAt ? 'border-red-300' : 'border-amber-200'
                     }`}
                   />
@@ -457,22 +457,22 @@ export function EvolucionesTab({
                     value={productQuantity}
                     onChange={(e) => setProductQuantity(e.target.value)}
                     placeholder="Cantidad (ej. 1 jeringa 1ml)"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 ${
+                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
                       requiresProduct && !productQuantity.trim() ? 'border-red-300' : 'border-amber-200'
                     }`}
                   />
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-[11px] font-medium text-amber-700">Fotos (antes/después, sticker)</span>
-                  <div className="flex flex-wrap shrink-0 gap-1 rounded-lg bg-white/70 p-0.5 text-[11px] font-medium">
+                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-400">Fotos (antes/después, sticker)</span>
+                  <div className="flex flex-wrap shrink-0 gap-1 rounded-lg bg-white/70 p-0.5 text-[11px] font-medium dark:bg-slate-900/70">
                     {PHOTO_LABELS.map((l) => (
                       <button
                         key={l}
                         type="button"
                         onClick={() => setPendingLabel(l)}
                         className={`rounded-md px-2 py-0.5 transition-colors ${
-                          pendingLabel === l ? 'bg-white text-brand-700 shadow-sm' : 'text-amber-700 hover:text-amber-900'
+                          pendingLabel === l ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300'
                         }`}
                       >
                         {l}
@@ -482,7 +482,7 @@ export function EvolucionesTab({
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   {pendingPhotos.map((photo) => (
-                    <div key={photo.key} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-amber-200">
+                    <div key={photo.key} className="group relative h-14 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-amber-200 dark:ring-amber-500/20">
                       <img src={photo.previewUrl} alt={photo.label} className="h-full w-full object-cover" />
                       <span className="absolute bottom-0.5 left-0.5 rounded bg-slate-900/60 px-1 py-0.5 text-[9px] font-medium text-white">
                         {photo.label}
@@ -501,7 +501,7 @@ export function EvolucionesTab({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-amber-300 text-amber-500 hover:border-amber-400 hover:text-amber-700"
+                    className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed border-amber-300 text-amber-500 hover:border-amber-400 hover:text-amber-700 dark:border-amber-500/30 dark:text-amber-500 dark:hover:border-amber-500/50 dark:hover:text-amber-400"
                   >
                     <UploadIcon className="h-4 w-4" />
                     <span className="text-[10px] font-medium">Foto</span>
@@ -514,11 +514,11 @@ export function EvolucionesTab({
 
         {isAdmin && (
           <div>
-            <label className="text-sm font-medium text-slate-700">Profesional</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Profesional</label>
             <select
               value={professionalId}
               onChange={(e) => setProfessionalId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               <option value="">Yo mismo ({user?.name})</option>
               {professionals
@@ -533,12 +533,12 @@ export function EvolucionesTab({
         )}
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Contenido de la evolución</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Contenido de la evolución</label>
           <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <select
               value={section}
               onChange={(e) => setSection(e.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               <option value="">Todas las secciones</option>
               {sections.map((s) => (
@@ -552,7 +552,7 @@ export function EvolucionesTab({
               onChange={(e) => {
                 if (e.target.value) insertHtml(templates.find((t) => t.id === e.target.value)?.content ?? '');
               }}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               <option value="">Predefinidas...</option>
               {filteredTemplates.map((t) => (
@@ -566,7 +566,7 @@ export function EvolucionesTab({
             <button
               type="button"
               onClick={handleGenerarAlta}
-              className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+              className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Generar alta
             </button>
@@ -574,7 +574,7 @@ export function EvolucionesTab({
               type="button"
               onClick={() => setShowPreview((v) => !v)}
               disabled={isContentEmpty(content)}
-              className="rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-full bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
             >
               {showPreview ? 'Volver a editar' : 'Previsualizar'}
             </button>
@@ -582,15 +582,15 @@ export function EvolucionesTab({
         </div>
 
         {showPreview ? (
-          <div className="min-h-[10rem] rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700">
+          <div className="min-h-[10rem] rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
             <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }} />
           </div>
         ) : (
           <RichTextEditor value={content} onChange={setContent} />
         )}
 
-        {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
-        {saveSuccess && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-600">Evolución guardada correctamente.</p>}
+        {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}
+        {saveSuccess && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">Evolución guardada correctamente.</p>}
 
         <div className="flex justify-end">
           <button
@@ -607,12 +607,12 @@ export function EvolucionesTab({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+      <div className="flex flex-col gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex items-center gap-2">
           <select
             value={filterProfessionalId}
             onChange={(e) => setFilterProfessionalId(e.target.value)}
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
             <option value="">Filtrar por profesional: TODOS</option>
             {professionals.map((p) => (
@@ -632,14 +632,14 @@ export function EvolucionesTab({
           </button>
         </div>
 
-        <div className="flex gap-1 rounded-full bg-slate-100 p-1 text-xs font-semibold">
+        <div className="flex gap-1 rounded-full bg-slate-100 p-1 text-xs font-semibold dark:bg-slate-800">
           {STATUS_TABS.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setStatusFilter(tab.key)}
               className={`flex-1 rounded-full px-2 py-1.5 transition-colors ${
-                statusFilter === tab.key ? 'bg-white text-brand-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                statusFilter === tab.key ? 'bg-white text-brand-600 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
               {tab.label}
@@ -647,11 +647,11 @@ export function EvolucionesTab({
           ))}
         </div>
 
-        {listError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{listError}</p>}
+        {listError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{listError}</p>}
 
         <div className="flex max-h-[32rem] flex-col gap-3 overflow-y-auto">
           {!isLoading && evolutions.length === 0 && (
-            <p className="py-8 text-center text-sm text-slate-400">No hay evoluciones registradas.</p>
+            <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">No hay evoluciones registradas.</p>
           )}
           {evolutions.map((evolution) => (
             <EvolutionCard
@@ -678,15 +678,15 @@ export function EvolucionesTab({
       {showUpcomingControls && (
         <Modal title="Próximos controles" onClose={() => setShowUpcomingControls(false)}>
           {isLoadingControls ? (
-            <p className="py-6 text-center text-sm text-slate-400">Cargando...</p>
+            <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">Cargando...</p>
           ) : upcomingControls.length === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">Este paciente no tiene controles agendados.</p>
+            <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">Este paciente no tiene controles agendados.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {upcomingControls.map((a) => (
-                <div key={a.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
-                  <p className="font-semibold text-slate-700">{formatLongDate(new Date(a.startAt))}</p>
-                  <p className="text-slate-500">
+                <div key={a.id} className="rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
+                  <p className="font-semibold text-slate-700 dark:text-slate-200">{formatLongDate(new Date(a.startAt))}</p>
+                  <p className="text-slate-500 dark:text-slate-400">
                     {formatTime(new Date(a.startAt))} · {a.professional?.name ?? 'Sin profesional'} ·{' '}
                     {a.chair?.name || `Sillón ${a.chair?.number}`}
                   </p>

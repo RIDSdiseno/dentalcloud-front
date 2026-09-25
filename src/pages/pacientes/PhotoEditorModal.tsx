@@ -100,12 +100,12 @@ export function PhotoEditorModal({ file, onClose, onConfirm }: PhotoEditorModalP
   return (
     <Modal title="Editar foto" onClose={onClose} maxWidth="max-w-lg">
       <div className="flex flex-col gap-4">
-        <div className="flex justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
+        <div className="flex justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
           <canvas ref={canvasRef} width={FRAME_SIZE} height={FRAME_SIZE} className="block" />
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">Zoom</label>
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Zoom</label>
           <input
             type="range"
             min={1}
@@ -118,27 +118,27 @@ export function PhotoEditorModal({ file, onClose, onConfirm }: PhotoEditorModalP
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-slate-600">Rotación:</span>
+          <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Rotación:</span>
           <button
             type="button"
             onClick={() => setRotation((r) => (r - 90 + 360) % 360)}
-            className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             ⟲ -90°
           </button>
           <button
             type="button"
             onClick={() => setRotation((r) => (r + 90) % 360)}
-            className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             ⟳ +90°
           </button>
-          <span className="ml-2 text-xs font-medium text-slate-600">Flip:</span>
+          <span className="ml-2 text-xs font-medium text-slate-600 dark:text-slate-300">Flip:</span>
           <button
             type="button"
             onClick={() => setFlipH((v) => !v)}
             className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
-              flipH ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              flipH ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
             }`}
           >
             ↔ Horizontal
@@ -147,7 +147,7 @@ export function PhotoEditorModal({ file, onClose, onConfirm }: PhotoEditorModalP
             type="button"
             onClick={() => setFlipV((v) => !v)}
             className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${
-              flipV ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              flipV ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
             }`}
           >
             ↕ Vertical
@@ -155,8 +155,8 @@ export function PhotoEditorModal({ file, onClose, onConfirm }: PhotoEditorModalP
         </div>
 
         <div>
-          <label className="text-xs font-medium text-slate-600">Posición</label>
-          <div className="mt-1 grid w-24 grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1.5">
+          <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Posición</label>
+          <div className="mt-1 grid w-24 grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1.5 dark:bg-slate-800">
             {POSITION_PRESETS.map((preset, idx) => {
               const isActive = preset.x === position.x && preset.y === position.y;
               return (
@@ -165,18 +165,18 @@ export function PhotoEditorModal({ file, onClose, onConfirm }: PhotoEditorModalP
                   type="button"
                   onClick={() => setPosition(preset)}
                   aria-label={`Posición ${idx + 1}`}
-                  className={`h-6 w-6 rounded ${isActive ? 'bg-brand-600' : 'bg-white ring-1 ring-slate-200 hover:bg-slate-50'}`}
+                  className={`h-6 w-6 rounded ${isActive ? 'bg-brand-600' : 'bg-white ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:ring-slate-700 dark:hover:bg-slate-800'}`}
                 />
               );
             })}
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

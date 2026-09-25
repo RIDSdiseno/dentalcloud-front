@@ -112,7 +112,7 @@ export function ConveniosTab() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Los convenios definen un descuento aplicado automáticamente al valor de las prestaciones en un presupuesto.
         </p>
         <ExcelImportExportBar
@@ -123,21 +123,21 @@ export function ConveniosTab() {
         />
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-      <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3">
+      <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
         <div className="flex-1">
-          <label className="text-xs font-medium text-slate-500">Nombre</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Nombre</label>
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             placeholder="Ej: Particular, Convenio Colmena..."
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="w-32">
-          <label className="text-xs font-medium text-slate-500">Descuento %</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Descuento %</label>
           <input
             type="number"
             min={0}
@@ -145,7 +145,7 @@ export function ConveniosTab() {
             value={newDiscount}
             onChange={(e) => setNewDiscount(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <button
@@ -159,13 +159,13 @@ export function ConveniosTab() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         {!isLoading && convenios.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-slate-400">Aún no hay convenios.</p>
+          <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">Aún no hay convenios.</p>
         )}
         {convenios.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-slate-800/60 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Descuento</th>
@@ -173,10 +173,10 @@ export function ConveniosTab() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {convenios.map((c) => (
                 <tr key={c.id} className={!c.active ? 'opacity-50' : ''}>
-                  <td className="px-4 py-3 font-medium text-slate-800">{c.name}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{c.name}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
                       <input
@@ -189,9 +189,9 @@ export function ConveniosTab() {
                           const value = Number(e.target.value) || 0;
                           if (value !== c.discountPercent) handleUpdate(c, { discountPercent: value });
                         }}
-                        className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm outline-none focus:border-brand-500"
+                        className="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       />
-                      <span className="text-slate-400">%</span>
+                      <span className="text-slate-400 dark:text-slate-500">%</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -200,7 +200,9 @@ export function ConveniosTab() {
                       disabled={busyId === c.id}
                       onClick={() => handleUpdate(c, { active: !c.active })}
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold disabled:opacity-60 ${
-                        c.active ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        c.active
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'
                       }`}
                     >
                       {c.active ? 'Activo' : 'Desactivado'}
@@ -212,7 +214,7 @@ export function ConveniosTab() {
                       disabled={busyId === c.id}
                       onClick={() => handleDelete(c)}
                       aria-label={`Eliminar ${c.name}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>

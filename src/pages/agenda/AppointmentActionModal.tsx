@@ -32,7 +32,7 @@ export function AppointmentActionModal({
 
   const status = appointment.status;
   const statusLabel = STATUS_LABEL[status] ?? status;
-  const statusBadgeClass = STATUS_BADGE_CLASS[status] ?? 'bg-slate-100 text-slate-600';
+  const statusBadgeClass = STATUS_BADGE_CLASS[status] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
 
   async function handleMarkArrival() {
     setError(null);
@@ -99,14 +99,14 @@ export function AppointmentActionModal({
       <div className="flex flex-col gap-4">
         <div>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-base font-semibold text-slate-900 uppercase">
+            <p className="text-base font-semibold text-slate-900 uppercase dark:text-slate-100">
               {appointment.patient.firstName} {appointment.patient.lastName}
             </p>
             <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${statusBadgeClass}`}>
               {statusLabel}
             </span>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1">
               <ClockIcon className="h-3.5 w-3.5" />
               {formatTime(new Date(appointment.startAt))}–{formatTime(new Date(appointment.endAt))}
@@ -121,7 +121,7 @@ export function AppointmentActionModal({
             </span>
           </div>
 
-          <p className={`mt-2 flex items-center gap-1 text-xs font-medium ${appointment.patientConfirmedAt ? 'text-emerald-600' : 'text-slate-400'}`}>
+          <p className={`mt-2 flex items-center gap-1 text-xs font-medium ${appointment.patientConfirmedAt ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
             <CheckIcon className="h-3.5 w-3.5" />
             {appointment.patientConfirmedAt
               ? `El paciente confirmó su asistencia (${new Date(appointment.patientConfirmedAt).toLocaleDateString('es-CL')})`
@@ -129,7 +129,7 @@ export function AppointmentActionModal({
           </p>
 
           {appointment.type === 'urgencia' && (
-            <div className="mt-2 flex flex-col gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+            <div className="mt-2 flex flex-col gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-400">
               <span className="flex items-center gap-1 font-semibold">
                 <AlertTriangleIcon className="h-3.5 w-3.5" />
                 Urgencia
@@ -140,7 +140,7 @@ export function AppointmentActionModal({
           )}
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="flex flex-col gap-2">
           {status === 'agendada' && (
@@ -178,7 +178,7 @@ export function AppointmentActionModal({
               <button
                 type="button"
                 onClick={handleGoToEvolucionar}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
               >
                 Ir a evolucionar
               </button>
@@ -190,7 +190,7 @@ export function AppointmentActionModal({
               type="button"
               onClick={handleCancel}
               disabled={isSubmitting}
-              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-70"
+              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:text-slate-400 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400"
             >
               Cancelar cita
             </button>

@@ -26,14 +26,14 @@ function CollapsibleSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div className="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="flex items-center justify-between px-5 py-3.5">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-slate-800"
+          className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-slate-800 dark:text-slate-100"
         >
-          <ChevronDownIcon className={`h-4 w-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDownIcon className={`h-4 w-4 text-slate-400 transition-transform dark:text-slate-500 ${open ? 'rotate-180' : ''}`} />
           {title}
         </button>
         {onAdd && (
@@ -41,13 +41,13 @@ function CollapsibleSection({
             type="button"
             onClick={onAdd}
             aria-label={`Agregar ${title}`}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 hover:bg-brand-100"
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20"
           >
             <PlusIcon className="h-4 w-4" />
           </button>
         )}
       </div>
-      {open && <div className="border-t border-slate-100 px-5 py-4">{children}</div>}
+      {open && <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-800">{children}</div>}
     </div>
   );
 }
@@ -117,7 +117,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
   }
 
   if (isLoading || !summary) {
-    return <p className="py-10 text-center text-sm text-slate-400">Cargando cartola...</p>;
+    return <p className="py-10 text-center text-sm text-slate-400 dark:text-slate-500">Cargando cartola...</p>;
   }
 
   const canDelete = (registeredById: string | undefined) => isAdmin || registeredById === user?.id;
@@ -129,7 +129,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
           type="button"
           onClick={handleSendEmail}
           disabled={isSendingEmail}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           <MailIcon className="h-4 w-4" />
           {isSendingEmail ? 'Enviando...' : emailSent ? 'Enviado' : 'Enviar por correo'}
@@ -138,20 +138,20 @@ export function CartolaTab({ patientId }: { patientId: string }) {
           type="button"
           onClick={handleDownloadPdf}
           disabled={isDownloading}
-          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
         >
           <DownloadIcon className="h-4 w-4" />
           {isDownloading ? 'Generando...' : 'Descargar PDF'}
         </button>
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        <div className="px-5 py-3.5 text-sm font-semibold text-slate-800">Listado de presupuestos</div>
-        <div className="overflow-x-auto border-t border-slate-100">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <div className="px-5 py-3.5 text-sm font-semibold text-slate-800 dark:text-slate-100">Listado de presupuestos</div>
+        <div className="overflow-x-auto border-t border-slate-100 dark:border-slate-800">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-2 text-left">N°</th>
                 <th className="px-4 py-2 text-left">Fecha</th>
@@ -164,10 +164,10 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                 <th className="px-4 py-2 text-right">Saldo</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {summary.plans.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
                     Este paciente no tiene presupuestos registrados.
                   </td>
                 </tr>
@@ -175,31 +175,31 @@ export function CartolaTab({ patientId }: { patientId: string }) {
               {summary.plans.map((plan) => (
                 <Fragment key={plan.id}>
                   <tr>
-                    <td className="px-4 py-2 font-medium text-slate-700">{plan.number}</td>
-                    <td className="px-4 py-2 text-slate-500">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</td>
-                    <td className="px-4 py-2 text-slate-500">{plan.professional ?? '—'}</td>
-                    <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.subtotal)}</td>
-                    <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.interes)}</td>
-                    <td className="px-4 py-2 text-right text-slate-600">{formatCLP(plan.ajustes)}</td>
-                    <td className="px-4 py-2 text-right font-medium text-slate-700">{formatCLP(plan.total)}</td>
-                    <td className="px-4 py-2 text-right text-emerald-600">{formatCLP(plan.abonado)}</td>
+                    <td className="px-4 py-2 font-medium text-slate-700 dark:text-slate-200">{plan.number}</td>
+                    <td className="px-4 py-2 text-slate-500 dark:text-slate-400">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</td>
+                    <td className="px-4 py-2 text-slate-500 dark:text-slate-400">{plan.professional ?? '—'}</td>
+                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatCLP(plan.subtotal)}</td>
+                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatCLP(plan.interes)}</td>
+                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatCLP(plan.ajustes)}</td>
+                    <td className="px-4 py-2 text-right font-medium text-slate-700 dark:text-slate-200">{formatCLP(plan.total)}</td>
+                    <td className="px-4 py-2 text-right text-emerald-600 dark:text-emerald-400">{formatCLP(plan.abonado)}</td>
                     <td
                       className={`px-4 py-2 text-right font-semibold ${
-                        plan.saldo > 0 ? 'text-amber-600' : 'text-emerald-600'
+                        plan.saldo > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                       }`}
                     >
                       {formatCLP(plan.saldo)}
                     </td>
                   </tr>
                   {plan.items.length > 0 && (
-                    <tr className="bg-slate-50/60">
+                    <tr className="bg-slate-50/60 dark:bg-slate-800/60">
                       <td colSpan={9} className="px-4 pb-2.5 pt-0">
                         <div className="flex flex-wrap gap-1.5">
                           {plan.items.map((item, index) => (
                             <span
                               key={index}
                               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                item.completed ? 'bg-emerald-50 text-emerald-700' : 'bg-brand-50 text-brand-700'
+                                item.completed ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400'
                               }`}
                             >
                               {item.toothNumber ? `${item.toothNumber} · ` : ''}
@@ -215,7 +215,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
             </tbody>
             {summary.plans.length > 0 && (
               <tfoot>
-                <tr className="bg-slate-50 font-semibold text-slate-700">
+                <tr className="bg-slate-50 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   <td className="px-4 py-2" colSpan={3}>
                     Totales
                   </td>
@@ -223,7 +223,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                   <td className="px-4 py-2 text-right">{formatCLP(summary.totals.interes)}</td>
                   <td className="px-4 py-2 text-right">{formatCLP(summary.totals.ajustes)}</td>
                   <td className="px-4 py-2 text-right">{formatCLP(summary.totals.total)}</td>
-                  <td className="px-4 py-2 text-right text-emerald-600">{formatCLP(summary.totals.abonado)}</td>
+                  <td className="px-4 py-2 text-right text-emerald-600 dark:text-emerald-400">{formatCLP(summary.totals.abonado)}</td>
                   <td className="px-4 py-2 text-right">{formatCLP(summary.totals.saldo)}</td>
                 </tr>
               </tfoot>
@@ -234,26 +234,26 @@ export function CartolaTab({ patientId }: { patientId: string }) {
 
       <CollapsibleSection title="Abonos libres" onAdd={() => setModalType('abono')}>
         {summary.abonosLibres.length === 0 ? (
-          <p className="text-sm text-slate-400">Sin abonos libres registrados.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Sin abonos libres registrados.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {summary.abonosLibres.map((m) => (
-              <div key={m.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+              <div key={m.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
                 <div>
-                  <p className="font-medium text-slate-700">{m.description || 'Abono libre'}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="font-medium text-slate-700 dark:text-slate-200">{m.description || 'Abono libre'}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
                     {new Date(m.createdAt).toLocaleDateString('es-CL')} · {m.paymentMethod ?? 'Sin forma de pago'} ·{' '}
                     {m.registeredBy.name}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-emerald-600">{formatCLP(m.haber)}</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCLP(m.haber)}</span>
                   {canDelete(m.registeredBy.id) && (
                     <button
                       type="button"
                       onClick={() => handleDeleteMovement(m.id)}
                       aria-label="Eliminar"
-                      className="text-slate-400 hover:text-red-600"
+                      className="text-slate-400 hover:text-red-600 dark:text-slate-500"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>
@@ -267,27 +267,27 @@ export function CartolaTab({ patientId }: { patientId: string }) {
 
       <CollapsibleSection title="Intereses generados" onAdd={() => setModalType('interes')}>
         {summary.intereses.length === 0 ? (
-          <p className="text-sm text-slate-400">Sin intereses generados.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Sin intereses generados.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {summary.intereses.map((m) => (
-              <div key={m.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+              <div key={m.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
                 <div>
-                  <p className="font-medium text-slate-700">
+                  <p className="font-medium text-slate-700 dark:text-slate-200">
                     {m.description || 'Interés'} {m.treatmentPlan && `· Presupuesto N° ${m.treatmentPlan.number}`}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
                     {new Date(m.createdAt).toLocaleDateString('es-CL')} · {m.registeredBy.name}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-amber-600">{formatCLP(m.debe)}</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">{formatCLP(m.debe)}</span>
                   {canDelete(m.registeredBy.id) && (
                     <button
                       type="button"
                       onClick={() => handleDeleteMovement(m.id)}
                       aria-label="Eliminar"
-                      className="text-slate-400 hover:text-red-600"
+                      className="text-slate-400 hover:text-red-600 dark:text-slate-500"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>
@@ -301,21 +301,21 @@ export function CartolaTab({ patientId }: { patientId: string }) {
 
       <CollapsibleSection title="Ajustes" onAdd={() => setModalType('ajuste')}>
         {summary.ajustes.length === 0 ? (
-          <p className="text-sm text-slate-400">Sin ajustes registrados.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Sin ajustes registrados.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {summary.ajustes.map((m) => (
-              <div key={m.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+              <div key={m.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
                 <div>
-                  <p className="font-medium text-slate-700">
+                  <p className="font-medium text-slate-700 dark:text-slate-200">
                     {m.description || 'Ajuste'} {m.treatmentPlan && `· Presupuesto N° ${m.treatmentPlan.number}`}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-400 dark:text-slate-500">
                     {new Date(m.createdAt).toLocaleDateString('es-CL')} · {m.registeredBy.name}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`font-semibold ${m.debe > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                  <span className={`font-semibold ${m.debe > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                     {m.debe > 0 ? formatCLP(m.debe) : `-${formatCLP(m.haber)}`}
                   </span>
                   {canDelete(m.registeredBy.id) && (
@@ -323,7 +323,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                       type="button"
                       onClick={() => handleDeleteMovement(m.id)}
                       aria-label="Eliminar"
-                      className="text-slate-400 hover:text-red-600"
+                      className="text-slate-400 hover:text-red-600 dark:text-slate-500"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>
@@ -338,7 +338,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
       <CollapsibleSection title="Saldo total" defaultOpen>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-slate-500">
+            <thead className="text-xs uppercase text-slate-500 dark:text-slate-400">
               <tr>
                 <th className="px-2 py-2 text-left">Comprobante</th>
                 <th className="px-2 py-2 text-left">N° Mov.</th>
@@ -353,33 +353,33 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                 <th className="px-2 py-2 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {summary.ledger.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-2 py-6 text-center text-slate-400">
+                  <td colSpan={11} className="px-2 py-6 text-center text-slate-400 dark:text-slate-500">
                     Paciente sin movimientos.
                   </td>
                 </tr>
               )}
               {summary.ledger.map((row) => (
                 <tr key={row.id}>
-                  <td className="px-2 py-2 text-slate-600">{row.comprobante}</td>
-                  <td className="px-2 py-2 text-slate-500">{row.number}</td>
-                  <td className="px-2 py-2 text-slate-500">{new Date(row.createdAt).toLocaleDateString('es-CL')}</td>
-                  <td className="px-2 py-2 text-right text-amber-600">{row.debe > 0 ? formatCLP(row.debe) : '—'}</td>
-                  <td className="px-2 py-2 text-right text-emerald-600">{row.haber > 0 ? formatCLP(row.haber) : '—'}</td>
-                  <td className="px-2 py-2 text-slate-500">{row.planNumber ?? '—'}</td>
-                  <td className="px-2 py-2 text-slate-600">{row.description ?? '—'}</td>
-                  <td className="px-2 py-2 text-slate-500">{row.paymentMethod ?? '—'}</td>
-                  <td className="px-2 py-2 text-slate-500">{row.documentNumber ?? '—'}</td>
-                  <td className="px-2 py-2 text-slate-500">{row.notes ?? '—'}</td>
+                  <td className="px-2 py-2 text-slate-600 dark:text-slate-300">{row.comprobante}</td>
+                  <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.number}</td>
+                  <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{new Date(row.createdAt).toLocaleDateString('es-CL')}</td>
+                  <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">{row.debe > 0 ? formatCLP(row.debe) : '—'}</td>
+                  <td className="px-2 py-2 text-right text-emerald-600 dark:text-emerald-400">{row.haber > 0 ? formatCLP(row.haber) : '—'}</td>
+                  <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.planNumber ?? '—'}</td>
+                  <td className="px-2 py-2 text-slate-600 dark:text-slate-300">{row.description ?? '—'}</td>
+                  <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.paymentMethod ?? '—'}</td>
+                  <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.documentNumber ?? '—'}</td>
+                  <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.notes ?? '—'}</td>
                   <td className="px-2 py-2 text-right">
                     {row.deletable && (
                       <button
                         type="button"
                         onClick={() => handleDeleteMovement(row.id)}
                         aria-label="Eliminar"
-                        className="text-slate-400 hover:text-red-600"
+                        className="text-slate-400 hover:text-red-600 dark:text-slate-500"
                       >
                         <TrashIcon className="h-4 w-4" />
                       </button>
@@ -390,11 +390,11 @@ export function CartolaTab({ patientId }: { patientId: string }) {
             </tbody>
             {summary.ledger.length > 0 && (
               <tfoot>
-                <tr className="bg-slate-50 font-semibold text-slate-700">
+                <tr className="bg-slate-50 font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                   <td colSpan={10} className="px-2 py-2 text-right">
                     Saldo total
                   </td>
-                  <td className="px-2 py-2 text-right text-brand-600">{formatCLP(summary.saldoTotal)}</td>
+                  <td className="px-2 py-2 text-right text-brand-600 dark:text-brand-400">{formatCLP(summary.saldoTotal)}</td>
                 </tr>
               </tfoot>
             )}

@@ -11,33 +11,33 @@ export function ImportSummaryModal({ summary, onClose }: ImportSummaryModalProps
     <Modal title="Resultado de la carga" onClose={onClose} maxWidth="max-w-lg">
       <div className="flex flex-col gap-4">
         <div className="flex gap-3">
-          <div className="flex-1 rounded-xl bg-emerald-50 px-4 py-3 text-center">
-            <p className="text-2xl font-bold text-emerald-700">{summary.created}</p>
-            <p className="text-xs font-medium text-emerald-700">Creadas</p>
+          <div className="flex-1 rounded-xl bg-emerald-50 px-4 py-3 text-center dark:bg-emerald-500/10">
+            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{summary.created}</p>
+            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Creadas</p>
           </div>
-          <div className="flex-1 rounded-xl bg-red-50 px-4 py-3 text-center">
-            <p className="text-2xl font-bold text-red-600">{summary.failed}</p>
-            <p className="text-xs font-medium text-red-600">Con error</p>
+          <div className="flex-1 rounded-xl bg-red-50 px-4 py-3 text-center dark:bg-red-500/10">
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">{summary.failed}</p>
+            <p className="text-xs font-medium text-red-600 dark:text-red-400">Con error</p>
           </div>
         </div>
         {summary.failed > 0 && (
-          <div className="max-h-64 overflow-auto rounded-xl border border-slate-200">
+          <div className="max-h-64 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500">
+              <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                 <tr>
                   <th className="px-3 py-2">Fila</th>
                   <th className="px-3 py-2">Nombre</th>
                   <th className="px-3 py-2">Error</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {summary.results
                   .filter((r) => r.status === 'error')
                   .map((r) => (
                     <tr key={r.row}>
-                      <td className="px-3 py-2 text-slate-400">{r.row}</td>
-                      <td className="px-3 py-2 font-medium text-slate-700">{r.name}</td>
-                      <td className="px-3 py-2 text-red-600">{r.message}</td>
+                      <td className="px-3 py-2 text-slate-400 dark:text-slate-500">{r.row}</td>
+                      <td className="px-3 py-2 font-medium text-slate-700 dark:text-slate-200">{r.name}</td>
+                      <td className="px-3 py-2 text-red-600 dark:text-red-400">{r.message}</td>
                     </tr>
                   ))}
               </tbody>

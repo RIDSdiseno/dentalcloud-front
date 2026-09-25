@@ -48,9 +48,9 @@ function RutCell({
         onBlur={handleBlur}
         placeholder="Sin RUT"
         disabled={isSaving}
-        className="w-32 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-slate-600 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15"
+        className="w-32 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-slate-600 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15 dark:text-slate-300 dark:hover:border-slate-700 dark:focus:bg-slate-800 dark:focus:text-slate-100"
       />
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
 }
@@ -117,8 +117,8 @@ export default function Profesionales() {
     <div className="flex flex-col gap-5">
       <div id="profesionales-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Profesionales</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Profesionales</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {users.length} usuario{users.length === 1 ? '' : 's'}
           </p>
         </div>
@@ -129,7 +129,7 @@ export default function Profesionales() {
               type="button"
               onClick={handleImportFromDimage}
               disabled={isImporting}
-              className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               <DownloadIcon className="h-4 w-4" />
               {isImporting ? 'Importando...' : 'Importar desde RIDS RX'}
@@ -147,21 +147,21 @@ export default function Profesionales() {
         </div>
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-      <div id="profesionales-tabla" className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div id="profesionales-tabla" className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         {!isLoading && users.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
               <UsersIcon className="h-6 w-6" />
             </div>
-            <p className="text-sm text-slate-500">Aún no hay profesionales registrados.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Aún no hay profesionales registrados.</p>
           </div>
         )}
 
         {users.length > 0 && (
           <table className="w-full min-w-160 text-left text-sm">
-            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-slate-800/60 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Correo</th>
@@ -170,11 +170,11 @@ export default function Profesionales() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {users.map((user) => (
-                <tr key={user.id} className={`hover:bg-slate-50 ${user.active ? '' : 'bg-slate-50/60 opacity-60'}`}>
-                  <td className="px-4 py-3 font-medium text-slate-800">{user.name}</td>
-                  <td className="px-4 py-3 text-slate-500">{user.email}</td>
+                <tr key={user.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 ${user.active ? '' : 'bg-slate-50/60 opacity-60 dark:bg-slate-800/40'}`}>
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{user.name}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{user.email}</td>
                   <td className="px-4 py-3">
                     <RutCell user={user} onUpdated={handleProfessionalSynced} />
                   </td>
@@ -183,14 +183,14 @@ export default function Profesionales() {
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                           user.role === 'admin'
-                            ? 'bg-slate-100 text-slate-600'
-                            : 'bg-brand-50 text-brand-700'
+                            ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                            : 'bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400'
                         }`}
                       >
                         {roleLabel(user.role)}
                       </span>
                       {!user.active && (
-                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600">
+                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 dark:bg-red-500/10 dark:text-red-400">
                           Inactivo · solo lectura
                         </span>
                       )}
@@ -201,7 +201,7 @@ export default function Profesionales() {
                       <button
                         type="button"
                         onClick={() => setPermissionsFor(user)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         <ShieldIcon className="h-4 w-4" />
                         Permisos
@@ -210,7 +210,7 @@ export default function Profesionales() {
                         <button
                           type="button"
                           onClick={() => setScheduleFor(user)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                         >
                           <ClockIcon className="h-4 w-4" />
                           Horario
@@ -228,8 +228,8 @@ export default function Profesionales() {
                           }
                           className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60 ${
                             user.active
-                              ? 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                              : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                              ? 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800'
+                              : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/10'
                           }`}
                         >
                           {user.active ? <LockIcon className="h-4 w-4" /> : <CheckIcon className="h-4 w-4" />}

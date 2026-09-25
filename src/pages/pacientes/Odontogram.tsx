@@ -830,17 +830,17 @@ function WholeToothControl({
         'focus-visible:ring-2',
         'focus-visible:ring-brand-500',
         disabled &&
-          'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-200',
+          'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-700',
         !disabled &&
           wholeToothSelected &&
           'border-brand-500 bg-brand-500 text-white',
         !disabled &&
           partiallySelected &&
-          'border-brand-400 bg-brand-100 text-brand-600',
+          'border-brand-400 bg-brand-100 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400',
         !disabled &&
           !wholeToothSelected &&
           !partiallySelected &&
-          'border-slate-300 bg-white text-slate-300 hover:border-brand-400',
+          'border-slate-300 bg-white text-slate-300 hover:border-brand-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-600',
       )}
     >
       {wholeToothSelected
@@ -890,8 +890,8 @@ function Tooth({
         quadrantStart &&
           (
             small
-              ? 'ml-2 border-l-2 border-slate-400 pl-2'
-              : 'ml-3 border-l-2 border-slate-400 pl-3'
+              ? 'ml-2 border-l-2 border-slate-400 pl-2 dark:border-slate-600'
+              : 'ml-3 border-l-2 border-slate-400 pl-3 dark:border-slate-600'
           ),
       )}
     >
@@ -902,8 +902,8 @@ function Tooth({
             ? 'text-[9px]'
             : 'text-[10px]',
           visual.highlighted
-            ? 'bg-brand-100 text-brand-700'
-            : 'text-slate-500',
+            ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400'
+            : 'text-slate-500 dark:text-slate-400',
         )}
       >
         {number}
@@ -941,7 +941,7 @@ function Tooth({
 
       {mode === 'extraction' &&
         visual.crossed && (
-          <span className="text-[8px] font-semibold text-blue-700">
+          <span className="text-[8px] font-semibold text-blue-700 dark:text-blue-400">
             Extraer
           </span>
         )}
@@ -1096,13 +1096,13 @@ function QuadrantPair({
             ? 'h-6 w-6 text-xs'
             : 'h-8 w-8 text-sm',
           disabled &&
-            'cursor-not-allowed border-transparent text-slate-400',
+            'cursor-not-allowed border-transparent text-slate-400 dark:text-slate-500',
           !disabled &&
             selected &&
             'border-brand-500 bg-brand-500 text-white',
           !disabled &&
             !selected &&
-            'border-slate-300 bg-white text-slate-700 hover:border-brand-400 hover:text-brand-600',
+            'border-slate-300 bg-white text-slate-700 hover:border-brand-400 hover:text-brand-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:text-brand-400',
         )}
       >
         {quadrant}
@@ -1168,7 +1168,7 @@ function ArchSelector({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         Arcadas
       </p>
 
@@ -1407,7 +1407,7 @@ function SextantSelector({
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
         Sextantes
       </p>
 
@@ -1967,13 +1967,13 @@ export function Odontogram({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-xl border border-slate-200 bg-slate-50">
-        <div className="border-b border-slate-200 px-4 py-3">
-          <h2 className="text-sm font-bold text-slate-700">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+        <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">
             Selección de piezas y caras
           </h2>
 
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             {MODE_HINTS[mode]}
           </p>
         </div>
@@ -1982,7 +1982,7 @@ export function Odontogram({
           <div className="mx-auto min-w-[980px]">
             {/* Permanentes superiores */}
             <section>
-              <h3 className="mb-2 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
+              <h3 className="mb-2 text-center text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 Dentición permanente
               </h3>
 
@@ -2024,7 +2024,7 @@ export function Odontogram({
             </section>
 
             {/* Centro: arcadas, temporales y sextantes */}
-            <div className="my-5 grid grid-cols-[150px_minmax(480px,1fr)_150px] items-center gap-5 border-y border-slate-200 py-5">
+            <div className="my-5 grid grid-cols-[150px_minmax(480px,1fr)_150px] items-center gap-5 border-y border-slate-200 py-5 dark:border-slate-700">
               <div className="flex flex-col items-center gap-3">
                 <ArchSelector
                   selection={
@@ -2047,8 +2047,8 @@ export function Odontogram({
                     scopeControlDisabled(
                       'session',
                     )
-                      ? 'cursor-not-allowed text-slate-400'
-                      : 'cursor-pointer text-slate-600',
+                      ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
+                      : 'cursor-pointer text-slate-600 dark:text-slate-300',
                   )}
                 >
                   <input
@@ -2070,6 +2070,8 @@ export function Odontogram({
                       border-slate-300
                       text-brand-600
                       focus:ring-brand-500
+                      dark:border-slate-700
+                      dark:bg-slate-800
                     "
                   />
 
@@ -2078,7 +2080,7 @@ export function Odontogram({
               </div>
 
               <section>
-                <h3 className="mb-2 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
+                <h3 className="mb-2 text-center text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Dentición temporal
                 </h3>
 
@@ -2120,7 +2122,7 @@ export function Odontogram({
                   }
                 />
 
-                <div className="mx-auto my-3 max-w-[460px] border-t-2 border-slate-400" />
+                <div className="mx-auto my-3 max-w-[460px] border-t-2 border-slate-400 dark:border-slate-600" />
 
                 <ToothRow
                   teeth={

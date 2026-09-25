@@ -217,11 +217,11 @@ export function PhotoAnnotationModal({ photoUrl, onClose, onConfirm }: PhotoAnno
   return (
     <Modal title="Marcar foto" onClose={onClose} maxWidth="max-w-2xl">
       <div className="flex flex-col gap-4">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Esto no modifica la foto original — se guarda como una imagen nueva, aparte, en "Imágenes marcadas".
         </p>
 
-        <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-slate-100 p-1.5">
+        <div className="flex w-full items-center justify-between gap-2 rounded-lg bg-slate-100 p-1.5 dark:bg-slate-800">
           <div className="flex gap-0.5">
             {TOOLS.map(({ key, icon: Icon, label }) => (
               <button
@@ -232,7 +232,9 @@ export function PhotoAnnotationModal({ photoUrl, onClose, onConfirm }: PhotoAnno
                 aria-pressed={tool === key}
                 onClick={() => setTool(key)}
                 className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                  tool === key ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  tool === key
+                    ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -246,7 +248,7 @@ export function PhotoAnnotationModal({ photoUrl, onClose, onConfirm }: PhotoAnno
               aria-label="Deshacer"
               onClick={handleUndo}
               disabled={marks.length === 0}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <UndoIcon className="h-4 w-4" />
             </button>
@@ -256,16 +258,16 @@ export function PhotoAnnotationModal({ photoUrl, onClose, onConfirm }: PhotoAnno
               aria-label="Rehacer"
               onClick={handleRedo}
               disabled={redoStack.length === 0}
-              className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <RedoIcon className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200">
-          {imageError && <p className="p-8 text-sm text-red-600">No se pudo cargar la foto.</p>}
-          {!imageError && !naturalSize && <p className="p-8 text-sm text-slate-400">Cargando foto...</p>}
+        <div className="flex justify-center overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-800">
+          {imageError && <p className="p-8 text-sm text-red-600 dark:text-red-400">No se pudo cargar la foto.</p>}
+          {!imageError && !naturalSize && <p className="p-8 text-sm text-slate-400 dark:text-slate-500">Cargando foto...</p>}
           {naturalSize && (
             <svg
               id="photo-annotation-canvas"
@@ -285,7 +287,7 @@ export function PhotoAnnotationModal({ photoUrl, onClose, onConfirm }: PhotoAnno
           )}
         </div>
 
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: MARK_COLOR }} />
             Punto — botox
@@ -300,14 +302,14 @@ export function PhotoAnnotationModal({ photoUrl, onClose, onConfirm }: PhotoAnno
           </span>
         </div>
 
-        {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+        {error && <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>}
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancelar
           </button>

@@ -126,7 +126,7 @@ export function ClinicasTab() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Las clínicas son las sedes físicas dentro de este holding. Cada presupuesto se asocia a una de ellas.
         </p>
         <ExcelImportExportBar
@@ -137,27 +137,27 @@ export function ClinicasTab() {
         />
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-      <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3">
+      <div className="flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
         <div className="flex-1">
-          <label className="text-xs font-medium text-slate-500">Nombre</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Nombre</label>
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             placeholder="Ej: Sede Providencia"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div className="flex-1">
-          <label className="text-xs font-medium text-slate-500">Dirección (opcional)</label>
+          <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Dirección (opcional)</label>
           <input
             value={newAddress}
             onChange={(e) => setNewAddress(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             placeholder="Ej: Av. Providencia 1234"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <button
@@ -171,13 +171,13 @@ export function ClinicasTab() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         {!isLoading && sucursales.length === 0 && (
-          <p className="px-4 py-8 text-center text-sm text-slate-400">Aún no hay clínicas registradas.</p>
+          <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">Aún no hay clínicas registradas.</p>
         )}
         {sucursales.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-slate-800/60 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Dirección</th>
@@ -185,7 +185,7 @@ export function ClinicasTab() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {sucursales.map((s) => (
                 <tr key={s.id} className={!s.active ? 'opacity-50' : ''}>
                   <td className="px-4 py-3">
@@ -193,17 +193,19 @@ export function ClinicasTab() {
                       defaultValue={s.name}
                       disabled={busyId === s.id}
                       onBlur={(e) => handleRename(s, e.target.value)}
-                      className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 font-medium text-slate-800 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15"
+                      className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 font-medium text-slate-800 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15 dark:text-slate-100 dark:hover:border-slate-700 dark:focus:bg-slate-800"
                     />
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{s.address ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{s.address ?? '—'}</td>
                   <td className="px-4 py-3">
                     <button
                       type="button"
                       disabled={busyId === s.id}
                       onClick={() => handleToggleActive(s)}
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold disabled:opacity-60 ${
-                        s.active ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                        s.active
+                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400'
+                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'
                       }`}
                     >
                       {s.active ? 'Activa' : 'Desactivada'}
@@ -215,7 +217,7 @@ export function ClinicasTab() {
                       disabled={busyId === s.id}
                       onClick={() => handleDelete(s)}
                       aria-label={`Eliminar ${s.name}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>

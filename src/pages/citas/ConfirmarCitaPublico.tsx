@@ -21,11 +21,11 @@ function statusFromError(err: unknown): ViewState {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="mb-6 flex items-center gap-2 text-brand-600">
           <ShieldIcon className="h-6 w-6" />
-          <span className="text-lg font-bold text-slate-900">fordentcloud</span>
+          <span className="text-lg font-bold text-slate-900 dark:text-slate-100">fordentcloud</span>
         </div>
         {children}
       </div>
@@ -62,7 +62,7 @@ export default function ConfirmarCitaPublico() {
   if (state === 'loading') {
     return (
       <Shell>
-        <p className="text-sm text-slate-500">Cargando...</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>
       </Shell>
     );
   }
@@ -70,7 +70,7 @@ export default function ConfirmarCitaPublico() {
   if (state === 'not_found') {
     return (
       <Shell>
-        <p className="text-sm text-red-600">Este link no es válido. Verifica que copiaste la URL completa.</p>
+        <p className="text-sm text-red-600 dark:text-red-400">Este link no es válido. Verifica que copiaste la URL completa.</p>
       </Shell>
     );
   }
@@ -78,7 +78,7 @@ export default function ConfirmarCitaPublico() {
   if (state === 'cancelled') {
     return (
       <Shell>
-        <p className="text-sm text-amber-600">Esta cita fue cancelada.</p>
+        <p className="text-sm text-amber-600 dark:text-amber-400">Esta cita fue cancelada.</p>
       </Shell>
     );
   }
@@ -86,7 +86,7 @@ export default function ConfirmarCitaPublico() {
   if (state === 'expired') {
     return (
       <Shell>
-        <p className="text-sm text-amber-600">Este link ya venció. Si tu cita sigue en pie, comunícate directamente con la clínica.</p>
+        <p className="text-sm text-amber-600 dark:text-amber-400">Este link ya venció. Si tu cita sigue en pie, comunícate directamente con la clínica.</p>
       </Shell>
     );
   }
@@ -94,7 +94,7 @@ export default function ConfirmarCitaPublico() {
   if (state === 'error') {
     return (
       <Shell>
-        <p className="text-sm text-red-600">Ocurrió un error inesperado. Intenta nuevamente más tarde.</p>
+        <p className="text-sm text-red-600 dark:text-red-400">Ocurrió un error inesperado. Intenta nuevamente más tarde.</p>
       </Shell>
     );
   }
@@ -110,14 +110,14 @@ export default function ConfirmarCitaPublico() {
     return (
       <Shell>
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
             <CalendarIcon className="h-6 w-6" />
           </div>
-          <p className="text-sm font-medium text-slate-800">
+          <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
             Gracias{appointment ? `, ${appointment.patientFirstName}` : ''} — quedó registrado que vas a venir a tu cita.
           </p>
           {appointment && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {dateLabel} a las {timeLabel} con {appointment.professionalName}
             </p>
           )}
@@ -128,10 +128,10 @@ export default function ConfirmarCitaPublico() {
 
   return (
     <Shell>
-      <h1 className="mb-1 text-lg font-bold text-slate-900">Confirma tu asistencia</h1>
-      <p className="mb-5 text-sm text-slate-500">Hola {appointment?.patientFirstName}, tienes una cita agendada en {appointment?.clinicaNombre}.</p>
+      <h1 className="mb-1 text-lg font-bold text-slate-900 dark:text-slate-100">Confirma tu asistencia</h1>
+      <p className="mb-5 text-sm text-slate-500 dark:text-slate-400">Hola {appointment?.patientFirstName}, tienes una cita agendada en {appointment?.clinicaNombre}.</p>
 
-      <div className="mb-5 rounded-lg bg-slate-50 p-4 text-sm">
+      <div className="mb-5 rounded-lg bg-slate-50 p-4 text-sm dark:bg-slate-800/60">
         <p className="mb-1"><strong>Día:</strong> {dateLabel}</p>
         <p className="mb-1"><strong>Hora:</strong> {timeLabel}</p>
         <p><strong>Profesional:</strong> {appointment?.professionalName}</p>

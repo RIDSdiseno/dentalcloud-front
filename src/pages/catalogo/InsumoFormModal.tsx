@@ -133,28 +133,28 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
   return (
     <Modal title={insumo ? 'Editar insumo' : 'Nuevo insumo'} onClose={onClose} maxWidth="max-w-xl">
       <div className="flex flex-col gap-4">
-        <p className="-mt-2 text-xs text-slate-400">
+        <p className="-mt-2 text-xs text-slate-400 dark:text-slate-500">
           Si ingresas cantidad y costo unitario, el total se calcula automáticamente.
         </p>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Nombre del insumo</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Nombre del insumo</label>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ej: Ácido Hialurónico"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Sede {sucursales.length > 0 && <span className="text-red-500">*</span>}
           </label>
           <select
             value={sucursalId}
             onChange={(e) => setSucursalId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           >
             <option value="">Selecciona una sede</option>
             {sucursales.map((s) => (
@@ -167,11 +167,11 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">Consultorio</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Consultorio</label>
             <select
               value={consultingRoom}
               onChange={(e) => setConsultingRoom(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               <option value="">Sin consultorio asignado</option>
               {CONSULTING_ROOMS.map((c) => (
@@ -182,11 +182,11 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Categoría</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Categoría</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               <option value="">Sin categoría</option>
               {INVENTORY_CATEGORIES.map((c) => (
@@ -198,11 +198,11 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
           </div>
           {showAreaPicker && (
             <div>
-              <label className="text-sm font-medium text-slate-700">Área clínica</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Área clínica</label>
               <select
                 value={clinicalArea}
                 onChange={(e) => setClinicalArea(e.target.value as SupplyClinicalArea)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               >
                 {SUPPLY_CLINICAL_AREAS.map((area) => (
                   <option key={area} value={area}>
@@ -215,40 +215,40 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Proveedor</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Proveedor</label>
           <input
             value={supplier}
             onChange={(e) => setSupplier(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Descripción</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Descripción</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">Fecha de compra</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Fecha de compra</label>
             <input
               type="date"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Unidad</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Unidad</label>
             <select
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               <option value="">—</option>
               {INVENTORY_UNITS.map((u) => (
@@ -262,7 +262,7 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">Cantidad comprada</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Cantidad comprada</label>
             <input
               type="number"
               min={0}
@@ -271,11 +271,11 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
                 setQuantity(e.target.value);
                 handleQuantityOrCostChange(e.target.value, unitCost);
               }}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Costo unitario</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Costo unitario</label>
             <input
               type="number"
               min={0}
@@ -285,14 +285,14 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
                 handleQuantityOrCostChange(quantity, e.target.value);
               }}
               placeholder="0"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">Costo total</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Costo total</label>
             <input
               type="number"
               min={0}
@@ -302,42 +302,42 @@ export function InsumoFormModal({ insumo, sucursales, clinicaTipo, onClose, onSa
                 setTotalCost(e.target.value);
               }}
               placeholder="0"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
-            <p className="mt-0.5 text-xs text-slate-400">Puedes ingresarlo manualmente si no tienes costo unitario.</p>
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Puedes ingresarlo manualmente si no tienes costo unitario.</p>
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Stock actual</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Stock actual</label>
             <input
               disabled
               value={insumo?.currentStock ?? 0}
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 outline-none"
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
             />
-            <p className="mt-0.5 text-xs text-slate-400">
+            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
               El stock actual se actualizará al registrar lotes o movimientos de inventario.
             </p>
           </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Stock mínimo</label>
-          <p className="mt-0.5 text-xs text-slate-400">Debajo de este número el insumo se marca "Bajo stock".</p>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Stock mínimo</label>
+          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">Debajo de este número el insumo se marca "Bajo stock".</p>
           <input
             type="number"
             min={0}
             value={minimumStock}
             onChange={(e) => setMinimumStock(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+        <div className="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

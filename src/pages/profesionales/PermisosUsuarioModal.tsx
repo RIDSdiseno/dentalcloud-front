@@ -72,7 +72,7 @@ function OverrideToggle({
   const active = value === undefined ? 'inherit' : value ? 'on' : 'off';
 
   return (
-    <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs font-semibold">
+    <div className="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs font-semibold dark:bg-slate-800">
       {options.map((opt) => (
         <button
           key={opt.key}
@@ -80,7 +80,9 @@ function OverrideToggle({
           disabled={disabled}
           onClick={opt.onClick}
           className={`rounded-md px-2.5 py-1 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-            active === opt.key ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            active === opt.key
+              ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           {opt.label}
@@ -135,12 +137,12 @@ export function PermisosUsuarioModal({ user, onClose }: { user: StaffUser; onClo
 
   return (
     <Modal title={`Permisos individuales · ${user.name}`} onClose={onClose} maxWidth="max-w-2xl">
-      {isLoading && <p className="text-sm text-slate-500">Cargando...</p>}
-      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>}
+      {isLoading && <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>}
+      {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
       {info && (
         <div className="flex flex-col gap-6">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Excepciones sólo para <span className="font-semibold">{user.name}</span>, por encima del default de su
             perfil y del plan de la clínica. "Hereda" quita la excepción.
           </p>
@@ -148,11 +150,11 @@ export function PermisosUsuarioModal({ user, onClose }: { user: StaffUser; onClo
           {info.isPermissionedRole ? (
             <>
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-slate-800">Pantallas (dentro de la clínica)</h3>
-                <div className="flex flex-col divide-y divide-slate-100">
+                <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Pantallas (dentro de la clínica)</h3>
+                <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
                   {PERMISSION_ORDER.map((key) => (
                     <div key={key} className="flex items-center justify-between gap-3 py-2">
-                      <span className="text-sm text-slate-700">{PERMISSION_LABELS[key]}</span>
+                      <span className="text-sm text-slate-700 dark:text-slate-200">{PERMISSION_LABELS[key]}</span>
                       <OverrideToggle
                         value={info.permissionOverrides[key]}
                         defaultValue={info.permissionDefaults[key]}
@@ -165,11 +167,11 @@ export function PermisosUsuarioModal({ user, onClose }: { user: StaffUser; onClo
               </div>
 
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-slate-800">Permisos generales (ficha del paciente)</h3>
-                <div className="flex flex-col divide-y divide-slate-100">
+                <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Permisos generales (ficha del paciente)</h3>
+                <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
                   {GENERAL_PERMISSION_ORDER.map((key) => (
                     <div key={key} className="flex items-center justify-between gap-3 py-2">
-                      <span className="text-sm text-slate-700">{PERMISSION_LABELS[key]}</span>
+                      <span className="text-sm text-slate-700 dark:text-slate-200">{PERMISSION_LABELS[key]}</span>
                       <OverrideToggle
                         value={info.permissionOverrides[key]}
                         defaultValue={info.permissionDefaults[key]}
@@ -182,17 +184,17 @@ export function PermisosUsuarioModal({ user, onClose }: { user: StaffUser; onClo
               </div>
             </>
           ) : (
-            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
               Este rol siempre tiene acceso completo a todas las pantallas; no admite excepciones de permisos.
             </p>
           )}
 
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-slate-800">Módulos (plan de la clínica)</h3>
-            <div className="flex flex-col divide-y divide-slate-100">
+            <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Módulos (plan de la clínica)</h3>
+            <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
               {MODULE_ORDER.map((key) => (
                 <div key={key} className="flex items-center justify-between gap-3 py-2">
-                  <span className="text-sm text-slate-700">{MODULE_LABELS[key]}</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-200">{MODULE_LABELS[key]}</span>
                   <OverrideToggle
                     value={info.moduleOverrides[key]}
                     defaultValue={info.moduleDefaults[key]}

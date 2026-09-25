@@ -89,7 +89,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:border-brand-400 hover:text-brand-500"
+            className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:border-brand-400 hover:text-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
           >
             {logoPreview ? (
               <img src={logoPreview} alt="Vista previa del logo" className="h-full w-full object-cover" />
@@ -98,8 +98,8 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
             )}
           </button>
           <div>
-            <p className="text-sm font-medium text-slate-700">Logo del holding</p>
-            <p className="text-xs text-slate-400">Opcional. PNG o JPG, máximo 5 MB.</p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Logo del holding</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Opcional. PNG o JPG, máximo 5 MB.</p>
           </div>
           <input
             ref={fileInputRef}
@@ -111,7 +111,7 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
         </div>
 
         <div>
-          <label htmlFor="clinica-name" className="text-sm font-medium text-slate-700">
+          <label htmlFor="clinica-name" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Nombre del holding
           </label>
           <input
@@ -119,12 +119,12 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label htmlFor="clinica-rut" className="text-sm font-medium text-slate-700">
+          <label htmlFor="clinica-rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             RUT
           </label>
           <input
@@ -135,25 +135,25 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
             placeholder="76.123.456-7"
             inputMode="text"
             maxLength={12}
-            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 ${
+            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 ${
               rutTouched && !rutIsValid
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
-                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15'
+                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-slate-700'
             }`}
           />
-          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600">RUT inválido</p>}
+          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600 dark:text-red-400">RUT inválido</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="clinica-tipo" className="text-sm font-medium text-slate-700">
+            <label htmlFor="clinica-tipo" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Tipo
             </label>
             <select
               id="clinica-tipo"
               value={tipo}
               onChange={(e) => setTipo(e.target.value as 'dental' | 'estetica' | 'ambas')}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               {Object.entries(TIPO_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -164,14 +164,14 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
           </div>
 
           <div>
-            <label htmlFor="clinica-pais" className="text-sm font-medium text-slate-700">
+            <label htmlFor="clinica-pais" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               País
             </label>
             <select
               id="clinica-pais"
               value={pais}
               onChange={(e) => setPais(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               {PAIS_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -182,48 +182,48 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-4">
+        <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-700">Sucursales iniciales (opcional)</p>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Sucursales iniciales (opcional)</p>
             <button
               type="button"
               onClick={addSucursalRow}
-              className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50"
+              className="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 dark:border-slate-700 dark:hover:bg-brand-500/10"
             >
               <PlusIcon className="h-3.5 w-3.5" />
               Agregar sucursal
             </button>
           </div>
-          <p className="mb-3 -mt-2 text-xs text-slate-400">
+          <p className="mb-3 -mt-2 text-xs text-slate-400 dark:text-slate-500">
             Si no agregas ninguna, la clínica se crea sin sucursales — se pueden agregar después desde Catálogo.
           </p>
 
           <div className="flex flex-col gap-3">
             {sucursales.map((sucursal, index) => (
-              <div key={index} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
+              <div key={index} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                 <div className="flex items-center gap-2">
                   <input
                     value={sucursal.name}
                     onChange={(e) => updateSucursal(index, { name: e.target.value })}
                     placeholder="Ej: Sede Providencia"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                   />
                   {sucursales.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeSucursalRow(index)}
                       title="Quitar esta sucursal"
-                      className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                      className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                     >
                       <TrashIcon className="h-4 w-4" />
                     </button>
                   )}
                 </div>
                 {sucursal.name.trim() && (
-                  <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5">
+                  <div className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2.5 dark:bg-slate-800/60">
                     <div>
-                      <p className="text-sm font-medium text-slate-700">Conectar con Dental-Demo</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Conectar con Dental-Demo</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
                         {sucursal.sync
                           ? 'Se crea también como sede en Dental-Demo, dentro de la clínica espejo.'
                           : 'Se crea solo en DentalCloud, sin sede equivalente en Dental-Demo.'}
@@ -241,12 +241,12 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-4">
-          <p className="mb-3 text-sm font-semibold text-slate-700">Administrador inicial</p>
+        <div className="border-t border-slate-100 pt-4 dark:border-slate-800">
+          <p className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Administrador inicial</p>
 
           <div className="flex flex-col gap-4">
             <div>
-              <label htmlFor="admin-name" className="text-sm font-medium text-slate-700">
+              <label htmlFor="admin-name" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Nombre completo
               </label>
               <input
@@ -254,12 +254,12 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
                 value={adminName}
                 onChange={(e) => setAdminName(e.target.value)}
                 required
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
 
             <div>
-              <label htmlFor="admin-email" className="text-sm font-medium text-slate-700">
+              <label htmlFor="admin-email" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Correo electrónico
               </label>
               <input
@@ -268,12 +268,12 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
                 required
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
 
             <div>
-              <label htmlFor="admin-password" className="text-sm font-medium text-slate-700">
+              <label htmlFor="admin-password" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Contraseña
               </label>
               <input
@@ -283,20 +283,20 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
                 onChange={(e) => setAdminPassword(e.target.value)}
                 minLength={8}
                 required
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
-              <p className="mt-1 text-xs text-slate-400">Mínimo 8 caracteres.</p>
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">Mínimo 8 caracteres.</p>
             </div>
           </div>
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

@@ -80,20 +80,20 @@ export default function AgendaDiaria() {
     <div className="mx-auto flex h-full min-h-0 w-full max-w-4xl flex-col gap-5">
       <div id="diaria-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Agenda diaria</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Agenda diaria</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {isAdmin ? 'Citas de todos los profesionales' : 'Tus citas del día'}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700">
+          <span className="rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
             {appointments.length} cita{appointments.length === 1 ? '' : 's'}
           </span>
           <button
             id="diaria-nueva-hora-btn"
             type="button"
             onClick={() => setShowNewOpenSlot(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50"
+            className="flex items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 shadow-sm hover:bg-brand-50 dark:bg-slate-900 dark:text-brand-400 dark:hover:bg-brand-500/10"
           >
             <PlusIcon className="h-4 w-4" />
             Agregar horas disponibles
@@ -110,17 +110,17 @@ export default function AgendaDiaria() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+      <div className="flex items-center justify-between gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <button
           type="button"
           onClick={() => setSelectedDate((d) => addDays(d, -1))}
           aria-label="Día anterior"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
         >
           <ChevronLeftIcon className="h-4 w-4" />
         </button>
 
-        <p className="text-sm font-semibold text-slate-700 capitalize">
+        <p className="text-sm font-semibold text-slate-700 capitalize dark:text-slate-200">
           Agenda para el día {formatLongDate(selectedDate)}
         </p>
 
@@ -129,7 +129,7 @@ export default function AgendaDiaria() {
             type="button"
             onClick={() => setSelectedDate(new Date())}
             disabled={isToday}
-            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-default disabled:opacity-50"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-default disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Hoy
           </button>
@@ -137,7 +137,7 @@ export default function AgendaDiaria() {
             type="button"
             onClick={() => setSelectedDate((d) => addDays(d, 1))}
             aria-label="Día siguiente"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </button>
@@ -145,7 +145,7 @@ export default function AgendaDiaria() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
+        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
           {error}
           <button type="button" className="ml-2 font-semibold underline" onClick={() => setError(null)}>
             Cerrar
@@ -155,11 +155,11 @@ export default function AgendaDiaria() {
 
       <div id="diaria-timeline" className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
         {!isLoading && timeline.length === 0 && (
-          <div className="flex flex-col items-center gap-2 rounded-2xl bg-white py-16 text-center shadow-sm ring-1 ring-slate-200">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+          <div className="flex flex-col items-center gap-2 rounded-2xl bg-white py-16 text-center shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
               <CalendarIcon className="h-6 w-6" />
             </div>
-            <p className="text-sm text-slate-500">No hay citas agendadas para este día.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No hay citas agendadas para este día.</p>
           </div>
         )}
 
@@ -171,16 +171,16 @@ export default function AgendaDiaria() {
                 type="button"
                 key={appointment.id}
                 onClick={() => setSelectedAppointment(appointment)}
-                className="flex w-full items-center justify-between gap-4 rounded-2xl border-l-4 border-brand-500 bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50"
+                className="flex w-full items-center justify-between gap-4 rounded-2xl border-l-4 border-brand-500 bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-900 dark:ring-slate-800 dark:hover:bg-slate-800"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-brand-700">
+                  <p className="text-sm font-bold text-brand-700 dark:text-brand-400">
                     {formatTime(new Date(appointment.startAt))} – {formatTime(new Date(appointment.endAt))}
                   </p>
-                  <p className="mt-1 truncate text-base font-semibold text-slate-900 uppercase">
+                  <p className="mt-1 truncate text-base font-semibold text-slate-900 uppercase dark:text-slate-100">
                     {appointment.patient.firstName} {appointment.patient.lastName}
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                     <span className="flex items-center gap-1">
                       <UsersIcon className="h-3.5 w-3.5" />
                       {appointment.professional?.name ?? 'Sin profesional asignado'}
@@ -194,7 +194,7 @@ export default function AgendaDiaria() {
 
                 <span
                   className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    STATUS_BADGE_CLASS[appointment.status] ?? 'bg-slate-100 text-slate-600'
+                    STATUS_BADGE_CLASS[appointment.status] ?? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
                   }`}
                 >
                   {STATUS_LABEL[appointment.status] ?? appointment.status}
@@ -207,14 +207,14 @@ export default function AgendaDiaria() {
           return (
             <div
               key={slot.id}
-              className="flex w-full items-center justify-between gap-4 rounded-2xl border-l-4 border-dashed border-brand-300 bg-brand-50/40 p-4"
+              className="flex w-full items-center justify-between gap-4 rounded-2xl border-l-4 border-dashed border-brand-300 bg-brand-50/40 p-4 dark:bg-brand-500/10"
             >
               <div className="min-w-0">
-                <p className="text-sm font-bold text-brand-700">
+                <p className="text-sm font-bold text-brand-700 dark:text-brand-400">
                   {formatTime(new Date(slot.startAt))} – {formatTime(new Date(slot.endAt))}
                 </p>
-                <p className="mt-1 text-base font-semibold text-slate-500 italic">Hora disponible, sin paciente todavía</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                <p className="mt-1 text-base font-semibold text-slate-500 italic dark:text-slate-400">Hora disponible, sin paciente todavía</p>
+                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                   <span className="flex items-center gap-1">
                     <UsersIcon className="h-3.5 w-3.5" />
                     {slot.professional.name}
@@ -226,12 +226,12 @@ export default function AgendaDiaria() {
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">Disponible</span>
+                <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">Disponible</span>
                 <button
                   type="button"
                   disabled={busySlotId === slot.id}
                   onClick={() => handleCancelOpenSlot(slot)}
-                  className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-60"
+                  className="text-xs font-semibold text-red-600 hover:underline disabled:opacity-60 dark:text-red-400"
                 >
                   Cancelar
                 </button>

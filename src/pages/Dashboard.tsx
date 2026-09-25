@@ -20,10 +20,10 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 py-10 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
         <Icon className="h-6 w-6" />
       </div>
-      <p className="text-sm text-slate-500">{message}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{message}</p>
     </div>
   );
 }
@@ -35,25 +35,25 @@ export default function Dashboard() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div id="dashboard-header" className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold text-slate-900">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
           Bienvenido{firstName ? `, ${firstName}` : ''}
         </h1>
-        <p className="text-sm text-slate-500">{formatToday()}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{formatToday()}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section id="dashboard-favoritos" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section id="dashboard-favoritos" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
           <div className="flex items-center gap-2">
             <StarIcon className="h-5 w-5 text-amber-400" />
-            <h2 className="text-base font-semibold text-slate-800">Favoritos</h2>
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Favoritos</h2>
           </div>
           <EmptyState icon={StarIcon} message="Sin favoritos configurados." />
         </section>
 
-        <section id="dashboard-proximas-citas" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <section id="dashboard-proximas-citas" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-brand-500" />
-            <h2 className="text-base font-semibold text-slate-800">
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
               Próximas citas de hoy
             </h2>
           </div>
@@ -61,10 +61,10 @@ export default function Dashboard() {
         </section>
       </div>
 
-      <section id="dashboard-novedades" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <section id="dashboard-novedades" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex items-center gap-2">
           <NewsIcon className="h-5 w-5 text-brand-500" />
-          <h2 className="text-base font-semibold text-slate-800">Últimas novedades</h2>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Últimas novedades</h2>
         </div>
         <EmptyState icon={NewsIcon} message="Sin novedades por el momento." />
       </section>

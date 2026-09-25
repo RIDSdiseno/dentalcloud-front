@@ -23,7 +23,7 @@ export function DayTabs({ selectedDate, onSelect }: DayTabsProps) {
         type="button"
         onClick={() => onSelect(addDays(selectedDate, -7))}
         aria-label="Semana anterior"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
       >
         <ChevronLeftIcon className="h-4 w-4" />
       </button>
@@ -41,7 +41,7 @@ export function DayTabs({ selectedDate, onSelect }: DayTabsProps) {
               className={`relative shrink-0 whitespace-nowrap rounded-lg px-3 py-2 text-center text-sm font-medium capitalize transition-colors lg:shrink lg:whitespace-normal lg:px-2 ${
                 active
                   ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
               }`}
             >
               {formatDayTab(day)}
@@ -57,7 +57,7 @@ export function DayTabs({ selectedDate, onSelect }: DayTabsProps) {
         type="button"
         onClick={() => onSelect(addDays(selectedDate, 7))}
         aria-label="Semana siguiente"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
       >
         <ChevronRightIcon className="h-4 w-4" />
       </button>

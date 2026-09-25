@@ -19,10 +19,10 @@ function formatDateTime(value: string | null) {
 type ConsentFilter = 'todos' | 'no_enviado' | Patient['privacyConsentStatus'];
 
 const CONSENT_STATUS_STYLES: Record<Patient['privacyConsentStatus'], { label: string; className: string }> = {
-  pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
-  firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-  rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200' },
-  expirado: { label: 'Expirado', className: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  pendiente: { label: 'Pendiente', className: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400' },
+  firmado: { label: 'Firmado', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400' },
+  rechazado: { label: 'Rechazado', className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-400' },
+  expirado: { label: 'Expirado', className: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-800' },
 };
 
 const CONSENT_FILTERS: { key: ConsentFilter; label: string }[] = [
@@ -47,7 +47,7 @@ function consentFilterOf(patient: Patient): ConsentFilter {
 function ConsentBadge({ patient }: { patient: Patient }) {
   if (isNotSent(patient)) {
     return (
-      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-800">
         No enviado
       </span>
     );
@@ -63,7 +63,7 @@ function ConsentBadge({ patient }: { patient: Patient }) {
     <div className="flex flex-col gap-0.5">
       <span className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${className}`}>{label}</span>
       {detailDate && (
-        <span className="text-[11px] text-slate-400">
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">
           {detailDate} · {methodLabel}
         </span>
       )}
@@ -131,8 +131,8 @@ export default function Pacientes() {
     <div className="flex h-full min-h-0 flex-col gap-5">
       <div id="pacientes-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Pacientes</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Pacientes</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {patients.length} paciente{patients.length === 1 ? '' : 's'}
           </p>
         </div>
@@ -148,13 +148,13 @@ export default function Pacientes() {
       </div>
 
       <div id="pacientes-search" className="relative max-w-md">
-        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Buscar por nombre, apellido o RUT..."
-          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10"
+          className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
         />
       </div>
 
@@ -167,7 +167,7 @@ export default function Pacientes() {
             className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition-colors ${
               consentFilter === filter.key
                 ? 'bg-brand-600 text-white ring-brand-600'
-                : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50'
+                : 'bg-white text-slate-500 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-400 dark:ring-slate-800 dark:hover:bg-slate-800'
             }`}
           >
             {filter.label} · {consentCounts[filter.key]}
@@ -175,15 +175,15 @@ export default function Pacientes() {
         ))}
       </div>
 
-      <div id="pacientes-tabla" className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
-        {error && <p className="p-6 text-sm text-red-600">{error}</p>}
+      <div id="pacientes-tabla" className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        {error && <p className="p-6 text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         {!error && !isLoading && visiblePatients.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
               <UsersIcon className="h-6 w-6" />
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {search
                 ? 'No se encontraron pacientes.'
                 : patients.length === 0
@@ -195,7 +195,7 @@ export default function Pacientes() {
 
         {!error && visiblePatients.length > 0 && (
           <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <thead className="sticky top-0 bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-brand-500/10 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Paciente</th>
                 <th className="px-4 py-3">RUT</th>
@@ -204,18 +204,18 @@ export default function Pacientes() {
                 <th className="px-4 py-3">Consentimiento</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {visiblePatients.map((patient) => (
                 <tr
                   key={patient.id}
                   onClick={() => navigate(`/pacientes/${patient.id}`)}
-                  className="cursor-pointer hover:bg-slate-50"
+                  className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <td className="px-4 py-3 font-medium text-slate-800">
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">
                     {patient.firstName} {patient.lastName}
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{formatRut(patient.rut)}</td>
-                  <td className="px-4 py-3 text-slate-500">
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatRut(patient.rut)}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">
                     <div className="flex flex-col gap-0.5">
                       {patient.phone && (
                         <span className="flex items-center gap-1.5">
@@ -230,7 +230,7 @@ export default function Pacientes() {
                       {!patient.phone && !patient.email && '—'}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-500">{formatBirthDate(patient.birthDate)}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatBirthDate(patient.birthDate)}</td>
                   <td className="px-4 py-3">
                     <ConsentBadge patient={patient} />
                   </td>

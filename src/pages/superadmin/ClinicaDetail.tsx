@@ -41,9 +41,9 @@ import {
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 
 const CONSENT_STATUS_STYLES = {
-  firmado: { label: 'Firmados', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
-  pendiente: { label: 'Pendientes', className: 'bg-amber-50 text-amber-700 ring-amber-200' },
-  rechazado: { label: 'Rechazados', className: 'bg-red-50 text-red-700 ring-red-200' },
+  firmado: { label: 'Firmados', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20' },
+  pendiente: { label: 'Pendientes', className: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:ring-amber-500/20' },
+  rechazado: { label: 'Rechazados', className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20' },
 } as const;
 
 export default function ClinicaDetail() {
@@ -160,12 +160,12 @@ export default function ClinicaDetail() {
         <button
           type="button"
           onClick={() => navigate('/admin/clinicas')}
-          className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+          className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Volver a holdings
         </button>
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error ?? 'Holding no encontrado'}</p>
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error ?? 'Holding no encontrado'}</p>
       </div>
     );
   }
@@ -178,13 +178,13 @@ export default function ClinicaDetail() {
       <button
         type="button"
         onClick={() => navigate('/admin/clinicas')}
-        className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+        className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         Volver a holdings
       </button>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -217,8 +217,8 @@ export default function ClinicaDetail() {
             onChange={(e) => handleLogoChange(e.target.files?.[0] ?? null)}
           />
           <div>
-            <h1 className="text-xl font-bold text-slate-900">{clinica.name}</h1>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">{clinica.name}</h1>
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
               Creada el {new Date(clinica.createdAt).toLocaleDateString('es-CL')}
             </p>
           </div>
@@ -226,7 +226,9 @@ export default function ClinicaDetail() {
         <div className="flex items-center gap-2">
           <span
             className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
-              clinica.active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-red-50 text-red-700 ring-red-200'
+              clinica.active
+                ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20'
+                : 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20'
             }`}
           >
             {clinica.active ? 'Activa' : 'Desactivada'}
@@ -241,16 +243,16 @@ export default function ClinicaDetail() {
       </div>
 
       {!clinica.active && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
           Los usuarios de este holding no podrán iniciar sesión mientras esté desactivado.
         </p>
       )}
 
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">Federación con Dental-Demo</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Federación con Dental-Demo</h2>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
               Sincronización de pacientes, citas y presupuestos con la plataforma de administración.
             </p>
           </div>
@@ -258,8 +260,8 @@ export default function ClinicaDetail() {
             <span
               className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
                 clinica.federatedClinicId
-                  ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                  : 'bg-slate-100 text-slate-500 ring-slate-200'
+                  ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20'
+                  : 'bg-slate-100 text-slate-500 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700'
               }`}
             >
               {clinica.federatedClinicId ? 'Conectada' : 'No conectada'}
@@ -274,11 +276,11 @@ export default function ClinicaDetail() {
         </div>
 
         {clinica.federatedClinicId ? (
-          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-slate-800">
             <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-1">
               <div>
-                <p className="text-sm font-medium text-slate-700">Conexión activa</p>
-                <p className="text-xs text-slate-500">Pausa toda la sincronización sin perder el emparejamiento.</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Conexión activa</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Pausa toda la sincronización sin perder el emparejamiento.</p>
               </div>
               <Toggle
                 checked={!clinica.federationPaused}
@@ -289,8 +291,8 @@ export default function ClinicaDetail() {
             </div>
             <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-start sm:gap-1">
               <div>
-                <p className="text-sm font-medium text-slate-700">Solo catálogo</p>
-                <p className="text-xs text-slate-500">Si está activo, nunca comparte pacientes/citas/presupuestos reales.</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Solo catálogo</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Si está activo, nunca comparte pacientes/citas/presupuestos reales.</p>
               </div>
               <Toggle
                 checked={clinica.federationCatalogOnly}
@@ -303,17 +305,17 @@ export default function ClinicaDetail() {
         ) : null}
 
         {clinica.federatedClinicId && (
-          <div className="mt-4 border-t border-slate-100 pt-4">
-            <p className="mb-3 text-sm font-medium text-slate-700">Conexiones individuales</p>
+          <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-200">Conexiones individuales</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {FEDERATION_SYNC_ITEMS.map((item) => (
                 <div
                   key={item.key}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-800/60"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-slate-700">{item.label}</p>
-                    <p className="text-xs text-slate-500">{item.description}</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{item.description}</p>
                   </div>
                   <Toggle
                     checked={clinica.federationSyncSettings[item.key]}
@@ -330,17 +332,17 @@ export default function ClinicaDetail() {
         )}
 
         {!clinica.federatedClinicId && (
-          <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+          <p className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
             Esta clínica no está emparejada con Dental-Demo. Activa el switch de arriba para conectarla — arrancará en modo "Solo catálogo" por seguridad.
           </p>
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <label htmlFor="detail-rut" className="text-sm font-medium text-slate-700">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+          <label htmlFor="detail-rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             RUT
           </label>
           <div className="mt-1 flex gap-2">
@@ -351,10 +353,10 @@ export default function ClinicaDetail() {
               onBlur={() => setRutTouched(true)}
               placeholder="76.123.456-7"
               maxLength={12}
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 ${
+              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 ${
                 rutTouched && !rutIsValid
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
-                  : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15'
+                  : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-slate-700'
               }`}
             />
             <button
@@ -366,12 +368,12 @@ export default function ClinicaDetail() {
               Guardar
             </button>
           </div>
-          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600">RUT inválido</p>}
-          {rutError && <p className="mt-1 text-xs text-red-600">{rutError}</p>}
+          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600 dark:text-red-400">RUT inválido</p>}
+          {rutError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{rutError}</p>}
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <label htmlFor="detail-tipo" className="text-sm font-medium text-slate-700">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+          <label htmlFor="detail-tipo" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Tipo de holding
           </label>
           <select
@@ -379,7 +381,7 @@ export default function ClinicaDetail() {
             value={clinica.tipo}
             onChange={(e) => applyUpdate({ tipo: e.target.value }, 'tipo')}
             disabled={busyField === 'tipo'}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
             {Object.entries(TIPO_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -389,8 +391,8 @@ export default function ClinicaDetail() {
           </select>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <label htmlFor="detail-pais" className="text-sm font-medium text-slate-700">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+          <label htmlFor="detail-pais" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             País
           </label>
           <select
@@ -398,7 +400,7 @@ export default function ClinicaDetail() {
             value={clinica.pais}
             onChange={(e) => applyUpdate({ pais: e.target.value }, 'pais')}
             disabled={busyField === 'pais'}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
             {PAIS_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -408,8 +410,8 @@ export default function ClinicaDetail() {
           </select>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <label htmlFor="detail-ai-limit" className="text-sm font-medium text-slate-700">
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+          <label htmlFor="detail-ai-limit" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Límite de tokens de IA (mensual)
           </label>
           <div className="mt-1 flex gap-2">
@@ -421,7 +423,7 @@ export default function ClinicaDetail() {
               value={aiTokenLimit}
               onChange={(e) => setAiTokenLimit(e.target.value)}
               placeholder="0 = sin límite"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
             <button
               type="button"
@@ -432,9 +434,9 @@ export default function ClinicaDetail() {
               Guardar
             </button>
           </div>
-          {aiTokenLimitError && <p className="mt-1 text-xs text-red-600">{aiTokenLimitError}</p>}
-          <p className="mt-1.5 text-xs text-slate-500">
-            Uso este mes: <span className="font-semibold text-slate-700">{clinica.aiTokensUsedThisMonth.toLocaleString('es-CL')}</span>
+          {aiTokenLimitError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{aiTokenLimitError}</p>}
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+            Uso este mes: <span className="font-semibold text-slate-700 dark:text-slate-200">{clinica.aiTokensUsedThisMonth.toLocaleString('es-CL')}</span>
             {clinica.aiTokenLimitMonthly > 0 && ` / ${clinica.aiTokenLimitMonthly.toLocaleString('es-CL')} tokens`}
             {clinica.aiTokenLimitMonthly === 0 && ' tokens (sin límite)'}
             {' — se reinicia el 1° de cada mes.'}
@@ -442,8 +444,8 @@ export default function ClinicaDetail() {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-4 text-sm font-semibold text-slate-800">Métricas</h2>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Métricas</h2>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
           <StatTile icon={UsersIcon} label="Pacientes" value={String(clinica.patientsCount)} />
           <StatTile icon={UsersIcon} label="Usuarios" value={String(clinica.usersCount)} />
@@ -457,7 +459,7 @@ export default function ClinicaDetail() {
           <StatTile icon={ChatIcon} label="Observaciones" value={String(clinica.observationsCount)} />
         </div>
 
-        <p className="mt-5 mb-2 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+        <p className="mt-5 mb-2 text-[11px] font-semibold tracking-wide text-slate-400 uppercase dark:text-slate-500">
           Consentimientos de protección de datos
         </p>
         <div className="flex flex-wrap gap-2">
@@ -469,39 +471,39 @@ export default function ClinicaDetail() {
               {CONSENT_STATUS_STYLES[key].label}: {clinica.consentStats[key]}
             </span>
           ))}
-          {consentTotal === 0 && <span className="text-xs text-slate-400">Sin pacientes registrados aún.</span>}
+          {consentTotal === 0 && <span className="text-xs text-slate-400 dark:text-slate-500">Sin pacientes registrados aún.</span>}
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800">Sucursales</h2>
-        <p className="mb-4 text-xs text-slate-500">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Sucursales</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Sedes creadas para este holding, y si cada una está conectada con Dental-Demo o solo vive en DentalCloud.
         </p>
         {clinica.sucursales.length === 0 ? (
-          <p className="text-sm text-slate-400">Esta clínica todavía no tiene ninguna sucursal registrada.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Esta clínica todavía no tiene ninguna sucursal registrada.</p>
         ) : (
           <div className="flex flex-col gap-2">
             {clinica.sucursales.map((sucursal) => (
               <div
                 key={sucursal.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5 dark:border-slate-800 dark:bg-slate-800/60"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-700">{sucursal.name}</p>
-                  {sucursal.address && <p className="truncate text-xs text-slate-400">{sucursal.address}</p>}
+                  <p className="truncate text-sm font-medium text-slate-700 dark:text-slate-200">{sucursal.name}</p>
+                  {sucursal.address && <p className="truncate text-xs text-slate-400 dark:text-slate-500">{sucursal.address}</p>}
                 </div>
                 <div className="flex items-center gap-2">
                   {!sucursal.active && (
-                    <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-300">
+                    <span className="rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
                       Inactiva
                     </span>
                   )}
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${
                       sucursal.connectedToDentalDemo
-                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
-                        : 'bg-slate-100 text-slate-500 ring-slate-200'
+                        ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20'
+                        : 'bg-slate-100 text-slate-500 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700'
                     }`}
                   >
                     {sucursal.connectedToDentalDemo ? 'Conectada con Dental-Demo' : 'Solo local'}
@@ -513,13 +515,13 @@ export default function ClinicaDetail() {
         )}
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-4 text-sm font-semibold text-slate-800">Módulos habilitados</h2>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Módulos habilitados</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {clinica.tipo !== 'estetica' && (
-            <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
-              <span className="flex items-center gap-2 text-sm text-slate-700">
-                <XrayIcon className="h-4 w-4 text-slate-400" />
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+              <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <XrayIcon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 Módulo Rx
               </span>
               <Toggle
@@ -533,9 +535,9 @@ export default function ClinicaDetail() {
           {MODULE_ORDER.map((key) => {
             const Icon = MODULE_ICONS[key];
             return (
-              <div key={key} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
-                <span className="flex items-center gap-2 text-sm text-slate-700">
-                  <Icon className="h-4 w-4 text-slate-400" />
+              <div key={key} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+                <span className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                  <Icon className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                   {MODULE_LABELS[key]}
                 </span>
                 <Toggle

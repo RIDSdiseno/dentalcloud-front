@@ -70,15 +70,15 @@ export function ScheduleModal({ professional, onClose }: ScheduleModalProps) {
           const dayBlocks = schedules.filter((s) => s.weekday === day);
           return (
             <div key={day} className="flex items-start gap-3">
-              <span className="w-24 shrink-0 pt-1.5 text-sm font-semibold text-slate-700">{label}</span>
+              <span className="w-24 shrink-0 pt-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200">{label}</span>
               <div className="flex flex-1 flex-wrap gap-2">
                 {dayBlocks.length === 0 && (
-                  <span className="pt-1.5 text-sm text-slate-400">Sin horario asignado</span>
+                  <span className="pt-1.5 text-sm text-slate-400 dark:text-slate-500">Sin horario asignado</span>
                 )}
                 {dayBlocks.map((block) => (
                   <span
                     key={block.id}
-                    className="flex items-center gap-1.5 rounded-lg bg-brand-50 py-1.5 pr-1.5 pl-3 text-sm font-medium text-brand-700"
+                    className="flex items-center gap-1.5 rounded-lg bg-brand-50 py-1.5 pr-1.5 pl-3 text-sm font-medium text-brand-700 dark:bg-brand-500/10 dark:text-brand-400"
                   >
                     {block.startTime}–{block.endTime}
                     {block.chair && (
@@ -101,13 +101,13 @@ export function ScheduleModal({ professional, onClose }: ScheduleModalProps) {
           );
         })}
 
-        <div className="mt-2 flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3">
+        <div className="mt-2 flex flex-wrap items-end gap-2 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
           <div>
-            <label className="text-xs font-medium text-slate-500">Día</label>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Día</label>
             <select
               value={weekday}
               onChange={(e) => setWeekday(Number(e.target.value))}
-              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500"
+              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               {WEEKDAYS.map((label, day) => (
                 <option key={day} value={day}>
@@ -117,29 +117,29 @@ export function ScheduleModal({ professional, onClose }: ScheduleModalProps) {
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-500">Desde</label>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Desde</label>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500"
+              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-500">Hasta</label>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Hasta</label>
             <input
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500"
+              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-slate-500">Sillón</label>
+            <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Sillón</label>
             <select
               value={chairId}
               onChange={(e) => setChairId(e.target.value)}
-              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500"
+              className="mt-1 block rounded-lg border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               <option value="">Cualquiera</option>
               {chairs.map((chair) => (
@@ -160,7 +160,7 @@ export function ScheduleModal({ professional, onClose }: ScheduleModalProps) {
           </button>
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
       </div>
     </Modal>
   );

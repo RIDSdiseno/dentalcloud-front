@@ -67,12 +67,12 @@ export default function Agenda() {
     <div className="flex h-full min-h-0 flex-col gap-5">
       <div id="agenda-header" className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Agenda general</h1>
-          <p className="mt-1 text-sm text-slate-500 capitalize">{formatLongDate(selectedDate)}</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Agenda general</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 capitalize">{formatLongDate(selectedDate)}</p>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700">
+          <span className="rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
             {appointments.length} cita{appointments.length === 1 ? '' : 's'} agendada
             {appointments.length === 1 ? '' : 's'}
           </span>
@@ -99,7 +99,7 @@ export default function Agenda() {
             id="agenda-sillon-btn"
             type="button"
             onClick={() => setShowChairForm(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <PlusIcon className="h-4 w-4" />
             Sillón
@@ -108,7 +108,7 @@ export default function Agenda() {
             type="button"
             onClick={() => setSelectedDate(new Date())}
             disabled={isToday}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-default disabled:opacity-50"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-default disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             Hoy
           </button>
@@ -116,7 +116,7 @@ export default function Agenda() {
       </div>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
+        <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
           {error}
           <button type="button" className="ml-2 font-semibold underline" onClick={() => setError(null)}>
             Cerrar
@@ -124,7 +124,7 @@ export default function Agenda() {
         </p>
       )}
 
-      <div id="agenda-day-tabs" className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+      <div id="agenda-day-tabs" className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <DayTabs selectedDate={selectedDate} onSelect={setSelectedDate} />
       </div>
 

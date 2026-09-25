@@ -50,10 +50,10 @@ export function SillonesLibresGrid({
   const gridTemplateColumns = `${TIME_COL_WIDTH}px repeat(7, minmax(150px, 1fr))`;
 
   return (
-    <div className="relative h-full min-h-[420px] overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div className="relative h-full min-h-[420px] overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="grid" style={{ gridTemplateColumns }}>
         <div
-          className="sticky top-0 left-0 z-20 border-r border-b border-slate-200 bg-brand-50/60"
+          className="sticky top-0 left-0 z-20 border-r border-b border-slate-200 bg-brand-50/60 dark:border-slate-700 dark:bg-brand-500/10"
           style={{ gridColumn: 1, gridRow: 1, height: HEADER_HEIGHT }}
         />
         {days.map((day, dayIndex) => {
@@ -62,15 +62,15 @@ export function SillonesLibresGrid({
           return (
             <div
               key={day.toISOString()}
-              className={`sticky top-0 z-10 flex flex-col items-center justify-center border-r border-b border-slate-200 last:border-r-0 ${
-                isToday ? 'bg-brand-100' : 'bg-brand-50/60'
+              className={`sticky top-0 z-10 flex flex-col items-center justify-center border-r border-b border-slate-200 last:border-r-0 dark:border-slate-700 ${
+                isToday ? 'bg-brand-100 dark:bg-brand-500/15' : 'bg-brand-50/60 dark:bg-brand-500/10'
               }`}
               style={{ gridColumn: dayIndex + 2, gridRow: 1, height: HEADER_HEIGHT }}
             >
-              <span className="text-xs font-medium tracking-wide text-slate-500 capitalize">
+              <span className="text-xs font-medium tracking-wide text-slate-500 capitalize dark:text-slate-400">
                 {weekday}
               </span>
-              <span className={`text-sm font-bold ${isToday ? 'text-brand-700' : 'text-slate-800'}`}>
+              <span className={`text-sm font-bold ${isToday ? 'text-brand-700 dark:text-brand-400' : 'text-slate-800 dark:text-slate-100'}`}>
                 {dayNumber}
               </span>
             </div>
@@ -83,8 +83,8 @@ export function SillonesLibresGrid({
           return (
             <div
               key={`t-${time}`}
-              className={`sticky left-0 z-10 flex items-start justify-end border-r border-slate-100 bg-white px-3 pt-1.5 text-xs ${
-                isHour ? 'border-t border-t-slate-200 font-semibold text-slate-600' : 'text-slate-300'
+              className={`sticky left-0 z-10 flex items-start justify-end border-r border-slate-100 bg-white px-3 pt-1.5 text-xs dark:border-slate-800 dark:bg-slate-900 ${
+                isHour ? 'border-t border-t-slate-200 font-semibold text-slate-600 dark:border-t-slate-700 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'
               }`}
               style={{ gridColumn: 1, gridRow: row, height: ROW_HEIGHT }}
             >
@@ -122,10 +122,10 @@ export function SillonesLibresGrid({
                   type="button"
                   key={`${day.toISOString()}-${slots[rowIndex]}`}
                   onClick={() => onAppointmentClick(covering.appt)}
-                  className="m-0.5 flex flex-col justify-center overflow-hidden rounded-lg bg-brand-100 px-2.5 py-1.5 text-left transition-colors hover:bg-brand-200"
+                  className="m-0.5 flex flex-col justify-center overflow-hidden rounded-lg bg-brand-100 px-2.5 py-1.5 text-left transition-colors hover:bg-brand-200 dark:bg-brand-500/15 dark:hover:bg-brand-500/20"
                   style={{ gridColumn: column, gridRow: `${row} / span ${spanRows}` }}
                 >
-                  <span className="flex items-center gap-1.5 truncate text-xs font-semibold text-brand-800">
+                  <span className="flex items-center gap-1.5 truncate text-xs font-semibold text-brand-800 dark:text-brand-300">
                     <span
                       className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                         STATUS_DOT_CLASS[covering.appt.status] ?? 'bg-slate-400'
@@ -133,7 +133,7 @@ export function SillonesLibresGrid({
                     />
                     {covering.appt.patient.firstName} {covering.appt.patient.lastName}
                   </span>
-                  <span className="truncate text-[11px] text-brand-700">
+                  <span className="truncate text-[11px] text-brand-700 dark:text-brand-400">
                     {formatTime(covering.start)}–{formatTime(covering.end)}
                   </span>
                 </button>
@@ -142,13 +142,13 @@ export function SillonesLibresGrid({
               cells.push(
                 <div
                   key={`${day.toISOString()}-${slots[rowIndex]}`}
-                  className="group/slot flex items-center border-r border-b border-slate-100 px-2 py-1 last:border-r-0"
+                  className="group/slot flex items-center border-r border-b border-slate-100 px-2 py-1 last:border-r-0 dark:border-slate-800"
                   style={{ gridColumn: column, gridRow: row, height: ROW_HEIGHT }}
                 >
                   <button
                     type="button"
                     onClick={() => onSlotClick(slotStart)}
-                    className="flex w-full items-center justify-center truncate rounded-lg bg-slate-50 py-2 text-xs font-medium text-slate-400 transition-colors group-hover/slot:bg-emerald-50 group-hover/slot:text-emerald-600"
+                    className="flex w-full items-center justify-center truncate rounded-lg bg-slate-50 py-2 text-xs font-medium text-slate-400 transition-colors group-hover/slot:bg-emerald-50 group-hover/slot:text-emerald-600 dark:bg-slate-800 dark:text-slate-500 dark:group-hover/slot:bg-emerald-500/10 dark:group-hover/slot:text-emerald-400"
                   >
                     Disponible
                   </button>

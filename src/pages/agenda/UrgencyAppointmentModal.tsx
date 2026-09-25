@@ -66,7 +66,7 @@ export function UrgencyAppointmentModal({ onClose, onCreated }: UrgencyAppointme
   return (
     <Modal title="Atender urgencia" onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
           Se asigna automáticamente el primer sillón disponible ahora mismo — no hace falta elegir horario ni
           sillón.
         </p>
@@ -74,7 +74,7 @@ export function UrgencyAppointmentModal({ onClose, onCreated }: UrgencyAppointme
         <PatientPicker value={selectedPatient} onChange={setSelectedPatient} />
 
         <div>
-          <label htmlFor="urgency-motivo" className="text-sm font-medium text-slate-700">
+          <label htmlFor="urgency-motivo" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Motivo de la urgencia
           </label>
           <input
@@ -84,19 +84,19 @@ export function UrgencyAppointmentModal({ onClose, onCreated }: UrgencyAppointme
             onChange={(e) => setMotivoUrgencia(e.target.value)}
             placeholder="Ej. Dolor agudo, trauma dental, reacción alérgica..."
             required
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label htmlFor="urgency-triage" className="text-sm font-medium text-slate-700">
+          <label htmlFor="urgency-triage" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Nivel de gravedad
           </label>
           <select
             id="urgency-triage"
             value={triageLevel}
             onChange={(e) => setTriageLevel(e.target.value as TriageLevel | '')}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           >
             <option value="">Sin especificar</option>
             {TRIAGE_OPTIONS.map((option) => (
@@ -108,14 +108,14 @@ export function UrgencyAppointmentModal({ onClose, onCreated }: UrgencyAppointme
         </div>
 
         <div>
-          <label htmlFor="urgency-professional" className="text-sm font-medium text-slate-700">
+          <label htmlFor="urgency-professional" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Profesional
           </label>
           <select
             id="urgency-professional"
             value={professionalId}
             onChange={(e) => setProfessionalId(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           >
             <option value="">Por asignar</option>
             {!isAdmin && user && (
@@ -131,13 +131,13 @@ export function UrgencyAppointmentModal({ onClose, onCreated }: UrgencyAppointme
           </select>
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

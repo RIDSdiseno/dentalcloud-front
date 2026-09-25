@@ -53,23 +53,23 @@ export function ChairAgendaGrid({
   const gridTemplateColumns = `${TIME_COL_WIDTH}px repeat(${chairs.length}, minmax(190px, 1fr))`;
 
   return (
-    <div className="relative h-full min-h-[420px] overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+    <div className="relative h-full min-h-[420px] overflow-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
       <div className="grid" style={{ gridTemplateColumns }}>
         <div
-          className="sticky top-0 left-0 z-20 border-r border-b border-slate-200 bg-brand-50/60"
+          className="sticky top-0 left-0 z-20 border-r border-b border-slate-200 bg-brand-50/60 dark:border-slate-700 dark:bg-brand-500/10"
           style={{ gridColumn: 1, gridRow: 1, height: HEADER_HEIGHT }}
         />
         {chairs.map((chair, chairIndex) => (
           <div
             key={chair.id}
-            className="group sticky top-0 z-10 flex items-center justify-between gap-2 border-r border-b border-slate-200 bg-brand-50/60 px-4 last:border-r-0"
+            className="group sticky top-0 z-10 flex items-center justify-between gap-2 border-r border-b border-slate-200 bg-brand-50/60 px-4 last:border-r-0 dark:border-slate-700 dark:bg-brand-500/10"
             style={{ gridColumn: chairIndex + 2, gridRow: 1, height: HEADER_HEIGHT }}
           >
             <div className="flex items-center gap-2.5 overflow-hidden">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-white shadow-sm shadow-brand-500/30">
                 <ChairIcon className="h-4.5 w-4.5" />
               </span>
-              <span className="truncate text-sm font-bold text-slate-800">
+              <span className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">
                 {chair.name || `Sillón ${chair.number}`}
               </span>
             </div>
@@ -77,7 +77,7 @@ export function ChairAgendaGrid({
               type="button"
               onClick={() => onRemoveChair(chair)}
               aria-label={`Eliminar sillón ${chair.number}`}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-600"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
             >
               <TrashIcon className="h-4 w-4" />
             </button>
@@ -90,8 +90,8 @@ export function ChairAgendaGrid({
           return (
             <div
               key={`t-${time}`}
-              className={`sticky left-0 z-10 flex items-start justify-end border-r border-slate-100 bg-white px-3 pt-1.5 text-xs ${
-                isHour ? 'border-t border-t-slate-200 font-semibold text-slate-600' : 'text-slate-300'
+              className={`sticky left-0 z-10 flex items-start justify-end border-r border-slate-100 bg-white px-3 pt-1.5 text-xs dark:border-slate-800 dark:bg-slate-900 ${
+                isHour ? 'border-t border-t-slate-200 font-semibold text-slate-600 dark:border-t-slate-700 dark:text-slate-300' : 'text-slate-300 dark:text-slate-600'
               }`}
               style={{ gridColumn: 1, gridRow: row, height: ROW_HEIGHT }}
             >
@@ -129,10 +129,10 @@ export function ChairAgendaGrid({
                   type="button"
                   key={`${chair.id}-${slots[rowIndex]}`}
                   onClick={() => onAppointmentClick(covering.appt)}
-                  className="m-0.5 flex flex-col justify-center overflow-hidden rounded-lg bg-brand-100 px-2.5 py-1.5 text-left transition-colors hover:bg-brand-200"
+                  className="m-0.5 flex flex-col justify-center overflow-hidden rounded-lg bg-brand-100 px-2.5 py-1.5 text-left transition-colors hover:bg-brand-200 dark:bg-brand-500/10 dark:hover:bg-brand-500/20"
                   style={{ gridColumn: column, gridRow: `${row} / span ${spanRows}` }}
                 >
-                  <span className="flex items-center gap-1.5 truncate text-xs font-semibold text-brand-800">
+                  <span className="flex items-center gap-1.5 truncate text-xs font-semibold text-brand-800 dark:text-brand-300">
                     <span
                       className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                         STATUS_DOT_CLASS[covering.appt.status] ?? 'bg-slate-400'
@@ -141,12 +141,12 @@ export function ChairAgendaGrid({
                     {covering.appt.patient.firstName} {covering.appt.patient.lastName}
                     {covering.appt.patientConfirmedAt && (
                       <CheckIcon
-                        className="h-3 w-3 shrink-0 text-emerald-600"
+                        className="h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400"
                         aria-label="El paciente confirmó su asistencia"
                       />
                     )}
                   </span>
-                  <span className="truncate text-[11px] text-brand-700">
+                  <span className="truncate text-[11px] text-brand-700 dark:text-brand-400">
                     {formatTime(covering.start)}–{formatTime(covering.end)}
                   </span>
                 </button>
@@ -155,13 +155,13 @@ export function ChairAgendaGrid({
               cells.push(
                 <div
                   key={`${chair.id}-${slots[rowIndex]}`}
-                  className="group/slot flex items-center border-r border-b border-slate-100 px-2 py-1 last:border-r-0"
+                  className="group/slot flex items-center border-r border-b border-slate-100 px-2 py-1 last:border-r-0 dark:border-slate-800"
                   style={{ gridColumn: column, gridRow: row, height: ROW_HEIGHT }}
                 >
                   <button
                     type="button"
                     onClick={() => onSlotClick(chair, slotStart)}
-                    className="flex w-full items-center justify-center truncate rounded-lg bg-slate-50 py-2 text-xs font-medium text-slate-400 transition-colors group-hover/slot:bg-emerald-50 group-hover/slot:text-emerald-600"
+                    className="flex w-full items-center justify-center truncate rounded-lg bg-slate-50 py-2 text-xs font-medium text-slate-400 transition-colors group-hover/slot:bg-emerald-50 group-hover/slot:text-emerald-600 dark:bg-slate-800 dark:text-slate-500 dark:group-hover/slot:bg-emerald-500/10 dark:group-hover/slot:text-emerald-400"
                   >
                     Disponible
                   </button>

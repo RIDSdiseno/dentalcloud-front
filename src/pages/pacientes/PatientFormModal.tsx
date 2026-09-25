@@ -177,7 +177,7 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
           <button
             type="button"
             onClick={() => photoInputRef.current?.click()}
-            className="flex h-24 w-24 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 transition-colors hover:border-brand-400 hover:text-brand-500"
+            className="flex h-24 w-24 flex-col items-center justify-center gap-1 overflow-hidden rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 transition-colors hover:border-brand-400 hover:text-brand-500 dark:border-slate-700 dark:text-slate-500"
           >
             {photoPreviewUrl ? (
               <img src={photoPreviewUrl} alt="Vista previa" className="h-full w-full object-cover" />
@@ -193,7 +193,7 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
         </div>
 
         <div>
-          <label htmlFor="rut" className="text-sm font-medium text-slate-700">
+          <label htmlFor="rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             RUT
           </label>
           <input
@@ -205,20 +205,20 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
             inputMode="text"
             maxLength={12}
             required
-            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 ${
+            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 ${
               rutTouched && !rutIsValid
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
-                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15'
+                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-slate-700'
             }`}
           />
           {rutTouched && !rutIsValid && (
-            <p className="mt-1 text-xs text-red-600">RUT inválido</p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">RUT inválido</p>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="firstName" className="text-sm font-medium text-slate-700">
+            <label htmlFor="firstName" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Nombre
             </label>
             <input
@@ -226,11 +226,11 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           <div>
-            <label htmlFor="lastName" className="text-sm font-medium text-slate-700">
+            <label htmlFor="lastName" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Apellido
             </label>
             <input
@@ -238,14 +238,14 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="phone" className="text-sm font-medium text-slate-700">
+            <label htmlFor="phone" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Teléfono
             </label>
             <div className="mt-1 flex">
@@ -260,7 +260,7 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
             </div>
           </div>
           <div>
-            <label htmlFor="birthDate" className="text-sm font-medium text-slate-700">
+            <label htmlFor="birthDate" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Fecha de nacimiento
             </label>
             <input
@@ -268,13 +268,13 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
               type="date"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="email" className="text-sm font-medium text-slate-700">
+          <label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Correo electrónico
           </label>
           <input
@@ -282,34 +282,34 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
         <div>
-          <label htmlFor="address" className="text-sm font-medium text-slate-700">
+          <label htmlFor="address" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Dirección
           </label>
           <input
             id="address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
-        <div className="border-t border-slate-100 pt-4">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">Datos personales</h3>
+        <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Datos personales</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="gender" className="text-sm font-medium text-slate-700">
+              <label htmlFor="gender" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Género
               </label>
               <select
                 id="gender"
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               >
                 <option value="">No especificado</option>
                 <option value="femenino">Femenino</option>
@@ -318,14 +318,14 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
               </select>
             </div>
             <div>
-              <label htmlFor="maritalStatus" className="text-sm font-medium text-slate-700">
+              <label htmlFor="maritalStatus" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Estado civil
               </label>
               <select
                 id="maritalStatus"
                 value={maritalStatus}
                 onChange={(e) => setMaritalStatus(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               >
                 <option value="">No especificado</option>
                 <option value="soltero">Soltero/a</option>
@@ -336,7 +336,7 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
               </select>
             </div>
             <div>
-              <label htmlFor="nationality" className="text-sm font-medium text-slate-700">
+              <label htmlFor="nationality" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Nacionalidad
               </label>
               <input
@@ -344,11 +344,11 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 value={nationality}
                 onChange={(e) => setNationality(e.target.value)}
                 placeholder="Ej. Chilena"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="occupation" className="text-sm font-medium text-slate-700">
+              <label htmlFor="occupation" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Ocupación
               </label>
               <input
@@ -356,18 +356,18 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 value={occupation}
                 onChange={(e) => setOccupation(e.target.value)}
                 placeholder="Ej. Profesor/a"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="healthInsurance" className="text-sm font-medium text-slate-700">
+              <label htmlFor="healthInsurance" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Previsión de salud
               </label>
               <select
                 id="healthInsurance"
                 value={healthInsurance}
                 onChange={(e) => setHealthInsurance(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               >
                 <option value="">No especificada</option>
                 <option value="fonasa">Fonasa</option>
@@ -377,7 +377,7 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
               </select>
             </div>
             <div>
-              <label htmlFor="healthInsuranceDetail" className="text-sm font-medium text-slate-700">
+              <label htmlFor="healthInsuranceDetail" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Plan / póliza
               </label>
               <input
@@ -385,39 +385,39 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 value={healthInsuranceDetail}
                 onChange={(e) => setHealthInsuranceDetail(e.target.value)}
                 placeholder="Ej. Banmédica Plan 500"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-4">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">Contacto de emergencia</h3>
+        <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Contacto de emergencia</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label htmlFor="emergencyContactName" className="text-sm font-medium text-slate-700">
+              <label htmlFor="emergencyContactName" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Nombre
               </label>
               <input
                 id="emergencyContactName"
                 value={emergencyContactName}
                 onChange={(e) => setEmergencyContactName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="emergencyContactPhone" className="text-sm font-medium text-slate-700">
+              <label htmlFor="emergencyContactPhone" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Teléfono
               </label>
               <input
                 id="emergencyContactPhone"
                 value={emergencyContactPhone}
                 onChange={(e) => setEmergencyContactPhone(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="emergencyContactRelationship" className="text-sm font-medium text-slate-700">
+              <label htmlFor="emergencyContactRelationship" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Relación
               </label>
               <input
@@ -425,18 +425,18 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 value={emergencyContactRelationship}
                 onChange={(e) => setEmergencyContactRelationship(e.target.value)}
                 placeholder="Ej. Madre, cónyuge..."
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-4">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">Antecedentes médicos</h3>
+        <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+          <h3 className="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">Antecedentes médicos</h3>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label htmlFor="heightCm" className="text-sm font-medium text-slate-700">
+              <label htmlFor="heightCm" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Altura (cm)
               </label>
               <input
@@ -446,11 +446,11 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 value={heightCm}
                 onChange={(e) => setHeightCm(e.target.value)}
                 placeholder="170"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="weightKg" className="text-sm font-medium text-slate-700">
+              <label htmlFor="weightKg" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Peso (kg)
               </label>
               <input
@@ -461,18 +461,18 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 value={weightKg}
                 onChange={(e) => setWeightKg(e.target.value)}
                 placeholder="70"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="bloodType" className="text-sm font-medium text-slate-700">
+              <label htmlFor="bloodType" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Grupo sanguíneo
               </label>
               <select
                 id="bloodType"
                 value={bloodType}
                 onChange={(e) => setBloodType(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               >
                 <option value="">Desconocido</option>
                 {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bt) => (
@@ -483,10 +483,10 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
           </div>
 
           <div className="mt-4">
-            <p className="text-sm font-medium text-slate-700">Alergias</p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Alergias</p>
             <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
               {ALLERGY_OPTIONS.map((opt) => (
-                <label key={opt.key} className="flex items-center gap-2 text-sm text-slate-600">
+                <label key={opt.key} className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
                   <input
                     type="checkbox"
                     checked={allergies.includes(opt.key)}
@@ -508,7 +508,7 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="medicalConditions" className="text-sm font-medium text-slate-700">
+              <label htmlFor="medicalConditions" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Condiciones médicas relevantes
               </label>
               <textarea
@@ -517,11 +517,11 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 onChange={(e) => setMedicalConditions(e.target.value)}
                 placeholder="Ej. diabetes, hipertensión, embarazo..."
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="currentMedications" className="text-sm font-medium text-slate-700">
+              <label htmlFor="currentMedications" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Medicamentos actuales
               </label>
               <textarea
@@ -530,11 +530,11 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 onChange={(e) => setCurrentMedications(e.target.value)}
                 placeholder="Ej. anticoagulantes, antihipertensivos..."
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="chronicDiseases" className="text-sm font-medium text-slate-700">
+              <label htmlFor="chronicDiseases" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Enfermedades crónicas
               </label>
               <textarea
@@ -543,11 +543,11 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 onChange={(e) => setChronicDiseases(e.target.value)}
                 placeholder="Ej. diabetes tipo 2, hipotiroidismo..."
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
             <div>
-              <label htmlFor="dentalHistory" className="text-sm font-medium text-slate-700">
+              <label htmlFor="dentalHistory" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 Antecedentes dentales
               </label>
               <textarea
@@ -556,27 +556,27 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
                 onChange={(e) => setDentalHistory(e.target.value)}
                 placeholder="Ej. extracciones previas, tratamientos de conducto..."
                 rows={2}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-4">
-          <h3 className="mb-1 text-sm font-semibold text-slate-700">Etiquetas</h3>
-          <p className="mb-2 text-xs text-slate-500">Marcas rápidas visibles en la ficha (ej. requiere sedación, paciente ansioso, moroso).</p>
+        <div className="border-t border-slate-100 pt-4 dark:border-slate-700">
+          <h3 className="mb-1 text-sm font-semibold text-slate-700 dark:text-slate-200">Etiquetas</h3>
+          <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">Marcas rápidas visibles en la ficha (ej. requiere sedación, paciente ansioso, moroso).</p>
           <div className="flex flex-wrap gap-1.5">
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200"
+                className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-800"
               >
                 {tag}
                 <button
                   type="button"
                   onClick={() => removeTag(tag)}
                   aria-label={`Quitar etiqueta ${tag}`}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   ×
                 </button>
@@ -589,25 +589,25 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
               onChange={(e) => setTagDraft(e.target.value)}
               onKeyDown={handleTagKeyDown}
               placeholder="Escribe una etiqueta y presiona Enter"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
             <button
               type="button"
               onClick={addTag}
-              className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="shrink-0 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Agregar
             </button>
           </div>
         </div>
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

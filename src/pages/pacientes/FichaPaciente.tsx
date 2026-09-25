@@ -136,10 +136,10 @@ function chairLabel(appointment: Appointment) {
 function InfoRow({ icon: Icon, value }: { icon: typeof PhoneIcon; value: string | null }) {
   return (
     <div className="flex items-center gap-2.5 text-sm">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
         <Icon className="h-4 w-4" />
       </span>
-      <span className={value ? 'text-slate-700' : 'text-slate-400'}>{value ?? 'No registrado'}</span>
+      <span className={value ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}>{value ?? 'No registrado'}</span>
     </div>
   );
 }
@@ -156,18 +156,18 @@ function GlanceCard({
   emptyLabel: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+    <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+      <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
         <Icon className="h-4 w-4 text-brand-500" />
         {title}
       </h3>
       {!appointment ? (
-        <p className="text-sm text-slate-400">{emptyLabel}</p>
+        <p className="text-sm text-slate-400 dark:text-slate-500">{emptyLabel}</p>
       ) : (
         <div>
-          <p className="text-xl font-bold text-brand-700">{formatTime(new Date(appointment.startAt))}</p>
-          <p className="text-sm text-slate-600 capitalize">{formatLongDate(new Date(appointment.startAt))}</p>
-          <div className="mt-2 flex flex-col gap-1 text-xs text-slate-500">
+          <p className="text-xl font-bold text-brand-700 dark:text-brand-400">{formatTime(new Date(appointment.startAt))}</p>
+          <p className="text-sm text-slate-600 capitalize dark:text-slate-300">{formatLongDate(new Date(appointment.startAt))}</p>
+          <div className="mt-2 flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
               <UsersIcon className="h-3.5 w-3.5" />
               {appointment.professional?.name ?? 'Sin profesional asignado'}
@@ -211,7 +211,7 @@ function DatosCorroboracionCard({ patient, onUpdate }: { patient: Patient; onUpd
     return (
       <div
         id="datos-corroboracion-card"
-        className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200 lg:col-span-3"
+        className="flex items-center gap-2 rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-800 ring-1 ring-emerald-200 lg:col-span-3 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20"
       >
         <CheckIcon className="h-4 w-4 shrink-0" />
         Datos del paciente confirmados por el profesional el {new Date(patient.datosCorroboradosAt).toLocaleDateString('es-CL')}.
@@ -222,15 +222,15 @@ function DatosCorroboracionCard({ patient, onUpdate }: { patient: Patient; onUpd
   return (
     <div
       id="datos-corroboracion-card"
-      className="flex flex-col gap-2 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 lg:col-span-3 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-2 rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200 lg:col-span-3 sm:flex-row sm:items-center sm:justify-between dark:bg-amber-500/10 dark:ring-amber-500/20"
     >
-      <div className="text-sm text-amber-800">
+      <div className="text-sm text-amber-800 dark:text-amber-400">
         <p className="font-semibold">Datos del paciente sin confirmar</p>
         <p className="text-xs">
           Recepción puede haber cargado estos datos — repásalos con el paciente presente antes de continuar (nombre, RUT,
           fecha de nacimiento, contacto).
         </p>
-        {error && <p className="mt-1 text-xs font-semibold text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
       </div>
       <button
         type="button"
@@ -383,15 +383,15 @@ function MotivoConsultaCard({
   }
 
   return (
-    <div id="motivo-consulta-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-      <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-800">
+    <div id="motivo-consulta-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+      <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
         <MicIcon className="h-4 w-4 text-brand-500" />
         Motivo de consulta
       </h2>
-      <p className="mb-4 text-xs text-slate-500">Debe completarlo el profesional durante la atención — no la secretaria.</p>
+      <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">Debe completarlo el profesional durante la atención — no la secretaria.</p>
 
       {!canEditMotivo && (
-        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+        <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
           <LockIcon className="h-3.5 w-3.5" />
           Tu perfil no tiene permiso para editar el motivo de consulta.
         </p>
@@ -403,7 +403,7 @@ function MotivoConsultaCard({
         rows={3}
         disabled={!canEditMotivo}
         placeholder="Ej: paciente refiere querer un aumento leve de volumen labial..."
-        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
       />
       <div className="mt-2 flex items-center gap-3">
         <button
@@ -414,18 +414,18 @@ function MotivoConsultaCard({
         >
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
-        {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+        {saveError && <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>}
       </div>
 
-      <div className="mt-5 border-t border-slate-100 pt-5">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Grabación de respaldo</h3>
+      <div className="mt-5 border-t border-slate-100 pt-5 dark:border-slate-800">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Grabación de respaldo</h3>
 
         {!consentChecked ? (
-          <p className="text-xs text-slate-400">Verificando consentimiento...</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Verificando consentimiento...</p>
         ) : !consentSigned ? (
-          <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200">
-            <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <div className="text-xs text-amber-800">
+          <div className="flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/20">
+            <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="text-xs text-amber-800 dark:text-amber-400">
               <p className="font-semibold">
                 El paciente debe firmar el consentimiento de grabación de voz antes de poder grabar.
               </p>
@@ -441,7 +441,7 @@ function MotivoConsultaCard({
               type="button"
               onClick={startRecording}
               disabled={uploading}
-              className="w-fit rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
+              className="w-fit rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Grabar de nuevo
             </button>
@@ -459,7 +459,7 @@ function MotivoConsultaCard({
             >
               {recording ? <span className="h-3.5 w-3.5 rounded-sm bg-white" /> : <MicIcon className="h-5 w-5" />}
             </button>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
               {uploading
                 ? 'Guardando grabación...'
                 : recording
@@ -468,7 +468,7 @@ function MotivoConsultaCard({
             </div>
           </div>
         )}
-        {recordError && <p className="mt-2 text-xs text-red-600">{recordError}</p>}
+        {recordError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{recordError}</p>}
       </div>
     </div>
   );
@@ -519,13 +519,13 @@ function YesNoBlock({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{label}</span>
       <div className="flex gap-2">
         <button
           type="button"
           onClick={() => onChange({ tiene: false, detalle: '' })}
           className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
-            value.tiene === false ? 'bg-slate-700 text-white ring-slate-700' : 'bg-slate-50 text-slate-600 ring-slate-200'
+            value.tiene === false ? 'bg-slate-700 text-white ring-slate-700' : 'bg-slate-50 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
           }`}
         >
           No
@@ -534,7 +534,7 @@ function YesNoBlock({
           type="button"
           onClick={() => onChange({ ...value, tiene: true })}
           className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
-            value.tiene === true ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200'
+            value.tiene === true ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
           }`}
         >
           Sí
@@ -545,7 +545,7 @@ function YesNoBlock({
           value={value.detalle}
           onChange={(e) => onChange({ ...value, detalle: e.target.value })}
           placeholder="Detalle..."
-          className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+          className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
         />
       )}
     </div>
@@ -571,12 +571,12 @@ function TriStateConditionsTable({
     { status: 'desconoce', label: 'Desconoce' },
   ];
   return (
-    <div className="overflow-hidden rounded-xl ring-1 ring-slate-200">
+    <div className="overflow-hidden rounded-xl ring-1 ring-slate-200 dark:ring-slate-800">
       <table className="w-full text-left text-sm">
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {options.map((key) => (
             <tr key={key}>
-              <td className="px-3 py-2 text-slate-700">{labels[key]}</td>
+              <td className="px-3 py-2 text-slate-700 dark:text-slate-200">{labels[key]}</td>
               <td className="px-3 py-2">
                 <div className="flex justify-end gap-1.5">
                   {OPTIONS.map((opt) => {
@@ -593,7 +593,7 @@ function TriStateConditionsTable({
                               : opt.status === 'no'
                                 ? 'bg-slate-700 text-white ring-slate-700'
                                 : 'bg-amber-500 text-white ring-amber-500'
-                            : 'bg-slate-50 text-slate-500 ring-slate-200 hover:bg-slate-100'
+                            : 'bg-slate-50 text-slate-500 ring-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700 dark:hover:bg-slate-700'
                         }`}
                       >
                         {opt.label}
@@ -631,7 +631,7 @@ function CheckboxPills<T extends string>({
             type="button"
             onClick={() => onToggle(key)}
             className={`rounded-full px-3 py-1.5 text-xs font-medium ring-1 transition-colors ${
-              active ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100'
+              active ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700'
             }`}
           >
             {labels[key]}
@@ -666,33 +666,33 @@ function ExamRequestModal({ patient, onClose, onCreated }: { patient: Patient; o
   return (
     <Modal title="Solicitud de exámenes" onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Se genera una receta imprimible con los exámenes solicitados y el flujo queda pausado en esta etapa hasta
           que el paciente los traiga.
         </p>
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Exámenes solicitados</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Exámenes solicitados</span>
           <textarea
             value={exams}
             onChange={(e) => setExams(e.target.value)}
             required
             rows={4}
             placeholder="Ej. Hemograma completo, perfil tiroideo, test de embarazo..."
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
           />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Observaciones (opcional)</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Observaciones (opcional)</span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
           />
         </label>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+          <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
             Cancelar
           </button>
           <button
@@ -773,13 +773,13 @@ function AnamnesisConclusionesCard({
       : 'Niega alergias medicamentosas, cosméticas o al látex.';
 
   return (
-    <div id="anamnesis-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-      <h2 className="mb-1 text-sm font-semibold text-slate-800">Anamnesis</h2>
-      <p className="mb-4 text-xs text-slate-500">Antecedentes por bloques, marcables con el dedo — nada de texto libre.</p>
+    <div id="anamnesis-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+      <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Anamnesis</h2>
+      <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">Antecedentes por bloques, marcables con el dedo — nada de texto libre.</p>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
             1. Antecedentes mórbidos personales
           </span>
           <TriStateConditionsTable
@@ -797,7 +797,7 @@ function AnamnesisConclusionesCard({
             value={anamnesis.antecedentesMorbidosOtro}
             onChange={(e) => setAnamnesis((prev) => ({ ...prev, antecedentesMorbidosOtro: e.target.value }))}
             placeholder="Otro (no listado arriba)..."
-            className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
           />
         </div>
 
@@ -808,13 +808,13 @@ function AnamnesisConclusionesCard({
         />
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">3. Procedimiento estético previo</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">3. Procedimiento estético previo</span>
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { tiene: false, tipo: '', zona: '', fecha: '' } }))}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
-                anamnesis.procedimientoPrevio.tiene === false ? 'bg-slate-700 text-white ring-slate-700' : 'bg-slate-50 text-slate-600 ring-slate-200'
+                anamnesis.procedimientoPrevio.tiene === false ? 'bg-slate-700 text-white ring-slate-700' : 'bg-slate-50 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
               }`}
             >
               No
@@ -823,7 +823,7 @@ function AnamnesisConclusionesCard({
               type="button"
               onClick={() => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, tiene: true } }))}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ${
-                anamnesis.procedimientoPrevio.tiene === true ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200'
+                anamnesis.procedimientoPrevio.tiene === true ? 'bg-brand-600 text-white ring-brand-600' : 'bg-slate-50 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700'
               }`}
             >
               Sí
@@ -835,19 +835,19 @@ function AnamnesisConclusionesCard({
                 value={anamnesis.procedimientoPrevio.tipo}
                 onChange={(e) => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, tipo: e.target.value } }))}
                 placeholder="Tipo"
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
               />
               <input
                 value={anamnesis.procedimientoPrevio.zona}
                 onChange={(e) => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, zona: e.target.value } }))}
                 placeholder="Zona"
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
               />
               <input
                 value={anamnesis.procedimientoPrevio.fecha}
                 onChange={(e) => setAnamnesis((prev) => ({ ...prev, procedimientoPrevio: { ...prev.procedimientoPrevio, fecha: e.target.value } }))}
                 placeholder="Fecha"
-                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+                className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
               />
             </div>
           )}
@@ -860,17 +860,17 @@ function AnamnesisConclusionesCard({
         />
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">5. Medicación actual</span>
-          <p className="text-sm text-slate-600">
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">5. Medicación actual</span>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             {patient.currentMedications || 'Sin medicación actual registrada.'}{' '}
-            <span className="text-xs text-slate-400">(se edita en "Antecedentes médicos" más abajo)</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">(se edita en "Antecedentes médicos" más abajo)</span>
           </p>
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">6. Alergias</span>
-          <p className="text-sm text-slate-600">
-            {allergyText} <span className="text-xs text-slate-400">(se edita en "Antecedentes médicos" más abajo)</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">6. Alergias</span>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            {allergyText} <span className="text-xs text-slate-400 dark:text-slate-500">(se edita en "Antecedentes médicos" más abajo)</span>
           </p>
         </div>
 
@@ -881,7 +881,7 @@ function AnamnesisConclusionesCard({
         />
 
         <div>
-          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">8. Hábitos</span>
+          <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">8. Hábitos</span>
           <CheckboxPills
             options={ANAMNESIS_HABIT_KEYS}
             labels={ANAMNESIS_HABIT_LABEL}
@@ -897,7 +897,7 @@ function AnamnesisConclusionesCard({
             value={anamnesis.habitosOtro}
             onChange={(e) => setAnamnesis((prev) => ({ ...prev, habitosOtro: e.target.value }))}
             placeholder="Otro..."
-            className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+            className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
           />
         </div>
       </div>
@@ -911,32 +911,32 @@ function AnamnesisConclusionesCard({
         >
           {saving ? 'Guardando...' : 'Guardar anamnesis'}
         </button>
-        {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+        {saveError && <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>}
       </div>
 
-      <div className="mt-6 border-t border-slate-100 pt-5">
+      <div className="mt-6 border-t border-slate-100 pt-5 dark:border-slate-800">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-slate-800">Conclusiones de Anamnesis</h3>
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Conclusiones de Anamnesis</h3>
           <button
             type="button"
             onClick={handleGenerateSummary}
             disabled={generatingSummary}
-            className="rounded-lg border border-brand-300 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-brand-300 px-3 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-brand-500/30 dark:text-brand-400 dark:hover:bg-brand-500/10"
           >
             {generatingSummary ? 'Generando con IA...' : patient.anamnesisSummary ? '↻ Regenerar con IA' : '✨ Generar resumen con IA'}
           </button>
         </div>
-        <div className="rounded-xl bg-slate-50 p-4 text-sm italic text-slate-600">
+        <div className="rounded-xl bg-slate-50 p-4 text-sm italic text-slate-600 dark:bg-slate-800 dark:text-slate-300">
           {patient.anamnesisSummary || buildAnamnesisSummary(patient)}
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Expectativas del paciente</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Expectativas del paciente</span>
             <select
               value={expectativas}
               onChange={(e) => setExpectativas(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
             >
               <option value="">No especificado</option>
               {Object.entries(EXPECTATIVAS_LABEL).map(([value, label]) => (
@@ -947,11 +947,11 @@ function AnamnesisConclusionesCard({
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">¿Paciente óptimo para tratamiento?</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">¿Paciente óptimo para tratamiento?</span>
             <select
               value={optimo}
               onChange={(e) => setOptimo(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-800"
             >
               <option value="">No especificado</option>
               {Object.entries(OPTIMO_LABEL).map(([value, label]) => (
@@ -968,7 +968,7 @@ function AnamnesisConclusionesCard({
           <button
             type="button"
             onClick={() => setExamModalOpen(true)}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-amber-300 bg-amber-50 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
           >
             <ClipboardIcon className="h-4 w-4" />
             Solicitud de exámenes — el flujo se pausa aquí hasta traerlos
@@ -1091,12 +1091,12 @@ export default function FichaPaciente() {
         <button
           type="button"
           onClick={() => navigate('/pacientes')}
-          className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+          className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Volver a pacientes
         </button>
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">
           {error ?? 'Paciente no encontrado'}
         </p>
       </div>
@@ -1121,13 +1121,13 @@ export default function FichaPaciente() {
       <button
         type="button"
         onClick={() => navigate('/pacientes')}
-        className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700"
+        className="flex w-fit items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         Volver a pacientes
       </button>
 
-      <div id="ficha-header-card" className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+      <div id="ficha-header-card" className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="flex items-center gap-4">
           <div className="group relative h-16 w-16 shrink-0">
             {patient.photoUrl ? (
@@ -1161,16 +1161,16 @@ export default function FichaPaciente() {
             </button>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {patient.firstName} {patient.lastName}
             </h1>
-            <p className="mt-0.5 text-sm text-slate-500">
+            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
               {formatRut(patient.rut)}
               {age !== null && ` · ${age} años`}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {patient.allergies.length > 0 && (
-                <span className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200">
+                <span className="flex w-fit items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20">
                   <AlertTriangleIcon className="h-3.5 w-3.5" />
                   Alergias: {patient.allergies.map((a) => ALLERGY_LABEL[a]).join(', ')}
                 </span>
@@ -1178,7 +1178,7 @@ export default function FichaPaciente() {
               {patient.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+                  className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700"
                 >
                   {tag}
                 </span>
@@ -1200,7 +1200,7 @@ export default function FichaPaciente() {
             id="ficha-editar-btn"
             type="button"
             onClick={() => setShowEditForm(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3.5 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <EditIcon className="h-4 w-4" />
             Editar
@@ -1216,7 +1216,7 @@ export default function FichaPaciente() {
           onSelectStep={(step: EstheticStepKey) => setActiveTab(step)}
         />
       ) : (
-        <div id="ficha-tabs-dental" className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200">
+        <div id="ficha-tabs-dental" className="flex gap-1.5 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
           {visibleTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -1226,7 +1226,7 @@ export default function FichaPaciente() {
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
                 className={`flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30' : 'text-slate-600 hover:bg-slate-100'
+                  isActive ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -1243,8 +1243,8 @@ export default function FichaPaciente() {
             <DatosCorroboracionCard patient={patient} onUpdate={setPatient} />
           )}
 
-          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
-            <h2 className="mb-4 text-sm font-semibold text-slate-800">Datos de contacto</h2>
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-2">
+            <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Datos de contacto</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <InfoRow icon={PhoneIcon} value={patient.phone} />
               <InfoRow icon={MailIcon} value={patient.email} />
@@ -1256,59 +1256,59 @@ export default function FichaPaciente() {
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
               <IdBadgeIcon className="h-4 w-4 text-brand-500" />
               Resumen
             </h3>
             <dl className="flex flex-col gap-2 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">Citas totales</dt>
-                <dd className="font-semibold text-slate-800">{appointments.length}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Citas totales</dt>
+                <dd className="font-semibold text-slate-800 dark:text-slate-100">{appointments.length}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">Canceladas</dt>
-                <dd className="font-semibold text-slate-800">{cancelledCount}</dd>
+                <dt className="text-slate-500 dark:text-slate-400">Canceladas</dt>
+                <dd className="font-semibold text-slate-800 dark:text-slate-100">{cancelledCount}</dd>
               </div>
               <div className="flex items-center justify-between">
-                <dt className="text-slate-500">Paciente desde</dt>
-                <dd className="font-semibold text-slate-800">
+                <dt className="text-slate-500 dark:text-slate-400">Paciente desde</dt>
+                <dd className="font-semibold text-slate-800 dark:text-slate-100">
                   {new Date(patient.createdAt).toLocaleDateString('es-CL')}
                 </dd>
               </div>
             </dl>
           </div>
 
-          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-            <h2 className="mb-4 text-sm font-semibold text-slate-800">Datos personales</h2>
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+            <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Datos personales</h2>
             <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Género</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.gender ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Género</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.gender ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {GENDER_LABEL[patient.gender ?? ''] ?? 'No especificado'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado civil</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.maritalStatus ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Estado civil</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.maritalStatus ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {MARITAL_STATUS_LABEL[patient.maritalStatus ?? ''] ?? 'No especificado'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nacionalidad</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.nationality ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Nacionalidad</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.nationality ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.nationality || 'No especificada'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Ocupación</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.occupation ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ocupación</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.occupation ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.occupation || 'No especificada'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Previsión de salud</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.healthInsurance ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Previsión de salud</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.healthInsurance ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {HEALTH_INSURANCE_LABEL[patient.healthInsurance ?? ''] ?? 'No especificada'}
                   {patient.healthInsuranceDetail && ` · ${patient.healthInsuranceDetail}`}
                 </dd>
@@ -1316,32 +1316,32 @@ export default function FichaPaciente() {
             </dl>
           </div>
 
-          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-            <h2 className="mb-4 text-sm font-semibold text-slate-800">Contacto de emergencia</h2>
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+            <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Contacto de emergencia</h2>
             <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactName ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Nombre</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactName ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.emergencyContactName || 'No registrado'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Teléfono</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactPhone ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Teléfono</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactPhone ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.emergencyContactPhone || 'No registrado'}
                 </dd>
               </div>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">Relación</dt>
-                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactRelationship ? 'text-slate-700' : 'text-slate-400'}`}>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Relación</dt>
+                <dd className={`mt-1 text-sm font-medium ${patient.emergencyContactRelationship ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.emergencyContactRelationship || 'No registrada'}
                 </dd>
               </div>
             </dl>
           </div>
 
-          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
               <ClockIcon className="h-4 w-4 text-brand-500" />
               Seguimiento clínico
             </h2>
@@ -1373,68 +1373,68 @@ export default function FichaPaciente() {
             onGoToExamen={() => setActiveTab('examen')}
           />
 
-          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-3">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
               <AlertTriangleIcon className="h-4 w-4 text-brand-500" />
               Antecedentes médicos
             </h2>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Medidas</p>
+              <div className="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Medidas</p>
                 <div className="flex gap-6 text-sm">
                   <div>
-                    <p className="text-slate-500">Altura</p>
-                    <p className="font-medium text-slate-700">{patient.heightCm ? `${patient.heightCm} cm` : 'No registrada'}</p>
+                    <p className="text-slate-500 dark:text-slate-400">Altura</p>
+                    <p className="font-medium text-slate-700 dark:text-slate-200">{patient.heightCm ? `${patient.heightCm} cm` : 'No registrada'}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500">Peso</p>
-                    <p className="font-medium text-slate-700">{patient.weightKg ? `${patient.weightKg} kg` : 'No registrado'}</p>
+                    <p className="text-slate-500 dark:text-slate-400">Peso</p>
+                    <p className="font-medium text-slate-700 dark:text-slate-200">{patient.weightKg ? `${patient.weightKg} kg` : 'No registrado'}</p>
                   </div>
                   <div>
-                    <p className="text-slate-500">Grupo sanguíneo</p>
-                    <p className="font-medium text-slate-700">{patient.bloodType || 'Desconocido'}</p>
+                    <p className="text-slate-500 dark:text-slate-400">Grupo sanguíneo</p>
+                    <p className="font-medium text-slate-700 dark:text-slate-200">{patient.bloodType || 'Desconocido'}</p>
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl bg-slate-50 p-4 text-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Alergias</p>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Alergias</p>
                 {patient.allergies.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {patient.allergies.map((a) => (
                       <span
                         key={a}
-                        className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200"
+                        className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 ring-1 ring-red-200 dark:bg-red-500/10 dark:text-red-400 dark:ring-red-500/20"
                       >
                         {ALLERGY_LABEL[a]}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="font-medium text-slate-400">Sin alergias registradas</p>
+                  <p className="font-medium text-slate-400 dark:text-slate-500">Sin alergias registradas</p>
                 )}
-                {patient.allergyNotes && <p className="mt-1.5 text-xs text-slate-500">{patient.allergyNotes}</p>}
+                {patient.allergyNotes && <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{patient.allergyNotes}</p>}
               </div>
-              <div className="rounded-xl bg-slate-50 p-4 text-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Condiciones médicas relevantes</p>
-                <p className={`font-medium ${patient.medicalConditions ? 'text-slate-700' : 'text-slate-400'}`}>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Condiciones médicas relevantes</p>
+                <p className={`font-medium ${patient.medicalConditions ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.medicalConditions ?? 'No registradas'}
                 </p>
               </div>
-              <div className="rounded-xl bg-slate-50 p-4 text-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Medicamentos actuales</p>
-                <p className={`font-medium ${patient.currentMedications ? 'text-slate-700' : 'text-slate-400'}`}>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Medicamentos actuales</p>
+                <p className={`font-medium ${patient.currentMedications ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.currentMedications ?? 'No registrados'}
                 </p>
               </div>
-              <div className="rounded-xl bg-slate-50 p-4 text-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Enfermedades crónicas</p>
-                <p className={`font-medium ${patient.chronicDiseases ? 'text-slate-700' : 'text-slate-400'}`}>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Enfermedades crónicas</p>
+                <p className={`font-medium ${patient.chronicDiseases ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.chronicDiseases ?? 'No registradas'}
                 </p>
               </div>
-              <div className="rounded-xl bg-slate-50 p-4 text-sm">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Antecedentes dentales</p>
-                <p className={`font-medium ${patient.dentalHistory ? 'text-slate-700' : 'text-slate-400'}`}>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm dark:bg-slate-800">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Antecedentes dentales</p>
+                <p className={`font-medium ${patient.dentalHistory ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                   {patient.dentalHistory ?? 'No registrados'}
                 </p>
               </div>
@@ -1449,17 +1449,17 @@ export default function FichaPaciente() {
 
       {activeTab === 'horas' && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 lg:col-span-2">
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                 <CalendarIcon className="h-5 w-5 text-brand-500" />
                 Historial de citas
               </h2>
-              <span className="text-xs text-slate-400">{appointments.length} en total</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">{appointments.length} en total</span>
             </div>
 
             {appointments.length === 0 && (
-              <p className="py-8 text-center text-sm text-slate-400">Sin citas registradas.</p>
+              <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Sin citas registradas.</p>
             )}
 
             <div className="flex max-h-[30rem] flex-col gap-3 overflow-y-auto pr-1">
@@ -1470,21 +1470,21 @@ export default function FichaPaciente() {
                   <div
                     key={appointment.id}
                     className={`flex items-center justify-between gap-4 rounded-xl border-l-4 p-3.5 ${
-                      isCancelled ? 'border-slate-300 bg-slate-50' : 'border-brand-500 bg-brand-50/40'
+                      isCancelled ? 'border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60' : 'border-brand-500 bg-brand-50/40 dark:bg-brand-500/10'
                     }`}
                   >
                     <div className="min-w-0">
                       <p
                         className={`text-sm font-semibold capitalize ${
-                          isCancelled ? 'text-slate-500' : 'text-slate-800'
+                          isCancelled ? 'text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-slate-100'
                         }`}
                       >
                         {formatLongDate(new Date(appointment.startAt))}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
                         {formatTime(new Date(appointment.startAt))} – {formatTime(new Date(appointment.endAt))}
                       </p>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                         <span className="flex items-center gap-1">
                           <UsersIcon className="h-3.5 w-3.5" />
                           {appointment.professional?.name ?? 'Sin profesional asignado'}
@@ -1496,7 +1496,7 @@ export default function FichaPaciente() {
                       </div>
                     </div>
                     {isCancelled ? (
-                      <span className="shrink-0 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                      <span className="shrink-0 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                         Cancelada
                       </span>
                     ) : (
@@ -1504,7 +1504,7 @@ export default function FichaPaciente() {
                         <button
                           type="button"
                           onClick={() => handleCancelAppointment(appointment)}
-                          className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                          className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                         >
                           Cancelar
                         </button>

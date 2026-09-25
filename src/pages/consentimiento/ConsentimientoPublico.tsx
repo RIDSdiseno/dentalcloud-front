@@ -23,11 +23,11 @@ function statusFromError(err: unknown): ViewState {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 dark:bg-slate-950">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <div className="mb-6 flex items-center gap-2 text-brand-600">
           <ShieldIcon className="h-6 w-6" />
-          <span className="text-lg font-bold text-slate-900">fordentcloud</span>
+          <span className="text-lg font-bold text-slate-900 dark:text-slate-100">fordentcloud</span>
         </div>
         {children}
       </div>
@@ -101,7 +101,7 @@ export default function ConsentimientoPublico() {
   if (state === 'loading') {
     return (
       <Shell>
-        <p className="text-sm text-slate-500">Cargando...</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Cargando...</p>
       </Shell>
     );
   }
@@ -109,7 +109,7 @@ export default function ConsentimientoPublico() {
   if (state === 'not_found') {
     return (
       <Shell>
-        <p className="text-sm text-red-600">Este link no es válido. Verifica que copiaste la URL completa.</p>
+        <p className="text-sm text-red-600 dark:text-red-400">Este link no es válido. Verifica que copiaste la URL completa.</p>
       </Shell>
     );
   }
@@ -117,7 +117,7 @@ export default function ConsentimientoPublico() {
   if (state === 'expired') {
     return (
       <Shell>
-        <p className="text-sm text-amber-600">Este link ha vencido. Solicita a la clínica que te envíe uno nuevo.</p>
+        <p className="text-sm text-amber-600 dark:text-amber-400">Este link ha vencido. Solicita a la clínica que te envíe uno nuevo.</p>
       </Shell>
     );
   }
@@ -125,7 +125,7 @@ export default function ConsentimientoPublico() {
   if (state === 'already_responded') {
     return (
       <Shell>
-        <p className="text-sm text-slate-600">Este consentimiento ya fue respondido anteriormente.</p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Este consentimiento ya fue respondido anteriormente.</p>
       </Shell>
     );
   }
@@ -133,7 +133,7 @@ export default function ConsentimientoPublico() {
   if (state === 'error') {
     return (
       <Shell>
-        <p className="text-sm text-red-600">Ocurrió un error inesperado. Intenta nuevamente más tarde.</p>
+        <p className="text-sm text-red-600 dark:text-red-400">Ocurrió un error inesperado. Intenta nuevamente más tarde.</p>
       </Shell>
     );
   }
@@ -141,7 +141,7 @@ export default function ConsentimientoPublico() {
   if (state === 'success') {
     return (
       <Shell>
-        <p className="text-sm font-medium text-slate-800">
+        <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
           {decidedAs === 'firmado'
             ? 'Gracias, tu aceptación quedó registrada correctamente.'
             : 'Quedó registrado que rechazaste este consentimiento.'}
@@ -152,15 +152,15 @@ export default function ConsentimientoPublico() {
 
   return (
     <Shell>
-      <h1 className="mb-1 text-lg font-bold text-slate-900">{consent?.consentTypeName}</h1>
-      <p className="mb-4 text-sm text-slate-500">Hola {consent?.patientName}, por favor revisa el siguiente documento.</p>
+      <h1 className="mb-1 text-lg font-bold text-slate-900 dark:text-slate-100">{consent?.consentTypeName}</h1>
+      <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">Hola {consent?.patientName}, por favor revisa el siguiente documento.</p>
 
       {consent?.pdfUrl ? (
         <div className="mb-5 flex flex-col gap-2">
           <iframe
             src={consent.pdfUrl}
             title={consent.consentTypeName}
-            className="h-80 w-full rounded-lg border border-slate-200 bg-slate-50"
+            className="h-80 w-full rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
           />
           <a
             href={consent.pdfUrl}
@@ -172,25 +172,25 @@ export default function ConsentimientoPublico() {
           </a>
         </div>
       ) : (
-        <div className="mb-5 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">
+        <div className="mb-5 max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
           {consent?.contentSnapshot}
         </div>
       )}
 
       <div className="flex flex-col gap-3">
         <div>
-          <label htmlFor="signerName" className="text-sm font-medium text-slate-700">
+          <label htmlFor="signerName" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Nombre completo
           </label>
           <input
             id="signerName"
             value={signerName}
             onChange={(e) => setSignerName(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
         <div>
-          <label htmlFor="signerRut" className="text-sm font-medium text-slate-700">
+          <label htmlFor="signerRut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             RUT
           </label>
           <input
@@ -198,10 +198,10 @@ export default function ConsentimientoPublico() {
             value={signerRut}
             onChange={(e) => setSignerRut(formatRutInput(e.target.value))}
             placeholder="12.345.678-9"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
-        <label className="mt-1 flex items-start gap-2 text-sm text-slate-600">
+        <label className="mt-1 flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
           <input
             type="checkbox"
             checked={readConfirmed}
@@ -212,13 +212,13 @@ export default function ConsentimientoPublico() {
         </label>
 
         <div>
-          <label className="text-sm font-medium text-slate-700">Firma</label>
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Firma</label>
           <div className="mt-1">
             <SignaturePad onChange={setSignatureDataUrl} />
           </div>
         </div>
 
-        {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
+        {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}
 
         <div className="mt-2 flex gap-3">
           <button
@@ -233,7 +233,7 @@ export default function ConsentimientoPublico() {
             type="button"
             disabled={!canSubmit || state === 'submitting'}
             onClick={() => handleDecision('rechazado')}
-            className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Rechazar
           </button>

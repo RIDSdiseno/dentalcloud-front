@@ -68,70 +68,70 @@ export default function PagosConsulta() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <div id="pagos-header">
-        <h1 className="text-2xl font-bold text-slate-900">Pagos de Consulta</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Pagos de Consulta</h1>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Registro de quién pagó su consulta antes de ser atendido. Es solo informativo — el personal decide con esta
           tabla si corresponde atender al paciente.
         </p>
       </div>
 
-      <form id="pagos-form" onSubmit={handleSubmit} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-4 text-sm font-semibold text-slate-800">Registrar pago</h2>
+      <form id="pagos-form" onSubmit={handleSubmit} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Registrar pago</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">RUT</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">RUT</span>
             <input
               required
               value={rut}
               onChange={(e) => setRut(e.target.value)}
               placeholder="12.345.678-9"
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Nombre</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Nombre</span>
             <input
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Apellido</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Apellido</span>
             <input
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Correo (opcional)</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Correo (opcional)</span>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Monto</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Monto</span>
             <input
               required
               type="number"
               min={1}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Método de pago</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Método de pago</span>
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:bg-slate-900"
             >
               {PAYMENT_METHODS.map((m) => (
                 <option key={m} value={m}>
@@ -149,21 +149,21 @@ export default function PagosConsulta() {
           >
             {saving ? 'Registrando...' : 'Registrar pago'}
           </button>
-          {formError && <p className="text-xs text-red-600">{formError}</p>}
+          {formError && <p className="text-xs text-red-600 dark:text-red-400">{formError}</p>}
         </div>
       </form>
 
-      <div id="pagos-tabla" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-4 text-sm font-semibold text-slate-800">Pagos registrados</h2>
-        {error && <p className="mb-3 text-xs text-red-600">{error}</p>}
+      <div id="pagos-tabla" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Pagos registrados</h2>
+        {error && <p className="mb-3 text-xs text-red-600 dark:text-red-400">{error}</p>}
         {loading ? (
-          <p className="text-sm text-slate-400">Cargando...</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Cargando...</p>
         ) : payments.length === 0 ? (
-          <p className="text-sm text-slate-400">Aún no hay pagos registrados.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">Aún no hay pagos registrados.</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <tr className="border-b border-slate-100 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400">
                 <th className="py-2">Nombre</th>
                 <th className="py-2">RUT</th>
                 <th className="py-2">Correo</th>
@@ -174,16 +174,16 @@ export default function PagosConsulta() {
             </thead>
             <tbody>
               {payments.map((p) => (
-                <tr key={p.id} className="border-b border-slate-50">
-                  <td className="py-2.5 font-medium text-slate-700">
+                <tr key={p.id} className="border-b border-slate-50 dark:border-slate-800">
+                  <td className="py-2.5 font-medium text-slate-700 dark:text-slate-200">
                     {p.firstName} {p.lastName}
                   </td>
-                  <td className="py-2.5 text-slate-500">{formatRut(p.rut)}</td>
-                  <td className="py-2.5 text-slate-500">{p.email || '—'}</td>
-                  <td className="py-2.5 text-slate-500">{formatDateTime(p.createdAt)}</td>
-                  <td className="py-2.5 text-slate-500">{formatCLP(p.amount)}</td>
+                  <td className="py-2.5 text-slate-500 dark:text-slate-400">{formatRut(p.rut)}</td>
+                  <td className="py-2.5 text-slate-500 dark:text-slate-400">{p.email || '—'}</td>
+                  <td className="py-2.5 text-slate-500 dark:text-slate-400">{formatDateTime(p.createdAt)}</td>
+                  <td className="py-2.5 text-slate-500 dark:text-slate-400">{formatCLP(p.amount)}</td>
                   <td className="py-2.5 text-right">
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
                       Pagado
                     </span>
                   </td>

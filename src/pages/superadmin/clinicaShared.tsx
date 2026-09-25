@@ -99,13 +99,13 @@ export function Toggle({
 
 export function StatTile({ icon: Icon, label, value }: { icon: typeof UsersIcon; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 px-3 py-2.5">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 ring-1 ring-slate-200">
+    <div className="flex items-center gap-2.5 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-800/60">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-medium text-slate-500">{label}</p>
-        <p className="truncate text-sm font-bold text-slate-800">{value}</p>
+        <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{label}</p>
+        <p className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{value}</p>
       </div>
     </div>
   );

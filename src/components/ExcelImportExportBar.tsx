@@ -28,7 +28,7 @@ export function ExcelImportExportBar({ isExporting, isImporting, onExport, onImp
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={isImporting}
-        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
       >
         <UploadIcon className="h-4 w-4" />
         {isImporting ? 'Leyendo archivo...' : 'Agregar mediante Excel'}
@@ -37,7 +37,7 @@ export function ExcelImportExportBar({ isExporting, isImporting, onExport, onImp
         type="button"
         onClick={onExport}
         disabled={isExporting}
-        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
       >
         <DownloadIcon className="h-4 w-4" />
         {isExporting ? 'Generando...' : 'Descargar Excel'}

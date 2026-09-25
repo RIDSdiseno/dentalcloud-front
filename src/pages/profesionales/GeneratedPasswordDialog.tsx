@@ -20,7 +20,7 @@ export function GeneratedPasswordDialog({ entries, onClose }: { entries: Entry[]
   return (
     <Modal title="Contraseña generada para RIDS RX" onClose={onClose} maxWidth="max-w-md">
       <div className="flex flex-col gap-4">
-        <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-700">
+        <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
           <AlertTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
           Guarda esta información ahora — no se podrá volver a ver. Compártela con la persona correspondiente para
           que pueda ingresar directamente a RIDS RX.
@@ -28,16 +28,16 @@ export function GeneratedPasswordDialog({ entries, onClose }: { entries: Entry[]
 
         <div className="flex flex-col gap-2">
           {entries.map((entry, index) => (
-            <div key={`${entry.label}-${index}`} className="rounded-lg border border-slate-200 p-3">
-              <p className="text-sm font-semibold text-slate-700">{entry.label}</p>
+            <div key={`${entry.label}-${index}`} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">{entry.label}</p>
               <div className="mt-1 flex items-center gap-2">
-                <code className="flex-1 truncate rounded-md bg-slate-100 px-2 py-1.5 text-sm text-slate-800">
+                <code className="flex-1 truncate rounded-md bg-slate-100 px-2 py-1.5 text-sm text-slate-800 dark:bg-slate-800 dark:text-slate-100">
                   {entry.password}
                 </code>
                 <button
                   type="button"
                   onClick={() => handleCopy(entry.password, index)}
-                  className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   {copiedIndex === index ? 'Copiado' : 'Copiar'}
                 </button>

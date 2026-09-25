@@ -74,27 +74,27 @@ export function ObservacionesTab({ patientId }: { patientId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
           <ChatIcon className="h-5 w-5 text-brand-500" />
           Observaciones administrativas
         </h2>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-slate-700">Fecha</label>
-            <p className="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Fecha</label>
+            <p className="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               {new Date().toLocaleDateString('es-CL')}
             </p>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700">Realizado por</label>
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Realizado por</label>
             {isAdmin ? (
               <select
                 value={professionalId}
                 onChange={(e) => setProfessionalId(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
                 <option value="">Yo mismo ({user?.name})</option>
                 {professionals
@@ -106,13 +106,13 @@ export function ObservacionesTab({ patientId }: { patientId: string }) {
                   ))}
               </select>
             ) : (
-              <p className="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">{user?.name}</p>
+              <p className="mt-1 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">{user?.name}</p>
             )}
           </div>
         </div>
 
         <div className="mt-4">
-          <label htmlFor="obs-content" className="text-sm font-medium text-slate-700">
+          <label htmlFor="obs-content" className="text-sm font-medium text-slate-700 dark:text-slate-200">
             Observación
           </label>
           <textarea
@@ -121,11 +121,11 @@ export function ObservacionesTab({ patientId }: { patientId: string }) {
             onChange={(e) => setContent(e.target.value)}
             rows={3}
             placeholder="Escribe una nota interna sobre el paciente..."
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
 
-        {formError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
+        {formError && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}
 
         <div className="mt-4 flex justify-end">
           <button
@@ -139,21 +139,21 @@ export function ObservacionesTab({ patientId }: { patientId: string }) {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <h3 className="mb-4 text-sm font-semibold text-slate-800">Historial</h3>
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Historial</h3>
 
-        {listError && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{listError}</p>}
+        {listError && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{listError}</p>}
 
         {!isLoading && observations.length === 0 && (
-          <p className="py-6 text-center text-sm text-slate-400">Este paciente no tiene observaciones registradas.</p>
+          <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">Este paciente no tiene observaciones registradas.</p>
         )}
 
         <div className="flex flex-col gap-3">
           {observations.map((obs) => (
-            <div key={obs.id} className="rounded-xl border border-slate-200 p-4">
+            <div key={obs.id} className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
               <div className="mb-1.5 flex items-center justify-between gap-2">
-                <div className="text-xs text-slate-500">
-                  <span className="font-semibold text-slate-700">{obs.professional.name}</span> ·{' '}
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">{obs.professional.name}</span> ·{' '}
                   {new Date(obs.createdAt).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })}
                 </div>
                 {canDelete(obs.professionalId) && (
@@ -161,13 +161,13 @@ export function ObservacionesTab({ patientId }: { patientId: string }) {
                     type="button"
                     onClick={() => handleDelete(obs.id)}
                     aria-label="Eliminar"
-                    className="text-slate-400 hover:text-red-600"
+                    className="text-slate-400 hover:text-red-600 dark:text-slate-500 dark:hover:text-red-400"
                   >
                     <TrashIcon className="h-4 w-4" />
                   </button>
                 )}
               </div>
-              <p className="text-sm text-slate-700">{obs.content}</p>
+              <p className="text-sm text-slate-700 dark:text-slate-200">{obs.content}</p>
             </div>
           ))}
         </div>

@@ -20,7 +20,7 @@ export function ChairTabs({ chairs, selectedChairId, onSelect }: ChairTabsProps)
             className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
               active
                 ? 'bg-brand-600 text-white shadow-sm shadow-brand-600/30'
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
             }`}
           >
             <ChairIcon className="h-4 w-4" />

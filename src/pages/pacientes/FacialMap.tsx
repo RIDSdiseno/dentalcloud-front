@@ -312,14 +312,14 @@ function ZoomControls({
   onReset: () => void;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-slate-200/70 p-0.5">
+    <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-slate-200/70 p-0.5 dark:bg-slate-800/70">
       <button
         type="button"
         title="Alejar"
         aria-label="Alejar"
         onClick={onZoomOut}
         disabled={!canZoomOut}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:text-slate-200"
       >
         <MinusIcon className="h-4 w-4" />
       </button>
@@ -328,7 +328,7 @@ function ZoomControls({
         title="Restablecer zoom"
         onClick={onReset}
         disabled={zoom === ZOOM_MIN}
-        className="w-10 text-center text-[11px] font-medium text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed"
+        className="w-10 text-center text-[11px] font-medium text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed dark:text-slate-400 dark:hover:text-slate-200"
       >
         {Math.round(zoom * 100)}%
       </button>
@@ -338,7 +338,7 @@ function ZoomControls({
         aria-label="Acercar"
         onClick={onZoomIn}
         disabled={!canZoomIn}
-        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:text-slate-200"
       >
         <PlusIcon className="h-4 w-4" />
       </button>
@@ -363,7 +363,7 @@ function DrawToolbar({
 }) {
   return (
     <div className="flex w-full max-w-[420px] items-center justify-between gap-2">
-      <div className="flex shrink-0 gap-0.5 rounded-lg bg-slate-200/70 p-0.5">
+      <div className="flex shrink-0 gap-0.5 rounded-lg bg-slate-200/70 p-0.5 dark:bg-slate-800/70">
         {DRAW_TOOLS.map(({ key: t, icon: Icon, label }) => (
           <button
             key={t}
@@ -373,21 +373,21 @@ function DrawToolbar({
             aria-pressed={tool === t}
             onClick={() => onToolChange(t)}
             className={`flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
-              tool === t ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              tool === t ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             <Icon className="h-4 w-4" />
           </button>
         ))}
       </div>
-      <div className="flex shrink-0 gap-0.5 rounded-lg bg-slate-200/70 p-0.5">
+      <div className="flex shrink-0 gap-0.5 rounded-lg bg-slate-200/70 p-0.5 dark:bg-slate-800/70">
         <button
           type="button"
           title="Deshacer"
           aria-label="Deshacer"
           onClick={onUndo}
           disabled={!canUndo}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:text-slate-200"
         >
           <UndoIcon className="h-4 w-4" />
         </button>
@@ -397,7 +397,7 @@ function DrawToolbar({
           aria-label="Rehacer"
           onClick={onRedo}
           disabled={!canRedo}
-          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:text-slate-200"
         >
           <RedoIcon className="h-4 w-4" />
         </button>
@@ -870,7 +870,7 @@ function ProfilePhotoPanel({
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex w-full max-w-[260px] items-center justify-between gap-2">
-        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-800/70">
           {(
             [
               { key: 'piel', label: 'Piel' },
@@ -886,7 +886,7 @@ function ProfilePhotoPanel({
                 title={isMuscleDisabled ? 'Vista de músculos no disponible por ahora' : undefined}
                 onClick={() => setLayer(l)}
                 className={`rounded-md px-2.5 py-1 transition-colors ${
-                  layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  layer === l ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 } ${isMuscleDisabled ? 'cursor-not-allowed opacity-40' : ''}`}
               >
                 {label}
@@ -920,11 +920,11 @@ function ProfilePhotoPanel({
         )}
       </div>
 
-      <div className="mx-auto aspect-square w-full max-w-[260px] overflow-auto rounded-xl ring-1 ring-slate-200">
+      <div className="mx-auto aspect-square w-full max-w-[260px] overflow-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-800">
         <div
           ref={containerRef}
           style={{ width: `${zoomState.zoom * 100}%`, height: `${zoomState.zoom * 100}%` }}
-          className="relative bg-white"
+          className="relative bg-white dark:bg-slate-900"
         >
           <img
             src={photos.muscleSrc}
@@ -1001,8 +1001,8 @@ function ProfilePhotoPanel({
                   isSelected
                     ? 'bg-brand-600 text-white ring-brand-600'
                     : isMarked
-                      ? 'bg-brand-50 text-brand-700 ring-brand-200'
-                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50'
+                      ? 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-500/10 dark:text-brand-400'
+                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800'
                 }`}
               >
                 {FACIAL_ZONE_LABELS[zone]}
@@ -1011,7 +1011,7 @@ function ProfilePhotoPanel({
           })}
         </div>
       ) : (
-        <p className="text-xs text-slate-400">Selecciona una prestación para marcar las zonas a tratar.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">Selecciona una prestación para marcar las zonas a tratar.</p>
       )}
     </div>
   );
@@ -1069,7 +1069,7 @@ function FacialPhotoView({
   return (
     <div className="flex flex-col items-center gap-2">
       <div className={`flex w-full ${widthClass} items-center justify-between gap-2`}>
-        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-800/70">
           {(
             [
               { key: 'piel', label: 'Piel' },
@@ -1085,7 +1085,7 @@ function FacialPhotoView({
                 title={isMuscleDisabled ? 'Vista de músculos no disponible por ahora' : undefined}
                 onClick={() => setLayer(l)}
                 className={`rounded-md px-2.5 py-1 transition-colors ${
-                  layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  layer === l ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 } ${isMuscleDisabled ? 'cursor-not-allowed opacity-40' : ''}`}
               >
                 {label}
@@ -1094,7 +1094,7 @@ function FacialPhotoView({
           })}
         </div>
 
-        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-800/70">
           {(
             [
               { key: 'mujer', label: 'Mujer' },
@@ -1108,7 +1108,7 @@ function FacialPhotoView({
               disabled={lockGender}
               onClick={() => onGenderChange(g)}
               className={`rounded-md px-2.5 py-1 transition-colors ${
-                gender === g ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                gender === g ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               } ${lockGender ? 'cursor-not-allowed opacity-60' : ''}`}
             >
               {label}
@@ -1140,11 +1140,11 @@ function FacialPhotoView({
         />
       </div>
 
-      <div className={`mx-auto aspect-square w-full ${widthClass} overflow-auto rounded-xl ring-1 ring-slate-200`}>
+      <div className={`mx-auto aspect-square w-full ${widthClass} overflow-auto rounded-xl ring-1 ring-slate-200 dark:ring-slate-800`}>
         <div
           ref={containerRef}
           style={{ width: `${zoomState.zoom * 100}%`, height: `${zoomState.zoom * 100}%` }}
-          className="relative bg-white"
+          className="relative bg-white dark:bg-slate-900"
         >
           <img
             src={photos.muscleSrc}
@@ -1221,8 +1221,8 @@ function FacialPhotoView({
                   isSelected
                     ? 'bg-brand-600 text-white ring-brand-600'
                     : isMarked
-                      ? 'bg-brand-50 text-brand-700 ring-brand-200'
-                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50'
+                      ? 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-500/10 dark:text-brand-400'
+                      : 'bg-white text-slate-600 ring-slate-200 hover:bg-brand-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-800'
                 }`}
               >
                 {FACIAL_ZONE_LABELS[zone]}
@@ -1231,7 +1231,7 @@ function FacialPhotoView({
           })}
         </div>
       ) : (
-        <p className="text-xs text-slate-400">Selecciona una prestación para marcar las zonas a tratar.</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">Selecciona una prestación para marcar las zonas a tratar.</p>
       )}
 
     </div>
@@ -1261,7 +1261,7 @@ function HighlightPhoto({
   className: string;
 }) {
   return (
-    <div className={`relative mx-auto aspect-square overflow-hidden rounded-xl bg-white ring-1 ring-slate-200 ${className}`}>
+    <div className={`relative mx-auto aspect-square overflow-hidden rounded-xl bg-white ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 ${className}`}>
       <img
         src={muscleSrc}
         alt="Musculatura"
@@ -1334,7 +1334,7 @@ export function FacialZonesHighlight({
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex w-full items-center justify-between gap-2">
-        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-800/70">
           {(
             [
               { key: 'piel', label: 'Piel' },
@@ -1350,7 +1350,7 @@ export function FacialZonesHighlight({
                 title={isMuscleDisabled ? 'Vista de músculos no disponible por ahora' : undefined}
                 onClick={() => setLayer(l)}
                 className={`rounded-md px-2 py-0.5 transition-colors ${
-                  layer === l ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  layer === l ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 } ${isMuscleDisabled ? 'cursor-not-allowed opacity-40' : ''}`}
               >
                 {label}
@@ -1359,14 +1359,14 @@ export function FacialZonesHighlight({
           })}
         </div>
         {showPerfilTab && (
-          <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+          <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-800/70">
             {(['frontal', 'perfil', 'todas'] as const).map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setView(v)}
                 className={`rounded-md px-2 py-0.5 capitalize transition-colors ${
-                  view === v ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  view === v ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 {v}
@@ -1389,7 +1389,7 @@ export function FacialZonesHighlight({
               strokes={frontStrokes}
               className="w-44 sm:w-56"
             />
-            <span className="text-[11px] font-medium text-slate-400">Frontal</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Frontal</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <HighlightPhoto
@@ -1402,7 +1402,7 @@ export function FacialZonesHighlight({
               strokes={derechoStrokes}
               className="w-44 sm:w-56"
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil derecho</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <HighlightPhoto
@@ -1415,7 +1415,7 @@ export function FacialZonesHighlight({
               strokes={izquierdoStrokes}
               className="w-44 sm:w-56"
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil izquierdo</span>
           </div>
         </div>
       ) : view === 'frontal' || !showPerfilTab ? (
@@ -1442,7 +1442,7 @@ export function FacialZonesHighlight({
               strokes={derechoStrokes}
               className="w-44 sm:w-56"
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil derecho</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <HighlightPhoto
@@ -1455,7 +1455,7 @@ export function FacialZonesHighlight({
               strokes={izquierdoStrokes}
               className="w-44 sm:w-56"
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil izquierdo</span>
           </div>
         </div>
       )}
@@ -1573,9 +1573,9 @@ export function FacialMap({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+    <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-800">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           {readOnly
             ? 'Zonas con procedimientos registrados en el historial del paciente.'
             : disabled
@@ -1584,14 +1584,14 @@ export function FacialMap({
                 ? `Esta prestación solo puede aplicarse en: ${Array.from(restrictedZones).map((z) => FACIAL_ZONE_LABELS[z as FacialZoneKey] ?? z).join(', ')}.`
                 : 'Haz clic en un punto o en su nombre para marcar la zona a tratar.'}
         </p>
-        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium">
+        <div className="flex shrink-0 gap-1 rounded-lg bg-slate-200/70 p-0.5 text-xs font-medium dark:bg-slate-800/70">
           {(['frontal', 'perfil', 'todas'] as const).map((v) => (
             <button
               key={v}
               type="button"
               onClick={() => setView(v)}
               className={`rounded-md px-2.5 py-1 capitalize transition-colors ${
-                view === v ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                view === v ? 'bg-white text-brand-700 shadow-sm dark:bg-slate-900 dark:text-brand-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
               {v}
@@ -1643,7 +1643,7 @@ export function FacialMap({
                     drawing: withActiveSide('perfilDerecho', perfilDerechoDrawing),
                   }}
                 />
-                <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil derecho</span>
               </div>
             ) : (
               <div className="flex shrink-0 flex-col items-center gap-1">
@@ -1659,7 +1659,7 @@ export function FacialMap({
                   strokes={currentAnnotations.perfilDerecho}
                   onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
                 />
-                <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil derecho</span>
               </div>
             )}
 
@@ -1685,7 +1685,7 @@ export function FacialMap({
                     : undefined
                 }
               />
-              <span className="text-[11px] font-medium text-slate-400">Frontal</span>
+              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Frontal</span>
             </div>
 
             {PROFILE_PHOTOS[currentGender] ? (
@@ -1708,7 +1708,7 @@ export function FacialMap({
                     drawing: withActiveSide('perfilIzquierdo', perfilIzquierdoDrawing),
                   }}
                 />
-                <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil izquierdo</span>
               </div>
             ) : (
               <div className="flex shrink-0 flex-col items-center gap-1">
@@ -1724,7 +1724,7 @@ export function FacialMap({
                   strokes={currentAnnotations.perfilIzquierdo}
                   onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
                 />
-                <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil izquierdo</span>
               </div>
             )}
           </div>
@@ -1762,7 +1762,7 @@ export function FacialMap({
               onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
               resetToolTrigger={resetToolTrigger}
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil derecho</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <ProfilePhotoPanel
@@ -1779,7 +1779,7 @@ export function FacialMap({
               onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
               resetToolTrigger={resetToolTrigger}
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil izquierdo</span>
           </div>
         </div>
       ) : (
@@ -1798,7 +1798,7 @@ export function FacialMap({
               onStrokesChange={(perfilDerecho) => setAnnotations({ ...currentAnnotations, perfilDerecho })}
               resetToolTrigger={resetToolTrigger}
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil derecho</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil derecho</span>
           </div>
           <div className="flex flex-col items-center gap-1">
             <ProfilePanel
@@ -1814,7 +1814,7 @@ export function FacialMap({
               onStrokesChange={(perfilIzquierdo) => setAnnotations({ ...currentAnnotations, perfilIzquierdo })}
               resetToolTrigger={resetToolTrigger}
             />
-            <span className="text-[11px] font-medium text-slate-400">Perfil izquierdo</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Perfil izquierdo</span>
           </div>
         </div>
       )}

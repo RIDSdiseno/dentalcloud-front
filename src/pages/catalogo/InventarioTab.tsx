@@ -33,10 +33,10 @@ const STATUS_OPTIONS: { value: InventorySupplyStatus | ''; label: string }[] = [
 ];
 
 const STATUS_BADGE: Record<InventorySupplyStatus, string> = {
-  ACTIVE: 'bg-emerald-50 text-emerald-700',
-  LOW_STOCK: 'bg-amber-50 text-amber-700',
-  OUT_OF_STOCK: 'bg-red-50 text-red-700',
-  ARCHIVED: 'bg-slate-100 text-slate-500',
+  ACTIVE: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400',
+  LOW_STOCK: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',
+  OUT_OF_STOCK: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-400',
+  ARCHIVED: 'bg-slate-100 text-slate-500 dark:bg-slate-800',
 };
 
 const STATUS_LABEL: Record<InventorySupplyStatus, string> = {
@@ -168,7 +168,7 @@ export function InventarioTab() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-slate-500">Insumos, lotes y stock — administrado en Dental-Demo-Back.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Insumos, lotes y stock — administrado en Dental-Demo-Back.</p>
         <div className="flex items-center gap-2">
           <ExcelImportExportBar
             isExporting={isExporting}
@@ -192,36 +192,36 @@ export function InventarioTab() {
 
       {alerts && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-            <p className="text-xs font-medium text-slate-400">Lotes vencidos</p>
-            <p className="mt-1 text-2xl font-bold text-red-600">{alerts.expiredLots}</p>
+          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500">Lotes vencidos</p>
+            <p className="mt-1 text-2xl font-bold text-red-600 dark:text-red-400">{alerts.expiredLots}</p>
           </div>
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-            <p className="text-xs font-medium text-slate-400">Lotes por vencer</p>
-            <p className="mt-1 text-2xl font-bold text-amber-600">{alerts.expiringLots}</p>
+          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500">Lotes por vencer</p>
+            <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{alerts.expiringLots}</p>
           </div>
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-            <p className="text-xs font-medium text-slate-400">Sin stock</p>
-            <p className="mt-1 text-2xl font-bold text-slate-700">{alerts.suppliesWithoutStock}</p>
+          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500">Sin stock</p>
+            <p className="mt-1 text-2xl font-bold text-slate-700 dark:text-slate-200">{alerts.suppliesWithoutStock}</p>
           </div>
-          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-            <p className="text-xs font-medium text-slate-400">Bajo stock</p>
-            <p className="mt-1 text-2xl font-bold text-amber-600">{alerts.lowStockSupplies}</p>
+          <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+            <p className="text-xs font-medium text-slate-400 dark:text-slate-500">Bajo stock</p>
+            <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{alerts.lowStockSupplies}</p>
           </div>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         <input
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder="Buscar por nombre/proveedor..."
-          className="min-w-50 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          className="min-w-50 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
         />
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
         >
           <option value="">Categoría</option>
           {INVENTORY_CATEGORIES.map((c) => (
@@ -234,7 +234,7 @@ export function InventarioTab() {
           <select
             value={clinicalArea}
             onChange={(e) => setClinicalArea(e.target.value as SupplyClinicalArea | '')}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           >
             <option value="">Área clínica</option>
             {SUPPLY_CLINICAL_AREAS.map((area) => (
@@ -248,12 +248,12 @@ export function InventarioTab() {
           value={supplier}
           onChange={(e) => setSupplier(e.target.value)}
           placeholder="Proveedor"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
         />
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as InventorySupplyStatus | '')}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s.value} value={s.value}>
@@ -265,7 +265,7 @@ export function InventarioTab() {
           <select
             value={sucursalId}
             onChange={(e) => setSucursalId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           >
             <option value="">Todas las sedes</option>
             {sucursales.map((s) => (
@@ -277,21 +277,21 @@ export function InventarioTab() {
         )}
       </div>
 
-      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>}
+      {error && <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
         {!isLoading && insumos.length === 0 && (
           <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500">
               <BoxIcon className="h-6 w-6" />
             </div>
-            <p className="text-sm text-slate-500">Aún no hay insumos en el inventario.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Aún no hay insumos en el inventario.</p>
           </div>
         )}
 
         {insumos.length > 0 && (
           <table className="w-full min-w-176 text-left text-sm">
-            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase">
+            <thead className="bg-brand-50/60 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:bg-slate-800/60 dark:text-slate-400">
               <tr>
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Categoría</th>
@@ -304,25 +304,25 @@ export function InventarioTab() {
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {insumos.map((insumo) => (
-                <tr key={insumo.id} className={`hover:bg-slate-50 ${insumo.status === 'ARCHIVED' ? 'opacity-50' : ''}`}>
-                  <td className="px-4 py-3 font-medium text-slate-800">{insumo.name}</td>
-                  <td className="px-4 py-3 text-slate-500">{insumo.category ?? '—'}</td>
+                <tr key={insumo.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/40 ${insumo.status === 'ARCHIVED' ? 'opacity-50' : ''}`}>
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{insumo.name}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{insumo.category ?? '—'}</td>
                   {showAreaColumn && (
                     <td className="px-4 py-3">
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                         {SUPPLY_CLINICAL_AREA_LABELS[insumo.clinicalArea]}
                       </span>
                     </td>
                   )}
-                  <td className="px-4 py-3 text-slate-500">{insumo.location?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-500">{insumo.supplier ?? '—'}</td>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{insumo.location?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{insumo.supplier ?? '—'}</td>
+                  <td className="px-4 py-3 text-slate-700 dark:text-slate-200">
                     {insumo.currentStock ?? 0}
-                    {insumo.minimumStock != null && <span className="text-xs text-slate-400"> / mín. {insumo.minimumStock}</span>}
+                    {insumo.minimumStock != null && <span className="text-xs text-slate-400 dark:text-slate-500"> / mín. {insumo.minimumStock}</span>}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{insumo.totalCost != null ? formatCLP(insumo.totalCost) : '—'}</td>
+                  <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{insumo.totalCost != null ? formatCLP(insumo.totalCost) : '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE[insumo.status]}`}>
                       {STATUS_LABEL[insumo.status]}
@@ -333,7 +333,7 @@ export function InventarioTab() {
                       <button
                         type="button"
                         onClick={() => setLotesFor(insumo)}
-                        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                       >
                         Lotes{insumo.lotSummary ? ` (${insumo.lotSummary.totalLots})` : ''}
                       </button>
@@ -344,7 +344,7 @@ export function InventarioTab() {
                           setEditing(insumo);
                           setShowForm(true);
                         }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
                       >
                         <EditIcon className="h-4 w-4" />
                       </button>
@@ -354,7 +354,7 @@ export function InventarioTab() {
                           disabled={busyId === insumo.id}
                           aria-label={`Archivar ${insumo.name}`}
                           onClick={() => handleArchive(insumo)}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-60 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </button>

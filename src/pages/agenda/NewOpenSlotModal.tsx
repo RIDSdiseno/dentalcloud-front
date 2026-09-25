@@ -71,14 +71,14 @@ export function NewOpenSlotModal({ defaultDate, onClose, onCreated }: NewOpenSlo
   return (
     <Modal title="Agregar hora disponible" onClose={onClose}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Esta hora va a quedar visible para que un paciente la agende él mismo desde el portal, o para que cualquiera del
           equipo se la asigne a un paciente desde "Nueva cita".
         </p>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="slot-date" className="text-sm font-medium text-slate-700">
+            <label htmlFor="slot-date" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Fecha
             </label>
             <input
@@ -87,11 +87,11 @@ export function NewOpenSlotModal({ defaultDate, onClose, onCreated }: NewOpenSlo
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           <div>
-            <label htmlFor="slot-time" className="text-sm font-medium text-slate-700">
+            <label htmlFor="slot-time" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Hora
             </label>
             <input
@@ -100,14 +100,14 @@ export function NewOpenSlotModal({ defaultDate, onClose, onCreated }: NewOpenSlo
               value={time}
               onChange={(e) => setTime(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="slot-chair" className="text-sm font-medium text-slate-700">
+            <label htmlFor="slot-chair" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Sillón
             </label>
             <select
@@ -115,7 +115,7 @@ export function NewOpenSlotModal({ defaultDate, onClose, onCreated }: NewOpenSlo
               value={chairId}
               onChange={(e) => setChairId(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               {chairs.map((chair) => (
                 <option key={chair.id} value={chair.id}>
@@ -125,14 +125,14 @@ export function NewOpenSlotModal({ defaultDate, onClose, onCreated }: NewOpenSlo
             </select>
           </div>
           <div>
-            <label htmlFor="slot-duration" className="text-sm font-medium text-slate-700">
+            <label htmlFor="slot-duration" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Duración
             </label>
             <select
               id="slot-duration"
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               {DURATION_OPTIONS.filter((minutes) => minutes % stepMinutes === 0).map((minutes) => (
                 <option key={minutes} value={minutes}>
@@ -145,14 +145,14 @@ export function NewOpenSlotModal({ defaultDate, onClose, onCreated }: NewOpenSlo
 
         {isAdmin && (
           <div>
-            <label htmlFor="slot-professional" className="text-sm font-medium text-slate-700">
+            <label htmlFor="slot-professional" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Profesional
             </label>
             <select
               id="slot-professional"
               value={professionalId}
               onChange={(e) => setProfessionalId(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             >
               <option value="">Yo mismo ({user?.name})</option>
               {professionals
@@ -166,13 +166,13 @@ export function NewOpenSlotModal({ defaultDate, onClose, onCreated }: NewOpenSlo
           </div>
         )}
 
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             Cancelar
           </button>

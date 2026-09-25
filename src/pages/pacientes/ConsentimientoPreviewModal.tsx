@@ -79,14 +79,14 @@ export function ConsentimientoPreviewModal({
   return (
     <Modal title={consentType.name} onClose={onClose} maxWidth="max-w-xl">
       <div className="flex flex-col gap-4">
-        {loadError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{loadError}</p>}
+        {loadError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{loadError}</p>}
 
         {pdfUrl ? (
           <div className="flex flex-col gap-2">
             <iframe
               src={pdfUrl}
               title={`Consentimiento ${consentType.name}`}
-              className="h-80 w-full rounded-lg border border-slate-200 bg-slate-50"
+              className="h-80 w-full rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
             />
             <a
               href={pdfUrl}
@@ -99,19 +99,19 @@ export function ConsentimientoPreviewModal({
           </div>
         ) : (
           text && (
-            <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700">
+            <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm whitespace-pre-wrap text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
               {text}
             </div>
           )
         )}
 
         {alreadyResponded ? (
-          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600">
+          <p className="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">
             Este consentimiento ya fue {consent?.status === 'firmado' ? 'firmado' : 'rechazado'} por{' '}
             {consent?.signerName ?? 'el paciente'}.
           </p>
         ) : (
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Firma presencial: úsala cuando el paciente está frente a ti y prefieres registrar su respuesta
             directamente, sin esperar el correo.
           </p>
@@ -119,18 +119,18 @@ export function ConsentimientoPreviewModal({
 
         <div className="flex flex-col gap-3">
           <div>
-            <label htmlFor="preview-signer-name" className="text-sm font-medium text-slate-700">
+            <label htmlFor="preview-signer-name" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               Nombre completo
             </label>
             <input
               id="preview-signer-name"
               value={signerName}
               onChange={(e) => setSignerName(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
           <div>
-            <label htmlFor="preview-signer-rut" className="text-sm font-medium text-slate-700">
+            <label htmlFor="preview-signer-rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
               RUT
             </label>
             <input
@@ -138,10 +138,10 @@ export function ConsentimientoPreviewModal({
               value={signerRut}
               onChange={(e) => setSignerRut(formatRutInput(e.target.value))}
               placeholder="12.345.678-9"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15"
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
-          <label className="flex items-start gap-2 text-sm text-slate-600">
+          <label className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
             <input
               type="checkbox"
               checked={readConfirmed}
@@ -153,14 +153,14 @@ export function ConsentimientoPreviewModal({
 
           {!alreadyResponded && (
             <div>
-              <label className="text-sm font-medium text-slate-700">Firma del paciente</label>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Firma del paciente</label>
               <div className="mt-1">
                 <SignaturePad onChange={setSignatureDataUrl} height={140} />
               </div>
             </div>
           )}
 
-          {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
+          {formError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{formError}</p>}
 
           <div className="flex gap-3">
             <button
@@ -175,7 +175,7 @@ export function ConsentimientoPreviewModal({
               type="button"
               disabled={!canSubmit}
               onClick={() => handleDecision('rechazado')}
-              className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
             >
               Rechazar
             </button>
