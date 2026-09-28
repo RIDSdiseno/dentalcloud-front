@@ -91,7 +91,7 @@ export default function Login() {
         alt="fordentcloud"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-black/10" />
+      <div className="absolute inset-0 bg-black/10 dark:bg-black/60" />
 
       <div className="relative w-full max-w-sm">
         <form
