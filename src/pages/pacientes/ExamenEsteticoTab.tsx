@@ -195,6 +195,13 @@ function PhotoRoundGrid({
   disabled?: boolean;
 }) {
   const bySlot = latestBySlot(photos, area, moment, round);
+  // Tocar una foto ya tomada la MUESTRA en grande (no vuelve a abrir la
+  // cámara) — mismo criterio que VideoRoundTile con "Regrabar": "Retomar" es
+  // la acción explícita para reemplazarla. Antes, tocar cualquier miniatura
+  // reabría la cámara sin preguntar, lo que además fallaba directo en
+  // dispositivos sin cámara disponible (ej. revisando una ronda antigua).
+  const [viewingSlot, setViewingSlot] = useState<ExamPhotoSlot | null>(null);
+  const viewingPhoto = viewingSlot ? (bySlot.get(viewingSlot) ?? null) : null;
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {PHOTO_SLOTS_BY_AREA[area].map((slot) => {
@@ -204,7 +211,7 @@ function PhotoRoundGrid({
           <div key={slot.key} className="flex flex-col items-center gap-2">
             <button
               type="button"
-              onClick={() => onOpenCamera(slot.key)}
+              onClick={() => (photo ? setViewingSlot(slot.key) : onOpenCamera(slot.key))}
               disabled={disabled || uploadingSlot === slot.key}
               className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-slate-800 disabled:opacity-50"
             >
@@ -221,15 +228,25 @@ function PhotoRoundGrid({
             </button>
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{slot.label}</span>
             {photo && (
-              <button
-                type="button"
-                onClick={() => onMark(photo)}
-                disabled={disabled}
-                className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <PenIcon className="h-3 w-3" />
-                Marcar
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onMark(photo)}
+                  disabled={disabled}
+                  className="flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <PenIcon className="h-3 w-3" />
+                  Marcar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenCamera(slot.key)}
+                  disabled={disabled || uploadingSlot === slot.key}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-400"
+                >
+                  Retomar
+                </button>
+              </div>
             )}
             <input
               ref={(el) => {
@@ -244,6 +261,19 @@ function PhotoRoundGrid({
           </div>
         );
       })}
+      {viewingPhoto && (
+        <div
+          className="fixed inset-0 z-[85] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setViewingSlot(null)}
+        >
+          <img
+            src={viewingPhoto.url}
+            alt="Foto ampliada"
+            className="max-h-[80vh] max-w-full rounded-xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
