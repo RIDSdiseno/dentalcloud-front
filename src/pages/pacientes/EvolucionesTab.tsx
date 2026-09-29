@@ -139,6 +139,11 @@ export function EvolucionesTab({
 }) {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  // Feedback de un usuario real (29/09): "Producto/N° de lote/Cantidad/Fotos"
+  // es terminología de procedimientos estéticos (botox, ácido, etc.) — no
+  // debe aparecer al documentar una prestación dental. Mismo patrón que ya
+  // usa TreatmentPlanTab.tsx para las clínicas "ambas".
+  const isEstetica = user?.clinicaTipo === 'estetica' || user?.clinicaTipo === 'ambas';
 
   const [professionals, setProfessionals] = useState<StaffUser[]>([]);
   const [professionalId, setProfessionalId] = useState('');
@@ -427,6 +432,8 @@ export function EvolucionesTab({
                   presupuesto.
                   {requiresProduct && ' Este procedimiento requiere registrar producto, lote, vencimiento y cantidad para poder grabar.'}
                 </p>
+                {isEstetica && (
+                <>
                 <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
                   <input
                     value={productName}
@@ -507,6 +514,8 @@ export function EvolucionesTab({
                     <span className="text-[10px] font-medium">Foto</span>
                   </button>
                 </div>
+                </>
+                )}
               </div>
             )}
           </div>
