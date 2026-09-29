@@ -2,6 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 
 type Point = { x: number; y: number };
 
+// La firma que se dibuja acá termina impresa en documentos (recetas, fichas
+// de profesionales) sobre fondo blanco — así que la superficie donde se
+// dibuja queda SIEMPRE blanca, sin importar el tema de la app, como una
+// hoja de papel real. Bug real (29/09): antes el canvas sí cambiaba a fondo
+// oscuro en modo oscuro (dark:bg-slate-800), pero el trazo seguía dibujado
+// en el mismo color oscuro (#1e293b) — la firma quedaba invisible mientras
+// se dibujaba. Dejar el papel siempre blanco evita ese problema de raíz y
+// además asegura que la tinta se siga viendo una vez impresa en un PDF.
+const PAPER_BG = '#ffffff';
+const INK_COLOR = '#1e293b';
+
 // Pad de firma: dibujo libre con Pointer Events (funciona igual con mouse,
 // dedo o lápiz óptico). El canvas se redimensiona a su contenedor y se
 // escala por devicePixelRatio para que la línea salga nítida en pantallas
@@ -28,7 +39,11 @@ export function SignaturePad({
     canvas.width = rect.width * dpr;
     canvas.height = height * dpr;
     const ctx = canvas.getContext('2d');
-    if (ctx) ctx.scale(dpr, dpr);
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = PAPER_BG;
+      ctx.fillRect(0, 0, rect.width, height);
+    }
   }, [height]);
 
   function toPoint(e: React.PointerEvent<HTMLCanvasElement>): Point {
@@ -48,7 +63,7 @@ export function SignaturePad({
     const ctx = canvasRef.current?.getContext('2d');
     const point = toPoint(e);
     if (ctx && lastPointRef.current) {
-      ctx.strokeStyle = '#1e293b';
+      ctx.strokeStyle = INK_COLOR;
       ctx.lineWidth = 2.5;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -77,7 +92,11 @@ export function SignaturePad({
   function handleClear() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (canvas && ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = PAPER_BG;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
     setIsEmpty(true);
     onChange(null);
   }
@@ -93,7 +112,7 @@ export function SignaturePad({
           onPointerLeave={handlePointerUp}
           onPointerCancel={handlePointerUp}
           style={{ height, touchAction: 'none' }}
-          className="w-full cursor-crosshair rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800"
+          className="w-full cursor-crosshair rounded-lg border border-slate-300 bg-white dark:border-slate-600"
         />
       </div>
       <div className="mt-1.5 flex items-center justify-between">
