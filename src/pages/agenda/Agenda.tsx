@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DayTabs } from './DayTabs';
 import { ChairAgendaGrid } from './ChairAgendaGrid';
 import { AppointmentFormModal } from './AppointmentFormModal';
@@ -26,6 +27,7 @@ export default function Agenda() {
   const [showNewAppointment, setShowNewAppointment] = useState(false);
   const [showUrgencyForm, setShowUrgencyForm] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const isToday = isSameDay(selectedDate, new Date());
 
@@ -34,6 +36,19 @@ export default function Agenda() {
       .then(setChairs)
       .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar los sillones')));
   }, []);
+
+  // Enlace directo desde "Nueva cita" (feedback de un usuario real, 29/09):
+  // si la clínica no tiene ningún sillón todavía, ese modal no deja avanzar
+  // y manda para acá con este parámetro, para abrir "Agregar sillón" de una
+  // vez en lugar de que el usuario tenga que encontrar el botón solo.
+  useEffect(() => {
+    if (searchParams.get('crearSillon') === '1') {
+      setShowChairForm(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete('crearSillon');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const controller = new AbortController();

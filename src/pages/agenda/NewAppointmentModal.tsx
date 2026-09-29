@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createAppointment, type Appointment } from '../../api/appointments';
@@ -29,11 +30,13 @@ export function NewAppointmentModal({
   onCreated,
 }: NewAppointmentModalProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
   const stepMinutes = user?.slotDurationMinutes ?? 15;
   const DURATION_OPTIONS = ALL_DURATION_OPTIONS.filter((minutes) => minutes % stepMinutes === 0);
 
   const [chairs, setChairs] = useState<Chair[]>([]);
+  const [chairsLoaded, setChairsLoaded] = useState(false);
   const [professionals, setProfessionals] = useState<StaffUser[]>([]);
   const [date, setDate] = useState(toDateParam(defaultDate));
   const [time, setTime] = useState('09:00');
@@ -55,10 +58,12 @@ export function NewAppointmentModal({
   const [isLoadingOpenSlots, setIsLoadingOpenSlots] = useState(false);
 
   useEffect(() => {
-    fetchChairs().then((data) => {
-      setChairs(data);
-      setChairId((current) => current || data[0]?.id || '');
-    });
+    fetchChairs()
+      .then((data) => {
+        setChairs(data);
+        setChairId((current) => current || data[0]?.id || '');
+      })
+      .finally(() => setChairsLoaded(true));
     if (isAdmin) {
       fetchUsers().then(setProfessionals).catch(() => undefined);
     }
@@ -73,6 +78,11 @@ export function NewAppointmentModal({
       .catch(() => setOpenSlots([]))
       .finally(() => setIsLoadingOpenSlots(false));
   }, [useOpenSlot, date, professionalId]);
+
+  function handleGoCreateChair() {
+    onClose();
+    navigate('/agenda?crearSillon=1');
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -165,19 +175,32 @@ export function NewAppointmentModal({
                 <label htmlFor="new-appt-chair" className="text-sm font-medium text-slate-700 dark:text-slate-200">
                   Sillón
                 </label>
-                <select
-                  id="new-appt-chair"
-                  value={chairId}
-                  onChange={(e) => setChairId(e.target.value)}
-                  required
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-                >
-                  {chairs.map((chair) => (
-                    <option key={chair.id} value={chair.id}>
-                      {chair.name || `Sillón ${chair.number}`}
-                    </option>
-                  ))}
-                </select>
+                {chairsLoaded && chairs.length === 0 ? (
+                  <div className="mt-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400">
+                    <p className="font-medium">Todavía no hay sillones creados.</p>
+                    <button
+                      type="button"
+                      onClick={handleGoCreateChair}
+                      className="mt-1 font-semibold underline hover:no-underline"
+                    >
+                      Ir a Agenda y crear uno →
+                    </button>
+                  </div>
+                ) : (
+                  <select
+                    id="new-appt-chair"
+                    value={chairId}
+                    onChange={(e) => setChairId(e.target.value)}
+                    required
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                  >
+                    {chairs.map((chair) => (
+                      <option key={chair.id} value={chair.id}>
+                        {chair.name || `Sillón ${chair.number}`}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div>
                 <label htmlFor="new-appt-duration" className="text-sm font-medium text-slate-700 dark:text-slate-200">
