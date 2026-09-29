@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
-import { TourButton } from '../TourButton';
 import { useModuleTour } from '../../lib/moduleTours';
 import { useAuth } from '../../context/AuthContext';
 import { applyTenantTheme, resetTenantTheme } from '../../theme';
@@ -29,7 +28,7 @@ export function AppLayout() {
         onCloseMobile={() => setMobileOpen(false)}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar onMenuClick={() => setMobileOpen(true)} />
+        <Topbar onMenuClick={() => setMobileOpen(true)} moduleTour={moduleTour} />
         {user && !user.active && (
           <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm font-medium text-amber-800 sm:px-6 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-400">
             Tu cuenta está inactiva: puedes seguir viendo tu historial, pero no crear ni modificar nada nuevo.
@@ -39,9 +38,6 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
-      {moduleTour && (
-        <TourButton key={moduleTour.storageKey} steps={moduleTour.steps} storageKey={moduleTour.storageKey} floating />
-      )}
     </div>
   );
 }

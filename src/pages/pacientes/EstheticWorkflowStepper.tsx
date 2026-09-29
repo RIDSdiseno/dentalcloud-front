@@ -421,10 +421,11 @@ export function EstheticWorkflowStepper({
 
   return (
     <div className="flex flex-col gap-2">
-      <div
-        id="etapa-stepper"
-        className="flex items-center gap-1 overflow-x-auto rounded-2xl bg-white p-3 shadow-sm ring-1 ring-brand-200 dark:bg-slate-900"
-      >
+      <div className="flex items-center gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-brand-200 dark:bg-slate-900">
+        <div
+          id="etapa-stepper"
+          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+        >
         {tabs.map((tab, index) => {
           const Icon = tab.icon;
           const isActive = activeStep === tab.key;
@@ -458,15 +459,28 @@ export function EstheticWorkflowStepper({
             </div>
           );
         })}
+      </div>
         {nextTab && (
           <button
             type="button"
             onClick={handleNextClick}
-            className="ml-auto shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition-colors hover:bg-brand-700"
+            className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm shadow-brand-600/30 transition-colors hover:bg-brand-700"
           >
             Siguiente: {nextTab.label} ›
           </button>
         )}
+        {/* Antes flotaba fija en la esquina inferior derecha y tapaba
+            contenido real (reportado por Oscar: en la pestaña "Cartola" no
+            dejaba ver el saldo final). Vive afuera de la fila de pestañas
+            (que hace scroll horizontal cuando hay muchas), así siempre
+            queda visible sin superponerse con nada de abajo. */}
+        <TourButton
+          steps={TOUR_STEPS}
+          storageKey={tourStorageKey}
+          forceStartAt={tourIndexFor(activeStep as EstheticStepKey)}
+          onNavigate={handleTourNavigate}
+          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+        />
       </div>
 
       {warning && (
@@ -483,21 +497,6 @@ export function EstheticWorkflowStepper({
           />
         </div>
       )}
-
-      {/* El botón flotante siempre parte en la pestaña donde el usuario está
-          parado ahora — antes usaba solo el progreso guardado (storageKey),
-          que quedaba pegado en la última pestaña que el tour mismo mostró,
-          aunque el usuario ya hubiera navegado a mano a otra parte (reportado
-          por Oscar: abrió "Módulo Rx", cerró, entró a mano a "Documentos
-          clínicos", y al volver a abrir "Instrucciones" igual lo mandaba a
-          "Módulo Rx"). */}
-      <TourButton
-        steps={TOUR_STEPS}
-        storageKey={tourStorageKey}
-        forceStartAt={tourIndexFor(activeStep as EstheticStepKey)}
-        onNavigate={handleTourNavigate}
-        floating
-      />
     </div>
   );
 }

@@ -6,6 +6,8 @@ import { fetchPatients, type Patient } from '../../api/patients';
 import { formatRut } from '../../utils/rut';
 import { BellIcon, ChevronDownIcon, IdBadgeIcon, LogoutIcon, MenuIcon, SearchIcon, SunIcon, MoonIcon } from '../icons';
 import { roleLabel } from '../../utils/roles';
+import { TourButton } from '../TourButton';
+import type { ModuleTourEntry } from '../../lib/moduleTours';
 
 function initialsOf(name: string) {
   return name
@@ -18,9 +20,10 @@ function initialsOf(name: string) {
 
 type TopbarProps = {
   onMenuClick: () => void;
+  moduleTour?: ModuleTourEntry | null;
 };
 
-export function Topbar({ onMenuClick }: TopbarProps) {
+export function Topbar({ onMenuClick, moduleTour }: TopbarProps) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -127,6 +130,15 @@ export function Topbar({ onMenuClick }: TopbarProps) {
         >
           <BellIcon className="h-5 w-5" />
         </button>
+
+        {moduleTour && (
+          <TourButton
+            key={moduleTour.storageKey}
+            steps={moduleTour.steps}
+            storageKey={moduleTour.storageKey}
+            className="hidden shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 sm:flex dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+          />
+        )}
 
         <div className="relative" ref={menuRef}>
           <button
