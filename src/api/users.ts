@@ -43,6 +43,11 @@ export async function updateMySignature(signatureDataUrl: string) {
   return data.user;
 }
 
+export async function deleteMySignature() {
+  const { data } = await api.delete<{ user: { signatureUrl: string | null } }>('/auth/me/signature');
+  return data.user;
+}
+
 export async function fetchUsers(options?: { includeInactive?: boolean }) {
   const { data } = await api.get<{ users: StaffUser[] }>('/users', {
     params: options?.includeInactive ? { includeInactive: 'true' } : undefined,

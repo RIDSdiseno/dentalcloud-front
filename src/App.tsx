@@ -8,6 +8,7 @@ import AgendaDiaria from './pages/agenda/AgendaDiaria';
 import Pacientes from './pages/pacientes/Pacientes';
 import FichaPaciente from './pages/pacientes/FichaPaciente';
 import Profesionales from './pages/profesionales/Profesionales';
+import MiPerfil from './pages/miPerfil/MiPerfil';
 import Catalogo from './pages/catalogo/Catalogo';
 import Configuracion from './pages/configuracion/Configuracion';
 import PagosConsulta from './pages/pagos/PagosConsulta';
@@ -38,6 +39,7 @@ function App() {
           <Route path="/pacientes/:id" element={<FichaPaciente />} />
           <Route path="/presupuestos" element={<Presupuestos />} />
           <Route path="/pagos-consulta" element={<PagosConsulta />} />
+          <Route path="/mi-perfil" element={<MiPerfil />} />
           <Route path="/terminos" element={<ComingSoon title="Términos y políticas" />} />
           <Route element={<AdminRoute />}>
             <Route path="/profesionales" element={<Profesionales />} />

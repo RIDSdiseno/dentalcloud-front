@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { fetchPatients, type Patient } from '../../api/patients';
 import { formatRut } from '../../utils/rut';
-import { BellIcon, ChevronDownIcon, LogoutIcon, MenuIcon, SearchIcon, SunIcon, MoonIcon } from '../icons';
+import { BellIcon, ChevronDownIcon, IdBadgeIcon, LogoutIcon, MenuIcon, SearchIcon, SunIcon, MoonIcon } from '../icons';
 import { roleLabel } from '../../utils/roles';
 
 function initialsOf(name: string) {
@@ -150,6 +150,17 @@ export function Topbar({ onMenuClick }: TopbarProps) {
 
           {menuOpen && (
             <div className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate('/mi-perfil');
+                }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                <IdBadgeIcon className="h-4 w-4" />
+                Mi perfil
+              </button>
               <button
                 type="button"
                 onClick={handleLogout}
