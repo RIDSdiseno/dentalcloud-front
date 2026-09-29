@@ -1,5 +1,6 @@
 import { api } from './client';
 import type { AllergyKey } from '../data/allergies';
+import type { ClinicalDocument } from './documents';
 
 export type PrivacyConsentStatus = 'pendiente' | 'firmado' | 'rechazado' | 'expirado';
 
@@ -176,6 +177,18 @@ export async function generatePatientAnamnesisSummary(id: string) {
 // guardada como documento clínico (categoría solicitud_laboratorio).
 export async function createPatientExamRequest(id: string, input: { exams: string; notes?: string }) {
   const { data } = await api.post<{ document: { id: string; fileUrl: string } }>(`/patients/${id}/exam-request`, input);
+  return data.document;
+}
+
+// Feedback de un usuario real (29/09): la pestaña "Recetas Médicas" solo
+// permitía subir un archivo ya existente. Este endpoint arma una receta a
+// partir de una lista de medicamentos y la deja guardada como documento
+// clínico (categoría "receta"), igual que las que se suben a mano.
+export async function createPatientManualReceta(
+  id: string,
+  input: { medicamentos: { medicamento: string; indicaciones: string }[]; observaciones?: string }
+) {
+  const { data } = await api.post<{ document: ClinicalDocument }>(`/patients/${id}/receta-manual`, input);
   return data.document;
 }
 

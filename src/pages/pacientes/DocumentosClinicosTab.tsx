@@ -7,6 +7,7 @@ import {
   type ClinicalDocument,
   type DocumentCategory,
 } from '../../api/documents';
+import { createPatientManualReceta } from '../../api/patients';
 import { useAuth } from '../../context/AuthContext';
 import {
   CameraIcon,
@@ -14,6 +15,7 @@ import {
   FileIcon,
   FolderIcon,
   MailIcon,
+  PlusIcon,
   ReceiptIcon,
   TrashIcon,
   UploadIcon,
@@ -45,6 +47,12 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [showManualReceta, setShowManualReceta] = useState(false);
+  const [medicamentos, setMedicamentos] = useState([{ medicamento: '', indicaciones: '' }]);
+  const [observaciones, setObservaciones] = useState('');
+  const [isCreatingReceta, setIsCreatingReceta] = useState(false);
+  const [recetaError, setRecetaError] = useState<string | null>(null);
+
   useEffect(() => {
     setIsLoading(true);
     setError(null);
@@ -71,6 +79,41 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
       setError(getErrorMessage(err, 'No se pudo subir el archivo'));
     } finally {
       setIsUploading(false);
+    }
+  }
+
+  function updateMedicamentoRow(index: number, field: 'medicamento' | 'indicaciones', value: string) {
+    setMedicamentos((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+  }
+
+  function addMedicamentoRow() {
+    setMedicamentos((prev) => [...prev, { medicamento: '', indicaciones: '' }]);
+  }
+
+  function removeMedicamentoRow(index: number) {
+    setMedicamentos((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
+  }
+
+  async function handleCreateManualReceta() {
+    const items = medicamentos
+      .map((row) => ({ medicamento: row.medicamento.trim(), indicaciones: row.indicaciones.trim() }))
+      .filter((row) => row.medicamento);
+    if (items.length === 0) {
+      setRecetaError('Agrega al menos un medicamento');
+      return;
+    }
+    setRecetaError(null);
+    setIsCreatingReceta(true);
+    try {
+      const document = await createPatientManualReceta(patientId, { medicamentos: items, observaciones });
+      setDocuments((prev) => [document, ...prev]);
+      setMedicamentos([{ medicamento: '', indicaciones: '' }]);
+      setObservaciones('');
+      setShowManualReceta(false);
+    } catch (err) {
+      setRecetaError(getErrorMessage(err, 'No se pudo generar la receta'));
+    } finally {
+      setIsCreatingReceta(false);
     }
   }
 
@@ -146,6 +189,96 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
         </div>
 
         {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
+
+        {activeCategory === 'receta' && (
+          <div className="mt-4">
+            {!showManualReceta ? (
+              <button
+                type="button"
+                onClick={() => setShowManualReceta(true)}
+                className="flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Crear receta manual
+              </button>
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Receta manual</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowManualReceta(false)}
+                    className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {medicamentos.map((row, index) => (
+                    <div key={index} className="flex flex-col gap-2 sm:flex-row sm:items-start">
+                      <input
+                        value={row.medicamento}
+                        onChange={(e) => updateMedicamentoRow(index, 'medicamento', e.target.value)}
+                        placeholder="Ej: Paracetamol 500mg"
+                        className="w-full flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 sm:w-auto"
+                      />
+                      <input
+                        value={row.indicaciones}
+                        onChange={(e) => updateMedicamentoRow(index, 'indicaciones', e.target.value)}
+                        placeholder="Indicaciones: 1 tableta cada 8 horas por 5 días"
+                        className="w-full flex-[1.4] rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 sm:w-auto"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeMedicamentoRow(index)}
+                        disabled={medicamentos.length === 1}
+                        aria-label="Quitar medicamento"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center self-start rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={addMedicamentoRow}
+                    className="flex w-fit items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                  >
+                    <PlusIcon className="h-3.5 w-3.5" />
+                    Agregar medicamento
+                  </button>
+
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Observaciones (opcional)</label>
+                    <textarea
+                      value={observaciones}
+                      onChange={(e) => setObservaciones(e.target.value)}
+                      rows={2}
+                      placeholder="Ej: Control en 7 días"
+                      className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                    />
+                  </div>
+
+                  {recetaError && (
+                    <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{recetaError}</p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleCreateManualReceta}
+                    disabled={isCreatingReceta}
+                    className="flex w-fit items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <ReceiptIcon className="h-4 w-4" />
+                    {isCreatingReceta ? 'Generando PDF...' : 'Generar receta en PDF'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-5 flex flex-col gap-2">
           {!isLoading && documents.length === 0 && (
