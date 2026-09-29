@@ -8,7 +8,9 @@ import {
   type DocumentCategory,
 } from '../../api/documents';
 import { createPatientManualReceta } from '../../api/patients';
+import { updateMySignature } from '../../api/users';
 import { useAuth } from '../../context/AuthContext';
+import { SignaturePad } from '../../components/SignaturePad';
 import {
   CameraIcon,
   DownloadIcon,
@@ -37,7 +39,7 @@ function formatBytes(resourceType: string) {
 }
 
 export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const isAdmin = user?.role === 'admin';
   const [activeCategory, setActiveCategory] = useState<DocumentCategory>('receta');
   const [documents, setDocuments] = useState<ClinicalDocument[]>([]);
@@ -52,6 +54,11 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
   const [observaciones, setObservaciones] = useState('');
   const [isCreatingReceta, setIsCreatingReceta] = useState(false);
   const [recetaError, setRecetaError] = useState<string | null>(null);
+
+  const [signatureDraft, setSignatureDraft] = useState<string | null>(null);
+  const [isSavingSignature, setIsSavingSignature] = useState(false);
+  const [redrawSignature, setRedrawSignature] = useState(false);
+  const [signatureError, setSignatureError] = useState<string | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -94,7 +101,27 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
     setMedicamentos((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   }
 
+  async function handleSaveSignature() {
+    if (!signatureDraft) return;
+    setSignatureError(null);
+    setIsSavingSignature(true);
+    try {
+      const updated = await updateMySignature(signatureDraft);
+      updateUser({ signatureUrl: updated.signatureUrl });
+      setSignatureDraft(null);
+      setRedrawSignature(false);
+    } catch (err) {
+      setSignatureError(getErrorMessage(err, 'No se pudo guardar la firma'));
+    } finally {
+      setIsSavingSignature(false);
+    }
+  }
+
   async function handleCreateManualReceta() {
+    if (!user?.signatureUrl) {
+      setRecetaError('Necesitas guardar tu firma antes de generar la receta');
+      return;
+    }
     const items = medicamentos
       .map((row) => ({ medicamento: row.medicamento.trim(), indicaciones: row.indicaciones.trim() }))
       .filter((row) => row.medicamento);
@@ -261,6 +288,59 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
                     />
                   </div>
 
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/60">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">Tu firma</p>
+                    {user?.signatureUrl && !redrawSignature ? (
+                      <div className="mt-2 flex items-center gap-3">
+                        <img
+                          src={user.signatureUrl}
+                          alt="Firma guardada"
+                          className="h-12 rounded border border-slate-200 bg-white px-2 dark:border-slate-700"
+                        />
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Firmarás con tu firma guardada</p>
+                          <button
+                            type="button"
+                            onClick={() => setRedrawSignature(true)}
+                            className="w-fit text-left text-xs font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400"
+                          >
+                            Cambiar firma
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2">
+                        <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                          Necesitas guardar tu firma para poder generar la receta.
+                        </p>
+                        <SignaturePad onChange={setSignatureDraft} height={110} />
+                        {signatureError && <p className="mt-2 text-xs text-red-600 dark:text-red-400">{signatureError}</p>}
+                        <div className="mt-2 flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleSaveSignature}
+                            disabled={!signatureDraft || isSavingSignature}
+                            className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-700 dark:hover:bg-slate-600"
+                          >
+                            {isSavingSignature ? 'Guardando...' : 'Guardar firma'}
+                          </button>
+                          {user?.signatureUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRedrawSignature(false);
+                                setSignatureDraft(null);
+                              }}
+                              className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {recetaError && (
                     <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{recetaError}</p>
                   )}
@@ -268,7 +348,7 @@ export function DocumentosClinicosTab({ patientId }: { patientId: string }) {
                   <button
                     type="button"
                     onClick={handleCreateManualReceta}
-                    disabled={isCreatingReceta}
+                    disabled={isCreatingReceta || !user?.signatureUrl}
                     className="flex w-fit items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     <ReceiptIcon className="h-4 w-4" />

@@ -34,6 +34,15 @@ export type DimageSyncResult = {
 
 export type ImportedProfessional = { name: string; rut: string; role: string; generatedPassword: string };
 
+// Self-service (29/09): antes la firma solo se podía dibujar al crear la
+// cuenta desde "Profesionales" (admin-only). Esto deja que cualquier
+// usuario autenticado guarde/reemplace SU PROPIA firma cuando la necesite —
+// por ejemplo, para poder generar una receta manual.
+export async function updateMySignature(signatureDataUrl: string) {
+  const { data } = await api.patch<{ user: { signatureUrl: string | null } }>('/auth/me/signature', { signatureDataUrl });
+  return data.user;
+}
+
 export async function fetchUsers(options?: { includeInactive?: boolean }) {
   const { data } = await api.get<{ users: StaffUser[] }>('/users', {
     params: options?.includeInactive ? { includeInactive: 'true' } : undefined,

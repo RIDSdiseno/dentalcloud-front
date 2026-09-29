@@ -23,6 +23,7 @@ export type User = {
   rxEnabled: boolean | null;
   slotDurationMinutes: number | null;
   permissions: Record<string, boolean> | null;
+  signatureUrl: string | null;
 };
 
 type AuthContextValue = {
