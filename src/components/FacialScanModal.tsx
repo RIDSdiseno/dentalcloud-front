@@ -52,6 +52,21 @@ const POSE_SWITCH_MS = 600;
 const STEADY_MAX_DELTA = 2.5; // grados de variación tolerada entre frames
 const STEADY_FRAMES = 8; // cuántos frames seguidos hay que estar quieto
 const COUNTDOWN_FROM = 3;
+
+// La rotación de la cabeza NO cambia si lo que se mueve es la cámara: el rostro
+// se desplaza por el cuadro pero sigue mirando igual. Por eso hay que vigilar
+// también dónde está y de qué tamaño se ve — así un movimiento de cámara
+// cancela el disparo igual que uno del paciente. Valores en coordenadas
+// normalizadas (0-1) del propio cuadro.
+const STEADY_MAX_SHIFT = 0.012;
+const STEADY_MAX_SCALE_DRIFT = 0.02;
+
+// Nitidez mínima para aceptar un disparo automático, medida como varianza del
+// laplaciano: una foto movida o desenfocada tiene muy pocos bordes y da un
+// valor bajo. El corte es deliberadamente permisivo — solo rechaza lo
+// claramente malo, porque un umbral demasiado exigente dejaría la cámara sin
+// disparar nunca. Si en clínica pasan fotos movidas, subir este número.
+const MIN_SHARPNESS = 15;
 // Inclinación (mentón arriba/abajo) y ladeo permitidos en cualquier ángulo —
 // son los que arruinan la comparación entre el "antes" y el "avance".
 const MAX_PITCH = 14;
@@ -120,6 +135,58 @@ function getFaceLandmarker(): Promise<FaceLandmarker> {
 }
 
 type HeadPose = { yaw: number; pitch: number; roll: number };
+// Dónde y de qué tamaño se ve el rostro dentro del cuadro. Complementa a
+// HeadPose, que solo describe hacia dónde mira.
+type FaceFrame = { cx: number; cy: number; scale: number };
+
+function faceFrameFrom(landmarks: { x: number; y: number }[]): FaceFrame {
+  let minX = 1;
+  let maxX = 0;
+  let minY = 1;
+  let maxY = 0;
+  for (const p of landmarks) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, scale: Math.max(maxX - minX, maxY - minY) };
+}
+
+// Varianza del laplaciano sobre una miniatura en escala de grises: mide cuánto
+// borde tiene la imagen. Se hace sobre una versión chica porque el valor sirve
+// igual para comparar contra un umbral y cuesta una fracción de lo que costaría
+// sobre la foto completa.
+function frameSharpness(source: HTMLCanvasElement): number {
+  const w = 160;
+  const h = Math.max(1, Math.round((source.height / source.width) * w));
+  const small = document.createElement('canvas');
+  small.width = w;
+  small.height = h;
+  const ctx = small.getContext('2d');
+  if (!ctx) return Infinity; // si no se puede medir, no se bloquea la toma
+  ctx.drawImage(source, 0, 0, w, h);
+  const { data } = ctx.getImageData(0, 0, w, h);
+  const gray = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i += 1) {
+    gray[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+  }
+  let sum = 0;
+  let sumSq = 0;
+  let n = 0;
+  for (let y = 1; y < h - 1; y += 1) {
+    for (let x = 1; x < w - 1; x += 1) {
+      const i = y * w + x;
+      const lap = 4 * gray[i] - gray[i - 1] - gray[i + 1] - gray[i - w] - gray[i + w];
+      sum += lap;
+      sumSq += lap * lap;
+      n += 1;
+    }
+  }
+  if (n === 0) return Infinity;
+  const mean = sum / n;
+  return sumSq / n - mean * mean;
+}
 
 // MediaPipe entrega la matriz 4x4 en orden por columnas: el elemento de la
 // fila i, columna j está en data[j * 4 + i].
@@ -201,9 +268,13 @@ export function FacialScanModal({
   const inProfileRef = useRef(false);
   // Quietud de la cabeza, para el modo automático.
   const prevPoseRef = useRef<HeadPose | null>(null);
+  const prevFrameRef = useRef<FaceFrame | null>(null);
   const steadyFramesRef = useRef(0);
   const [steady, setSteady] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  // Se descartó un disparo automático por salir movido; se avisa y se vuelve a
+  // esperar en vez de guardar una foto mala o quedarse mudo.
+  const [blurRetry, setBlurRetry] = useState(false);
   // Copia en estado de lo anterior: el render no puede leer un ref y enterarse
   // de que cambió, así que el bucle publica acá lo que decidió.
   const [inProfile, setInProfile] = useState(false);
@@ -303,15 +374,29 @@ export function FacialScanModal({
               // sostenida varios frames para que un instante casual de calma
               // en medio de un giro no arme el disparo.
               const prev = prevPoseRef.current;
-              const moved = prev
+              const rotated = prev
                 ? Math.max(
                     Math.abs(measured.yaw - prev.yaw),
                     Math.abs(measured.pitch - prev.pitch),
                     Math.abs(measured.roll - prev.roll)
                   )
                 : Infinity;
-              steadyFramesRef.current = moved <= STEADY_MAX_DELTA ? steadyFramesRef.current + 1 : 0;
+              // Desplazamiento del rostro dentro del cuadro: esto es lo que
+              // delata que se movió la CÁMARA, porque mover el equipo corre la
+              // cara por la imagen sin cambiar hacia dónde mira.
+              const frame = faceFrameFrom(result.faceLandmarks[0]);
+              const prevFrame = prevFrameRef.current;
+              const shifted = prevFrame
+                ? Math.max(Math.abs(frame.cx - prevFrame.cx), Math.abs(frame.cy - prevFrame.cy))
+                : Infinity;
+              const scaleDrift = prevFrame ? Math.abs(frame.scale - prevFrame.scale) : Infinity;
+              const still =
+                rotated <= STEADY_MAX_DELTA &&
+                shifted <= STEADY_MAX_SHIFT &&
+                scaleDrift <= STEADY_MAX_SCALE_DRIFT;
+              steadyFramesRef.current = still ? steadyFramesRef.current + 1 : 0;
               prevPoseRef.current = measured;
+              prevFrameRef.current = frame;
               setSteady(steadyFramesRef.current >= STEADY_FRAMES);
             } else {
               // Sin cara. Si veníamos de un giro fuerte hace muy poco, es un
@@ -335,6 +420,7 @@ export function FacialScanModal({
               // que el disparo automático no herede la calma de antes.
               steadyFramesRef.current = 0;
               prevPoseRef.current = null;
+              prevFrameRef.current = null;
               setSteady(false);
             }
             setInProfile(inProfileRef.current);
@@ -449,6 +535,20 @@ export function FacialScanModal({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     ctx.drawImage(video, (video.videoWidth - srcW) / 2, (video.videoHeight - srcH) / 2, srcW, srcH, 0, 0, srcW, srcH);
+
+    // El disparo automático además exige que el cuadro esté nítido. La quietud
+    // se mide sobre el rostro detectado, pero entre dos mediciones igual puede
+    // colarse un frame movido; acá se mira la imagen que realmente se va a
+    // guardar. En modo manual no se aplica: si el operador decidió disparar, no
+    // es el software quien debe vetarlo.
+    if (mode === 'auto' && frameSharpness(canvas) < MIN_SHARPNESS) {
+      setBlurRetry(true);
+      steadyFramesRef.current = 0;
+      setSteady(false);
+      setTimeout(() => setBlurRetry(false), 1500);
+      return;
+    }
+
     canvas.toBlob(
       (blob) => {
         if (!blob) return;
@@ -675,21 +775,38 @@ export function FacialScanModal({
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => target && capture(target)}
-                disabled={status !== 'ready' || !target}
-                className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-40 ${
-                  matchesTarget ? 'bg-green-600 hover:bg-green-700' : 'bg-brand-600 hover:bg-brand-700'
-                }`}
-              >
-                <CameraIcon className="h-4 w-4" />
-                {mode === 'auto' ? `Tomar ahora (${targetStep?.label ?? 'foto'})` : `Tomar ${targetStep?.label ?? 'foto'}`}
-              </button>
-              {mode === 'auto' && (
-                <p className="mt-2 text-center text-[10px] text-slate-500">
-                  Modo automático: dispara solo al mantener la posición. El botón sirve igual si prefiere no esperar.
-                </p>
+              {/* En automático no hay botón de disparo: la cámara es la que
+                  decide el momento. Si no logra fijar la pose, se cierra y se
+                  vuelve a entrar eligiendo el modo manual. */}
+              {mode === 'manual' ? (
+                <button
+                  type="button"
+                  onClick={() => target && capture(target)}
+                  disabled={status !== 'ready' || !target}
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-40 ${
+                    matchesTarget ? 'bg-green-600 hover:bg-green-700' : 'bg-brand-600 hover:bg-brand-700'
+                  }`}
+                >
+                  <CameraIcon className="h-4 w-4" />
+                  Tomar {targetStep?.label ?? 'foto'}
+                </button>
+              ) : (
+                <div
+                  className={`flex w-full items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold ${
+                    blurRetry
+                      ? 'bg-amber-500/15 text-amber-300'
+                      : countdown !== null
+                        ? 'bg-green-600/20 text-green-300'
+                        : 'bg-white/5 text-slate-400'
+                  }`}
+                >
+                  <CameraIcon className="h-4 w-4" />
+                  {blurRetry
+                    ? 'Salió movida — no se mueva, reintentando'
+                    : countdown !== null
+                      ? `Disparando en ${countdown}...`
+                      : 'Esperando la posición'}
+                </div>
               )}
             </>
           )}
