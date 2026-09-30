@@ -129,10 +129,13 @@ function ScanRoundGrid({ photos, moment, round }: { photos: ExamPhoto[]; moment:
   const bySlot = latestBySlot(photos, 'facialAvanzado', moment, round);
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-      {FACIAL_PHOTO_SLOTS.map((slot) => {
-        const photo = bySlot.get(slot.key) ?? null;
+      {/* Etiquetas de SCAN_SEQUENCE y no de FACIAL_PHOTO_SLOTS: el registro
+          avanzado nombra "Perfil" a secas lo que el registro normal llama
+          "Perfil Derecho", porque acá sirve el giro hacia cualquier lado. */}
+      {SCAN_SEQUENCE.map((slot) => {
+        const photo = bySlot.get(slot.slot) ?? null;
         return (
-          <div key={slot.key} className="flex flex-col items-center gap-2">
+          <div key={slot.slot} className="flex flex-col items-center gap-2">
             <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
               {photo ? (
                 <a href={photo.url} target="_blank" rel="noreferrer" className="h-full w-full">

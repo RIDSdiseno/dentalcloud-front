@@ -21,7 +21,11 @@ import { SCAN_SEQUENCE, type ScanSlot } from './facialScanConfig';
 // pedirle a una persona "exactamente 45°" no es realista: al examen le basta
 // una vista de tres cuartos consistente.
 const FRONTAL_MAX_YAW = 15;
-const PROFILE_MIN_YAW = 55;
+// Bajado de 55° a 45°: a 55° el perfil casi no se llegaba a detectar. El
+// modelo de rostro pierde precisión (y a veces la cara entera) en giros
+// extremos, así que pedir más grados no daba una detección mejor, solo una
+// pose que el escaneo nunca alcanzaba a reconocer.
+const PROFILE_MIN_YAW = 45;
 
 // Cuánto tiene que sostenerse una pose antes de que el escaneo cambie solo de
 // ángulo. Sin esta espera, el temblor normal de la cabeza en el límite entre
@@ -125,11 +129,10 @@ function classifyPose(yaw: number): { slot: ScanSlot | null; name: string } {
       ? { slot: '45derecha', name: '45° derecha' }
       : { slot: '45izquierda', name: '45° izquierda' };
   }
-  // El perfil izquierdo no es uno de los 4 ángulos del examen, pero se nombra
-  // igual: el modal siempre dice qué está viendo, aunque no sirva para tomar.
-  return toPatientRight
-    ? { slot: 'perfilDerecho', name: 'Perfil derecho' }
-    : { slot: null, name: 'Perfil izquierdo (no se registra en este examen)' };
+  // El perfil no distingue lado: sirve girando hacia cualquiera de los dos.
+  // Antes solo contaba el derecho, así que si el paciente giraba al otro lado
+  // el escaneo decía que esa vista no se registraba y la toma no salía nunca.
+  return { slot: 'perfilDerecho', name: 'Perfil' };
 }
 
 export function FacialScanModal({

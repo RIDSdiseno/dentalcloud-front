@@ -21,9 +21,14 @@ export const SCAN_SEQUENCE: { slot: ScanSlot; label: string; instruction: string
     instruction: 'Pida al paciente que gire la cabeza hacia SU derecha, a medio camino.',
   },
   {
+    // La clave sigue siendo 'perfilDerecho' porque así se guarda en la base y
+    // así la valida el backend; lo que cambia es que en el escaneo ya no se
+    // pide un lado concreto. Se etiqueta solo "Perfil" y sirve cualquiera de
+    // los dos: exigir el derecho hacía que la toma fallara cuando el paciente
+    // giraba al otro lado, y para el examen la vista de perfil es la misma.
     slot: 'perfilDerecho',
-    label: 'Perfil Derecho',
-    instruction: 'Pida al paciente que siga girando a SU derecha hasta mostrar el perfil completo.',
+    label: 'Perfil',
+    instruction: 'Pida al paciente que gire la cabeza hasta mostrar el perfil completo, hacia cualquier lado.',
   },
   {
     slot: '45izquierda',
