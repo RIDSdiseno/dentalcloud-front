@@ -13,13 +13,20 @@ import { SCAN_SEQUENCE, type ScanSlot } from './facialScanConfig';
 // puesto el rostro — no solo si coincide con lo pedido — y guiar la sesión
 // completa solo, ángulo por ángulo.
 
-// Umbrales de giro (grados). El rango de 45° es ancho a propósito: pedirle a
-// una persona "exactamente 45°" no es realista, y el examen solo necesita una
-// vista de tres cuartos consistente.
-const FRONTAL_MAX_YAW = 12;
-const YAW_45_MIN = 22;
-const YAW_45_MAX = 58;
-const PROFILE_MIN_YAW = 58;
+// Umbrales de giro (grados). Los rangos son CONTIGUOS a propósito: cualquier
+// giro cae siempre en alguno de los tres. La primera versión dejaba huecos
+// (12°-22° no era ni frontal ni 45°) y ahí el escaneo se quedaba sin detectar
+// nada, que fue justo lo que se vio al probarlo — costaba encontrar la
+// posición que el modal aceptara. Además el rango de 45° es ancho porque
+// pedirle a una persona "exactamente 45°" no es realista: al examen le basta
+// una vista de tres cuartos consistente.
+const FRONTAL_MAX_YAW = 15;
+const PROFILE_MIN_YAW = 55;
+
+// Cuánto tiene que sostenerse una pose antes de que el escaneo cambie solo de
+// ángulo. Sin esta espera, el temblor normal de la cabeza en el límite entre
+// dos rangos haría saltar el paso pedido de un lado a otro.
+const POSE_SWITCH_MS = 600;
 // Inclinación (mentón arriba/abajo) y ladeo permitidos en cualquier ángulo —
 // son los que arruinan la comparación entre el "antes" y el "avance".
 const MAX_PITCH = 14;
@@ -113,17 +120,16 @@ function classifyPose(yaw: number): { slot: ScanSlot | null; name: string } {
   const turned = Math.abs(yaw);
   const toPatientRight = yaw > 0;
   if (turned < FRONTAL_MAX_YAW) return { slot: 'frontal', name: 'Frontal' };
-  if (turned >= YAW_45_MIN && turned <= YAW_45_MAX) {
+  if (turned < PROFILE_MIN_YAW) {
     return toPatientRight
       ? { slot: '45derecha', name: '45° derecha' }
       : { slot: '45izquierda', name: '45° izquierda' };
   }
-  if (turned > PROFILE_MIN_YAW) {
-    return toPatientRight
-      ? { slot: 'perfilDerecho', name: 'Perfil derecho' }
-      : { slot: null, name: 'Perfil izquierdo (no se registra en este examen)' };
-  }
-  return { slot: null, name: toPatientRight ? 'Girando a su derecha' : 'Girando a su izquierda' };
+  // El perfil izquierdo no es uno de los 4 ángulos del examen, pero se nombra
+  // igual: el modal siempre dice qué está viendo, aunque no sirva para tomar.
+  return toPatientRight
+    ? { slot: 'perfilDerecho', name: 'Perfil derecho' }
+    : { slot: null, name: 'Perfil izquierdo (no se registra en este examen)' };
 }
 
 export function FacialScanModal({
@@ -261,12 +267,21 @@ export function FacialScanModal({
   const detected = pose ? classifyPose(pose.yaw) : null;
   const tiltOk = pose ? Math.abs(pose.pitch) <= MAX_PITCH && Math.abs(pose.roll) <= MAX_ROLL : false;
   const matchesTarget = detected?.slot != null && detected.slot === target && tiltOk;
-  // Adelanto: el paciente quedó en un ángulo que todavía falta, pero no es el
-  // que se estaba pidiendo. En vez de corregirlo, se ofrece aprovecharlo.
-  const advanceSlot =
-    detected?.slot && detected.slot !== target && tiltOk && remaining.includes(detected.slot)
-      ? detected.slot
-      : null;
+  const detectedSlot = detected?.slot ?? null;
+
+  // El paso pedido SIGUE a la pose: si el paciente se pone en un ángulo que
+  // todavía falta, el escaneo cambia solo a ese ángulo en vez de insistir con
+  // el que venía. Así no hay que pelear para que vuelva a una pose puntual —
+  // se toma la que ya está adoptando. El giro se mide igual aunque la cabeza
+  // esté inclinada o ladeada; eso se corrige aparte, con el aviso de abajo.
+  useEffect(() => {
+    if (!detectedSlot || shot) return;
+    if (detectedSlot === target) return;
+    if (!remaining.includes(detectedSlot)) return;
+    const timer = setTimeout(() => setTargetIndex(remaining.indexOf(detectedSlot)), POSE_SWITCH_MS);
+    // Si la pose cambia antes de cumplirse la espera, el cambio se cancela.
+    return () => clearTimeout(timer);
+  }, [detectedSlot, target, remaining, shot]);
 
   function correctionHint(): string | null {
     if (!pose) return null;
@@ -468,7 +483,14 @@ export function FacialScanModal({
               <p className="mb-1 text-center text-xs font-bold text-white">
                 {targetStep ? `${doneCount + 1} de ${pending.length} — ${targetStep.label}` : 'Escaneo completo'}
               </p>
-              <p className="mb-3 text-center text-[11px] text-slate-400">{targetStep?.instruction}</p>
+              <p className="mb-3 text-center text-[11px] text-slate-400">
+                {targetStep?.instruction}
+                {remaining.length > 1 && (
+                  <span className="mt-1 block text-slate-500">
+                    Si el paciente adopta otro de los ángulos que faltan, el escaneo cambia solo a ése.
+                  </span>
+                )}
+              </p>
 
               {aiStatus === 'loading' && (
                 <p className="mb-3 text-center text-xs font-semibold text-slate-400">
@@ -483,19 +505,6 @@ export function FacialScanModal({
                   </p>
                   {aiErrorDetail && <p className="mt-1 text-[10px] text-slate-500">Detalle: {aiErrorDetail}</p>}
                 </div>
-              )}
-
-              {/* Adelanto: aparece solo cuando el rostro quedó en otro ángulo
-                  que también falta. Evita pelear con el paciente para que
-                  vuelva a la pose pedida cuando ya está en una útil. */}
-              {advanceSlot && (
-                <button
-                  type="button"
-                  onClick={() => capture(advanceSlot)}
-                  className="mb-2 w-full rounded-lg border border-amber-400/40 bg-amber-400/10 py-2 text-xs font-semibold text-amber-200 hover:bg-amber-400/20"
-                >
-                  {SCAN_SEQUENCE.find((s) => s.slot === advanceSlot)?.label} detectado — tomarlo como adelanto
-                </button>
               )}
 
               <button
