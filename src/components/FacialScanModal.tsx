@@ -21,11 +21,20 @@ import { SCAN_SEQUENCE, type ScanSlot } from './facialScanConfig';
 // pedirle a una persona "exactamente 45°" no es realista: al examen le basta
 // una vista de tres cuartos consistente.
 const FRONTAL_MAX_YAW = 15;
-// Bajado de 55° a 45°: a 55° el perfil casi no se llegaba a detectar. El
-// modelo de rostro pierde precisión (y a veces la cara entera) en giros
-// extremos, así que pedir más grados no daba una detección mejor, solo una
-// pose que el escaneo nunca alcanzaba a reconocer.
 const PROFILE_MIN_YAW = 45;
+
+// El modelo de rostro de MediaPipe está entrenado de frente: pasado cierto
+// giro deja de reconocer la cara POR COMPLETO, en vez de reportar un ángulo
+// mayor. Por eso el perfil se detectaba solo de vez en cuando — no es que
+// midiera mal, es que ya no había medición. Se aprovecha esa pérdida como
+// señal: si la cara desaparece justo después de venir girando fuerte, lo que
+// hay delante es un perfil. Sin esto, en perfil el escaneo solo dice "no se
+// detecta un rostro" y nunca confirma la pose.
+const PROFILE_HINT_YAW = 32;
+// Cuánto se sostiene esa suposición tras perder la cara. Corto a propósito: si
+// el paciente se salió de cuadro o se dio vuelta entera, a los ~1,5 s vuelve a
+// decir honestamente que no ve a nadie.
+const PROFILE_GRACE_MS = 1500;
 
 // Cuánto tiene que sostenerse una pose antes de que el escaneo cambie solo de
 // ángulo. Sin esta espera, el temblor normal de la cabeza en el límite entre
@@ -163,6 +172,12 @@ export function FacialScanModal({
   const [targetIndex, setTargetIndex] = useState(0);
   const [pose, setPose] = useState<HeadPose | null>(null);
   const [faceSeen, setFaceSeen] = useState(false);
+  // El rostro se perdió viniendo de un giro fuerte: se asume perfil (ver
+  // PROFILE_HINT_YAW). Se distingue del caso medido para poder decirlo con
+  // otras palabras en pantalla y no aparentar una precisión que no hay.
+  const [assumedProfile, setAssumedProfile] = useState(false);
+  // Última pose realmente medida, para poder interpretar la pérdida de cara.
+  const lastGoodRef = useRef<{ pose: HeadPose; at: number } | null>(null);
   // Foto tomada esperando el "¿Está correcta?" — guarda también a qué ángulo
   // corresponde, porque se puede capturar un ángulo distinto al pedido
   // (adelanto) y al confirmar hay que guardarlo en el correcto.
@@ -233,14 +248,31 @@ export function FacialScanModal({
         if (!pausedRef.current && video.videoWidth > 0 && video.currentTime !== lastVideoTime) {
           lastVideoTime = video.currentTime;
           try {
-            const result = landmarker.detectForVideo(video, performance.now());
+            const now = performance.now();
+            const result = landmarker.detectForVideo(video, now);
             const matrix = result.facialTransformationMatrixes?.[0]?.data;
             if (matrix && result.faceLandmarks?.length) {
+              const measured = headPoseFromMatrix(matrix);
+              lastGoodRef.current = { pose: measured, at: now };
               setFaceSeen(true);
-              setPose(headPoseFromMatrix(matrix));
+              setAssumedProfile(false);
+              setPose(measured);
             } else {
-              setFaceSeen(false);
-              setPose(null);
+              // Sin cara. Si veníamos de un giro fuerte hace muy poco, es un
+              // perfil, no una ausencia: se mantiene la última pose medida y se
+              // marca como supuesta.
+              const last = lastGoodRef.current;
+              const fromHardTurn =
+                last && now - last.at < PROFILE_GRACE_MS && Math.abs(last.pose.yaw) >= PROFILE_HINT_YAW;
+              if (fromHardTurn) {
+                setFaceSeen(true);
+                setAssumedProfile(true);
+                setPose(last.pose);
+              } else {
+                setFaceSeen(false);
+                setAssumedProfile(false);
+                setPose(null);
+              }
             }
           } catch {
             // Un frame que falla no debe cortar el bucle: se ignora y se sigue.
@@ -267,8 +299,22 @@ export function FacialScanModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const detected = pose ? classifyPose(pose.yaw) : null;
-  const tiltOk = pose ? Math.abs(pose.pitch) <= MAX_PITCH && Math.abs(pose.roll) <= MAX_ROLL : false;
+  // Si la cara se perdió viniendo de un giro fuerte, es perfil aunque el último
+  // ángulo medido no llegara al umbral: el giro siguió más allá de donde el
+  // modelo alcanza a ver.
+  const detected = assumedProfile
+    ? { slot: 'perfilDerecho' as ScanSlot, name: 'Perfil' }
+    : pose
+      ? classifyPose(pose.yaw)
+      : null;
+  // En perfil supuesto no hay medición fresca de inclinación/ladeo, así que no
+  // se exige: bloquear la toma por un dato que ya no se está midiendo dejaría
+  // el perfil sin poder confirmarse nunca.
+  const tiltOk = assumedProfile
+    ? true
+    : pose
+      ? Math.abs(pose.pitch) <= MAX_PITCH && Math.abs(pose.roll) <= MAX_ROLL
+      : false;
   const matchesTarget = detected?.slot != null && detected.slot === target && tiltOk;
   const detectedSlot = detected?.slot ?? null;
 
@@ -287,7 +333,9 @@ export function FacialScanModal({
   }, [detectedSlot, target, remaining, shot]);
 
   function correctionHint(): string | null {
-    if (!pose) return null;
+    // En perfil supuesto la pose guardada es de antes de perder la cara; no se
+    // corrige sobre un dato viejo.
+    if (!pose || assumedProfile) return null;
     if (pose.pitch > MAX_PITCH) return 'Baje el mentón — la cabeza está inclinada hacia arriba';
     if (pose.pitch < -MAX_PITCH) return 'Suba el mentón — la cabeza está inclinada hacia abajo';
     if (Math.abs(pose.roll) > MAX_ROLL) return 'Enderece la cabeza — está ladeada hacia un hombro';
@@ -431,12 +479,17 @@ export function FacialScanModal({
                     ? `✓ ${detected?.name} detectado — puede tomar la foto`
                     : (hint ?? `Detectado: ${detected?.name}`)}
               </div>
-              {faceSeen && pose && (
+              {faceSeen && pose && !assumedProfile && (
                 <div className="mt-1.5 flex justify-center gap-3 text-[10px] font-semibold text-slate-300">
                   <span>giro {pose.yaw.toFixed(0)}°</span>
                   <span>inclinación {pose.pitch.toFixed(0)}°</span>
                   <span>ladeo {pose.roll.toFixed(0)}°</span>
                 </div>
+              )}
+              {assumedProfile && (
+                <p className="mt-1.5 text-center text-[10px] font-semibold text-slate-300">
+                  Giro más allá de donde el rostro se puede medir — se asume perfil
+                </p>
               )}
             </div>
           )}
