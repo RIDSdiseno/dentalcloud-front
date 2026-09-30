@@ -21,7 +21,7 @@ import {
 import { getErrorMessage } from '../../api/client';
 import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon, RefreshIcon, PenIcon, TrashIcon } from '../../components/icons';
 import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
-import { FacialScanModal } from '../../components/FacialScanModal';
+import { FacialScanModal, type ScanMode } from '../../components/FacialScanModal';
 import { SCAN_SEQUENCE, type ScanSlot } from '../../components/facialScanConfig';
 import { VideoCaptureModal } from '../../components/VideoCaptureModal';
 import { PhotoAnnotationModal } from './PhotoAnnotationModal';
@@ -187,6 +187,58 @@ function ScanRoundGrid({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// Elegir cómo se va a disparar antes de abrir la cámara. Se pregunta en vez de
+// reemplazar el modo de siempre por el automático: si el automático no logra
+// fijar la pose (pasa sobre todo en perfil), el manual sigue estando a un clic
+// y nadie queda esperando un disparo que no llega.
+function ScanModeDialog({ onPick, onCancel }: { onPick: (mode: ScanMode) => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" onClick={onCancel}>
+      <div
+        className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
+          ¿Cómo quieres tomar las fotos?
+        </h3>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+          Las dos guían igual la posición del rostro; solo cambia quién aprieta el gatillo.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => onPick('manual')}
+          className="mb-3 w-full rounded-xl border border-slate-200 p-3 text-left hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
+        >
+          <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">Modo manual</span>
+          <span className="block text-xs text-slate-500 dark:text-slate-400">
+            La cámara te indica la posición y tú decides el momento exacto de la foto.
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onPick('auto')}
+          className="w-full rounded-xl border border-brand-300 bg-brand-50 p-3 text-left hover:bg-brand-100 dark:border-brand-500/40 dark:bg-brand-500/10 dark:hover:bg-brand-500/20"
+        >
+          <span className="block text-sm font-semibold text-brand-700 dark:text-brand-300">Modo automático</span>
+          <span className="block text-xs text-brand-700/80 dark:text-brand-300/80">
+            Cuando la posición se mantenga quieta, cuenta 3 y dispara sola. Igual puedes tomarla a mano cuando quieras.
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mt-4 w-full text-xs font-semibold text-slate-500 hover:underline dark:text-slate-400"
+        >
+          Cancelar
+        </button>
+      </div>
     </div>
   );
 }
@@ -573,6 +625,14 @@ export function ExamenEsteticoTab({
   // `slots` es lo que va a pedir el escaneo: los ángulos que faltan al entrar
   // normal, o uno solo cuando se entra desde "Retomar" de una foto puntual.
   const [scanSession, setScanSession] = useState<{
+    moment: ExamPhotoMoment;
+    round: number;
+    slots: ScanSlot[];
+    mode: ScanMode;
+  } | null>(null);
+  // Sesión ya decidida pero esperando que se elija manual o automático. Se
+  // guarda aparte para no tener que repetir el cálculo de ángulos al elegir.
+  const [scanModePrompt, setScanModePrompt] = useState<{
     moment: ExamPhotoMoment;
     round: number;
     slots: ScanSlot[];
@@ -1149,7 +1209,7 @@ export function ExamenEsteticoTab({
           <button
             type="button"
             onClick={() =>
-              setScanSession({
+              setScanModePrompt({
                 moment: scan.latestRound.moment,
                 round: scan.latestRound.round,
                 slots: scanPending,
@@ -1179,7 +1239,7 @@ export function ExamenEsteticoTab({
           deletingPhotoId={deletingPhotoId}
           disabled={!photoConsentSigned}
           onRetake={(slot) =>
-            setScanSession({ moment: scan.latestRound.moment, round: scan.latestRound.round, slots: [slot] })
+            setScanModePrompt({ moment: scan.latestRound.moment, round: scan.latestRound.round, slots: [slot] })
           }
           onDelete={handleDeletePhoto}
         />
@@ -1217,7 +1277,7 @@ export function ExamenEsteticoTab({
                       round={r.round}
                       deletingPhotoId={deletingPhotoId}
                       disabled={!photoConsentSigned}
-                      onRetake={(slot) => setScanSession({ moment: r.moment, round: r.round, slots: [slot] })}
+                      onRetake={(slot) => setScanModePrompt({ moment: r.moment, round: r.round, slots: [slot] })}
                       onDelete={handleDeletePhoto}
                     />
                   </div>
@@ -1248,8 +1308,19 @@ export function ExamenEsteticoTab({
         </div>
       </div>
 
+      {scanModePrompt && (
+        <ScanModeDialog
+          onCancel={() => setScanModePrompt(null)}
+          onPick={(mode) => {
+            setScanSession({ ...scanModePrompt, mode });
+            setScanModePrompt(null);
+          }}
+        />
+      )}
+
       {scanSession && (
         <FacialScanModal
+          mode={scanSession.mode}
           patientName={`${patient.firstName} ${patient.lastName}`}
           momentLabel={scanSession.moment === 'antes' ? 'Antes' : `Avance ${scanSession.round}`}
           pending={scanSession.slots}

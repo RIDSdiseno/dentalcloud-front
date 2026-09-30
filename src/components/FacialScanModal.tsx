@@ -43,6 +43,15 @@ const PROFILE_GRACE_MS = 1500;
 // ángulo. Sin esta espera, el temblor normal de la cabeza en el límite entre
 // dos rangos haría saltar el paso pedido de un lado a otro.
 const POSE_SWITCH_MS = 600;
+
+// --- Modo automático --------------------------------------------------------
+// El disparo solo se arma si la pose es la correcta Y la cabeza está quieta.
+// Lo segundo importa tanto como lo primero: una pose puede ser correcta justo
+// mientras el paciente todavía está girando, y esa foto sale movida. Exigir
+// quietud además obliga a detenerse, que es lo que se quiere para la toma.
+const STEADY_MAX_DELTA = 2.5; // grados de variación tolerada entre frames
+const STEADY_FRAMES = 8; // cuántos frames seguidos hay que estar quieto
+const COUNTDOWN_FROM = 3;
 // Inclinación (mentón arriba/abajo) y ladeo permitidos en cualquier ángulo —
 // son los que arruinan la comparación entre el "antes" y el "avance".
 const MAX_PITCH = 14;
@@ -147,14 +156,21 @@ function classifyPose(yaw: number): { slot: ScanSlot | null; name: string } {
   return { slot: 'perfilDerecho', name: 'Perfil' };
 }
 
+export type ScanMode = 'manual' | 'auto';
+
 export function FacialScanModal({
   patientName,
   pending,
   onSave,
   onClose,
   momentLabel,
+  mode,
 }: {
   patientName: string;
+  // 'manual': el operador dispara. 'auto': la cámara cuenta y dispara sola
+  // cuando la pose se sostiene quieta. El botón manual existe en los dos, para
+  // que el automático nunca deje a nadie encerrado si no logra fijar la pose.
+  mode: ScanMode;
   // Ángulos que todavía faltan en esta ronda. El modal recorre solo éstos y se
   // cierra al completarlos; los que ya estaban no se vuelven a pedir.
   pending: ScanSlot[];
@@ -183,6 +199,11 @@ export function FacialScanModal({
   const lastGoodRef = useRef<{ pose: HeadPose; at: number } | null>(null);
   // Si la pose está actualmente considerada "perfil" (con histéresis).
   const inProfileRef = useRef(false);
+  // Quietud de la cabeza, para el modo automático.
+  const prevPoseRef = useRef<HeadPose | null>(null);
+  const steadyFramesRef = useRef(0);
+  const [steady, setSteady] = useState(false);
+  const [countdown, setCountdown] = useState<number | null>(null);
   // Copia en estado de lo anterior: el render no puede leer un ref y enterarse
   // de que cambió, así que el bucle publica acá lo que decidió.
   const [inProfile, setInProfile] = useState(false);
@@ -278,6 +299,20 @@ export function FacialScanModal({
               // detección suelta: en perfil el modelo reaparece un frame con un
               // ángulo cualquiera y eso bastaba para perder el estado.
               setAssumedProfile((prev) => (prev ? turned >= PROFILE_EXIT_YAW : false));
+              // Quietud: cuánto se movió respecto del frame anterior. Se pide
+              // sostenida varios frames para que un instante casual de calma
+              // en medio de un giro no arme el disparo.
+              const prev = prevPoseRef.current;
+              const moved = prev
+                ? Math.max(
+                    Math.abs(measured.yaw - prev.yaw),
+                    Math.abs(measured.pitch - prev.pitch),
+                    Math.abs(measured.roll - prev.roll)
+                  )
+                : Infinity;
+              steadyFramesRef.current = moved <= STEADY_MAX_DELTA ? steadyFramesRef.current + 1 : 0;
+              prevPoseRef.current = measured;
+              setSteady(steadyFramesRef.current >= STEADY_FRAMES);
             } else {
               // Sin cara. Si veníamos de un giro fuerte hace muy poco, es un
               // perfil, no una ausencia: se mantiene la última pose medida y se
@@ -296,6 +331,11 @@ export function FacialScanModal({
                 setAssumedProfile(false);
                 setPose(null);
               }
+              // Sin cara medida no hay quietud que garantizar: se reinicia para
+              // que el disparo automático no herede la calma de antes.
+              steadyFramesRef.current = 0;
+              prevPoseRef.current = null;
+              setSteady(false);
             }
             setInProfile(inProfileRef.current);
           } catch {
@@ -356,6 +396,37 @@ export function FacialScanModal({
     // Si la pose cambia antes de cumplirse la espera, el cambio se cancela.
     return () => clearTimeout(timer);
   }, [detectedSlot, target, remaining, shot]);
+
+  // Disparo automático: se arma solo si la pose pedida se sostiene quieta, y se
+  // cancela en cuanto deja de cumplirse (el cleanup del efecto). Así el paciente
+  // que se mueve a mitad de la cuenta no sale movido: simplemente no se dispara.
+  const autoArmed = mode === 'auto' && !shot && target !== null && matchesTarget && steady;
+  useEffect(() => {
+    if (!autoArmed) {
+      setCountdown(null);
+      return;
+    }
+    setCountdown(COUNTDOWN_FROM);
+    let value = COUNTDOWN_FROM;
+    const id = setInterval(() => {
+      value -= 1;
+      if (value > 0) {
+        setCountdown(value);
+        return;
+      }
+      clearInterval(id);
+      setCountdown(null);
+      // `target` está garantizado por autoArmed.
+      if (target) capture(target);
+    }, 1000);
+    return () => {
+      clearInterval(id);
+      setCountdown(null);
+    };
+    // `capture` se recrea en cada render pero no depende de nada que cambie su
+    // comportamiento; incluirla reiniciaría la cuenta en cada frame.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoArmed, target]);
 
   function correctionHint(): string | null {
     // En perfil supuesto la pose guardada es de antes de perder la cara; no se
@@ -501,7 +572,11 @@ export function FacialScanModal({
                 {!faceSeen
                   ? 'No se detecta un rostro — acérquese y busque buena luz'
                   : matchesTarget
-                    ? `✓ ${detected?.name} detectado — puede tomar la foto`
+                    ? mode === 'auto'
+                      ? steady
+                        ? `✓ ${detected?.name} — no se mueva, disparando`
+                        : `✓ ${detected?.name} — quédese quieto para disparar`
+                      : `✓ ${detected?.name} detectado — puede tomar la foto`
                     : (hint ?? `Detectado: ${detected?.name}`)}
               </div>
               {faceSeen && pose && !assumedProfile && (
@@ -516,6 +591,18 @@ export function FacialScanModal({
                   Giro más allá de donde el rostro se puede medir — se asume perfil
                 </p>
               )}
+            </div>
+          )}
+
+          {countdown !== null && !shot && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+              <span
+                key={countdown}
+                className="flex h-24 w-24 animate-ping items-center justify-center rounded-full bg-green-500/30 text-5xl font-black text-white"
+              >
+                {countdown}
+              </span>
+              <span className="absolute text-5xl font-black text-white drop-shadow-lg">{countdown}</span>
             </div>
           )}
 
@@ -597,8 +684,13 @@ export function FacialScanModal({
                 }`}
               >
                 <CameraIcon className="h-4 w-4" />
-                Tomar {targetStep?.label ?? 'foto'}
+                {mode === 'auto' ? `Tomar ahora (${targetStep?.label ?? 'foto'})` : `Tomar ${targetStep?.label ?? 'foto'}`}
               </button>
+              {mode === 'auto' && (
+                <p className="mt-2 text-center text-[10px] text-slate-500">
+                  Modo automático: dispara solo al mantener la posición. El botón sirve igual si prefiere no esperar.
+                </p>
+              )}
             </>
           )}
         </div>
