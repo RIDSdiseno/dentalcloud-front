@@ -176,7 +176,7 @@ function PhotoRoundGrid({
   moment,
   round,
   photos,
-  uploadingSlot,
+  uploadingSlots,
   fileInputs,
   onOpenCamera,
   onFileChange,
@@ -187,9 +187,15 @@ function PhotoRoundGrid({
   moment: ExamPhotoMoment;
   round: number;
   photos: ExamPhoto[];
-  uploadingSlot: ExamPhotoSlot | null;
+  // Claves `area-moment-round-slot` con subida en curso. Es un conjunto y no
+  // un solo ángulo porque, con las tomas encadenadas, varias fotos pueden
+  // estar subiendo a la vez; y lleva la ronda dentro de la clave para que
+  // "Subiendo..." no aparezca además en el mismo ángulo de otra ronda.
+  uploadingSlots: Set<string>;
   fileInputs: React.MutableRefObject<Record<string, HTMLInputElement | null>>;
-  onOpenCamera: (slot: ExamPhotoSlot) => void;
+  // `chain` = seguir solo con los ángulos que falten después de éste. Va en
+  // true al capturar desde una casilla vacía, y en false desde "Retomar".
+  onOpenCamera: (slot: ExamPhotoSlot, chain: boolean) => void;
   onFileChange: (slot: ExamPhotoSlot, file: File | null) => void;
   onMark: (photo: ExamPhoto) => void;
   disabled?: boolean;
@@ -207,15 +213,16 @@ function PhotoRoundGrid({
       {PHOTO_SLOTS_BY_AREA[area].map((slot) => {
         const photo = bySlot.get(slot.key) ?? null;
         const inputKey = `${area}-${moment}-${round}-${slot.key}`;
+        const uploading = uploadingSlots.has(inputKey);
         return (
           <div key={slot.key} className="flex flex-col items-center gap-2">
             <button
               type="button"
-              onClick={() => (photo ? setViewingSlot(slot.key) : onOpenCamera(slot.key))}
-              disabled={disabled || uploadingSlot === slot.key}
+              onClick={() => (photo ? setViewingSlot(slot.key) : onOpenCamera(slot.key, true))}
+              disabled={disabled || uploading}
               className="relative flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-slate-800 disabled:opacity-50"
             >
-              {uploadingSlot === slot.key ? (
+              {uploading ? (
                 <span className="text-xs">Subiendo...</span>
               ) : photo ? (
                 <img src={photo.url} alt={slot.label} className="h-full w-full object-cover" />
@@ -240,8 +247,8 @@ function PhotoRoundGrid({
                 </button>
                 <button
                   type="button"
-                  onClick={() => onOpenCamera(slot.key)}
-                  disabled={disabled || uploadingSlot === slot.key}
+                  onClick={() => onOpenCamera(slot.key, false)}
+                  disabled={disabled || uploading}
                   className="text-[11px] font-semibold text-brand-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-400"
                 >
                   Retomar
@@ -310,7 +317,7 @@ export function ExamenEsteticoTab({
   const [diagnosis, setDiagnosis] = useState(patient.examDiagnosis ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [uploadingSlot, setUploadingSlot] = useState<ExamPhotoSlot | null>(null);
+  const [uploadingSlots, setUploadingSlots] = useState<Set<string>>(new Set());
   const [dictating, setDictating] = useState(false);
   const [examPhotos, setExamPhotos] = useState<ExamPhoto[]>([]);
   // Switch Rostro/Cuerpo (14/09, pedido explícito) — mismo mecanismo de
@@ -324,16 +331,92 @@ export function ExamenEsteticoTab({
     setTimeout(() => setAreaFlipping(false), 400);
     setPhotoArea((prev) => (prev === 'facial' ? 'corporal' : 'facial'));
     setPendingAvanceRound(null);
-    setCameraTarget(null);
+    endCameraSession();
     setShowOlderPhotos(false);
   }
   // Ronda de "Avance" que el doctor eligió empezar recién ahora, antes de que
   // tenga ninguna foto propia — así el grid vacío ya aparece al tocar el
   // botón, en vez de esperar a la primera foto para existir.
   const [pendingAvanceRound, setPendingAvanceRound] = useState<number | null>(null);
-  const [cameraTarget, setCameraTarget] = useState<{ slot: ExamPhotoSlot; moment: ExamPhotoMoment; round: number } | null>(
-    null
-  );
+  // Tomas encadenadas (30/09, pedido de la jefatura): la cámara ya no se abre
+  // y cierra una vez por foto. Se le entrega una COLA de ángulos y va pasando
+  // sola al siguiente después de cada captura, en el orden de
+  // PHOTO_SLOTS_BY_AREA (rostro: Frontal → Perfil Derecho → 45° Derecha → 45°
+  // Izquierda; cuerpo: Frontal → Espalda → Perfil Izquierdo → Perfil Derecho).
+  // Una cola de un solo elemento es el caso "Retomar": una foto y cierra.
+  const [cameraTarget, setCameraTarget] = useState<{
+    queue: ExamPhotoSlot[];
+    index: number;
+    moment: ExamPhotoMoment;
+    round: number;
+  } | null>(null);
+
+  // Arma la cola desde el ángulo que se tocó. Sin encadenar ("Retomar") es
+  // solo ése. Encadenando, sigue con los que vienen DESPUÉS en el orden fijo y
+  // que todavía no tienen foto: si el doctor retoma un registro a medias, la
+  // cámara le pide únicamente los que faltan en vez de repetirlo todo. No
+  // vuelve hacia atrás a propósito — avanza en el orden de la lista, que es lo
+  // que se pidió; los ángulos anteriores que estén vacíos se toman entrando
+  // por su propia casilla.
+  function buildCaptureQueue(
+    startSlot: ExamPhotoSlot,
+    moment: ExamPhotoMoment,
+    round: number,
+    chain: boolean
+  ): ExamPhotoSlot[] {
+    if (!chain) return [startSlot];
+    const slots = PHOTO_SLOTS_BY_AREA[photoArea];
+    const taken = latestBySlot(examPhotos, photoArea, moment, round);
+    const startIndex = slots.findIndex((s) => s.key === startSlot);
+    return slots
+      .filter((s, i) => i === startIndex || (i > startIndex && !taken.has(s.key)))
+      .map((s) => s.key);
+  }
+
+  // Fotos tomadas durante la sesión de cámara que todavía no se dan por
+  // buenas, por ángulo (`moment-round-slot`). Viven acá y no dentro del modal
+  // a propósito: el modal se remonta al cambiar de ángulo, así que si el
+  // borrador viviera ahí se perdería al avanzar o retroceder. Gracias a esto,
+  // tomar la 1, tomar la 2, volver a la 1 y avanzar de nuevo deja la 2 tal
+  // como estaba. `uploaded` evita volver a subir una foto ya guardada cuando
+  // se pasa por ella otra vez.
+  const [captureDrafts, setCaptureDrafts] = useState<
+    Record<string, { file: File; url: string; uploaded: boolean }>
+  >({});
+
+  function draftKey(slot: ExamPhotoSlot, moment: ExamPhotoMoment, round: number) {
+    return `${moment}-${round}-${slot}`;
+  }
+
+  // Los object URL de los borradores se liberan al cerrar la sesión de cámara;
+  // si no, cada foto tomada queda ocupando memoria hasta recargar la página.
+  function endCameraSession() {
+    setCaptureDrafts((prev) => {
+      for (const draft of Object.values(prev)) URL.revokeObjectURL(draft.url);
+      return {};
+    });
+    setCameraTarget(null);
+  }
+
+  function openCamera(slot: ExamPhotoSlot, moment: ExamPhotoMoment, round: number, chain: boolean) {
+    setCameraTarget({ queue: buildCaptureQueue(slot, moment, round, chain), index: 0, moment, round });
+  }
+
+  // Guarda la foto pendiente de un ángulo, si hay alguna y todavía no se subió.
+  // El `uploaded` evita el duplicado cuando se pasa dos veces por el mismo
+  // ángulo (retroceder y volver a avanzar). La subida corre de fondo para que
+  // la cámara pueda seguir al siguiente ángulo sin esperarla.
+  function saveDraft(
+    slot: ExamPhotoSlot,
+    moment: ExamPhotoMoment,
+    round: number,
+    key: string,
+    draft: { file: File; url: string; uploaded: boolean } | null
+  ) {
+    if (!draft || draft.uploaded) return;
+    handlePhotoChange(slot, moment, round, draft.file);
+    setCaptureDrafts((prev) => (prev[key] ? { ...prev, [key]: { ...prev[key], uploaded: true } } : prev));
+  }
   const [showOlderPhotos, setShowOlderPhotos] = useState(false);
   const [photoConsentChecked, setPhotoConsentChecked] = useState(false);
   const [photoConsentSigned, setPhotoConsentSigned] = useState(false);
@@ -490,15 +573,29 @@ export function ExamenEsteticoTab({
     file: File | null
   ) {
     if (!file) return;
-    setUploadingSlot(slot);
+    const key = `${photoArea}-${moment}-${round}-${slot}`;
+    setUploadingSlots((prev) => new Set(prev).add(key));
     try {
       const updated = await uploadExamPhoto(patient.id, slot, file, moment, round, photoArea);
-      setExamPhotos(updated);
+      // Con las tomas encadenadas puede haber varias subidas en vuelo a la vez,
+      // y cada respuesta trae la lista completa tal como estaba en el servidor
+      // cuando se resolvió. Reemplazarla de plano haría desaparecer de pantalla
+      // una foto que subió antes pero cuya respuesta llegó después, así que se
+      // unen por id — latestBySlot sigue eligiendo la más reciente por ángulo.
+      setExamPhotos((prev) => {
+        const byId = new Map(prev.map((p) => [p.id, p]));
+        for (const p of updated) byId.set(p.id, p);
+        return [...byId.values()];
+      });
       if (moment === 'avance') setPendingAvanceRound(null);
     } catch (err) {
       setSaveError(getErrorMessage(err, 'No se pudo subir la foto'));
     } finally {
-      setUploadingSlot(null);
+      setUploadingSlots((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
     }
   }
 
@@ -667,10 +764,10 @@ export function ExamenEsteticoTab({
             moment={latestRound.moment}
             round={latestRound.round}
             photos={examPhotos}
-            uploadingSlot={uploadingSlot}
+            uploadingSlots={uploadingSlots}
             fileInputs={fileInputs}
             disabled={!photoConsentSigned}
-            onOpenCamera={(slot) => setCameraTarget({ slot, moment: latestRound.moment, round: latestRound.round })}
+            onOpenCamera={(slot, chain) => openCamera(slot, latestRound.moment, latestRound.round, chain)}
             onFileChange={(slot, file) => handlePhotoChange(slot, latestRound.moment, latestRound.round, file)}
             onMark={setAnnotatingPhoto}
           />
@@ -696,10 +793,10 @@ export function ExamenEsteticoTab({
                       moment={r.moment}
                       round={r.round}
                       photos={examPhotos}
-                      uploadingSlot={uploadingSlot}
+                      uploadingSlots={uploadingSlots}
                       fileInputs={fileInputs}
                       disabled={!photoConsentSigned}
-                      onOpenCamera={(slot) => setCameraTarget({ slot, moment: r.moment, round: r.round })}
+                      onOpenCamera={(slot, chain) => openCamera(slot, r.moment, r.round, chain)}
                       onFileChange={(slot, file) => handlePhotoChange(slot, r.moment, r.round, file)}
                       onMark={setAnnotatingPhoto}
                     />
@@ -880,26 +977,86 @@ export function ExamenEsteticoTab({
         />
       )}
 
-      {cameraTarget && (
-        <CameraCaptureModal
-          guide={PHOTO_SLOTS_BY_AREA[photoArea].find((s) => s.key === cameraTarget.slot)!.guide}
-          label={`${PHOTO_SLOTS_BY_AREA[photoArea].find((s) => s.key === cameraTarget.slot)!.label} — ${
-            cameraTarget.moment === 'antes' ? 'Antes' : `Avance ${cameraTarget.round}`
-          }`}
-          patientGender={patient.gender}
-          onClose={() => setCameraTarget(null)}
-          onFallbackToFile={() => {
-            const target = cameraTarget;
-            setCameraTarget(null);
-            fileInputs.current[`${photoArea}-${target.moment}-${target.round}-${target.slot}`]?.click();
-          }}
-          onCapture={(file) => {
-            const target = cameraTarget;
-            setCameraTarget(null);
-            handlePhotoChange(target.slot, target.moment, target.round, file);
-          }}
-        />
-      )}
+      {cameraTarget &&
+        (() => {
+          const target = cameraTarget;
+          const slotKey = target.queue[target.index];
+          const slotDef = PHOTO_SLOTS_BY_AREA[photoArea].find((s) => s.key === slotKey)!;
+          const momentLabel = target.moment === 'antes' ? 'Antes' : `Avance ${target.round}`;
+          // El contador solo aparece cuando de verdad hay una secuencia por
+          // delante — en un "Retomar" suelto diría siempre "1 de 1".
+          const progress = target.queue.length > 1 ? ` · ${target.index + 1} de ${target.queue.length}` : '';
+          const key = draftKey(slotKey, target.moment, target.round);
+          const draft = captureDrafts[key] ?? null;
+          const areaSlots = PHOTO_SLOTS_BY_AREA[photoArea];
+          // Qué ángulo viene después de éste. Normalmente es el siguiente de la
+          // cola; si ésta ya se acabó (típico al entrar por "Retomar", que arma
+          // una cola de uno solo), se ofrece igual el ángulo que sigue en el
+          // orden del registro, para poder continuar en vez de quedar obligado
+          // a cerrar y volver a entrar por la casilla de al lado.
+          const nextInQueue = target.index < target.queue.length - 1 ? target.queue[target.index + 1] : null;
+          const nextInOrder = areaSlots[areaSlots.findIndex((s) => s.key === slotKey) + 1]?.key ?? null;
+          const nextSlot = nextInQueue ?? nextInOrder;
+          return (
+            <CameraCaptureModal
+              // Remonta la cámara en cada paso de la cola: así vuelve a su
+              // estado inicial (guía de encuadre y detección del ángulo nuevo)
+              // en vez de arrastrar el del ángulo anterior.
+              key={`${target.moment}-${target.round}-${slotKey}`}
+              guide={slotDef.guide}
+              label={`${slotDef.label} — ${momentLabel}${progress}`}
+              patientGender={patient.gender}
+              draftUrl={draft?.url ?? null}
+              confirmLabel={nextSlot ? 'Guardar y siguiente' : 'Guardar y terminar'}
+              onBack={target.index > 0 ? () => setCameraTarget({ ...target, index: target.index - 1 }) : undefined}
+              onClose={endCameraSession}
+              onFallbackToFile={() => {
+                endCameraSession();
+                fileInputs.current[`${photoArea}-${target.moment}-${target.round}-${slotKey}`]?.click();
+              }}
+              // Capturar ya no guarda: deja la foto en pantalla para revisarla.
+              onCapture={(file) => {
+                setCaptureDrafts((prev) => {
+                  if (prev[key]) URL.revokeObjectURL(prev[key].url);
+                  return { ...prev, [key]: { file, url: URL.createObjectURL(file), uploaded: false } };
+                });
+              }}
+              onRetake={() => {
+                setCaptureDrafts((prev) => {
+                  if (!prev[key]) return prev;
+                  URL.revokeObjectURL(prev[key].url);
+                  const next = { ...prev };
+                  delete next[key];
+                  return next;
+                });
+              }}
+              onConfirm={() => {
+                saveDraft(slotKey, target.moment, target.round, key, draft);
+                if (!nextSlot) {
+                  endCameraSession();
+                } else if (nextInQueue) {
+                  setCameraTarget({ ...target, index: target.index + 1 });
+                } else {
+                  // La cola se había acabado: se le agrega el ángulo siguiente
+                  // para poder continuar la secuencia desde acá.
+                  setCameraTarget({
+                    ...target,
+                    queue: [...target.queue, nextSlot],
+                    index: target.index + 1,
+                  });
+                }
+              }}
+              onFinish={
+                nextSlot
+                  ? () => {
+                      saveDraft(slotKey, target.moment, target.round, key, draft);
+                      endCameraSession();
+                    }
+                  : undefined
+              }
+            />
+          );
+        })()}
 
       <div id="diagnostico-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
         <div className="mb-2 flex items-center justify-between">

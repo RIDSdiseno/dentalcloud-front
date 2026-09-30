@@ -239,6 +239,12 @@ export function CameraCaptureModal({
   onClose,
   onFallbackToFile,
   patientGender,
+  draftUrl,
+  onRetake,
+  onConfirm,
+  onBack,
+  confirmLabel,
+  onFinish,
 }: {
   guide: CaptureGuide;
   label: string;
@@ -248,10 +254,33 @@ export function CameraCaptureModal({
   // Solo afecta la silueta genérica de cuerpo (marcas decorativas por
   // género) — no tiene ningún efecto sobre rostro ni sobre la detección.
   patientGender?: string | null;
+  // --- Modo revisión (opcional) -------------------------------------------
+  // Sin `onConfirm`, el modal se comporta como siempre: capturar dispara
+  // `onCapture` y quien lo abrió decide qué hacer (así lo usan
+  // TreatmentPlanTab y TreatmentPlanFormModal, que cierran de inmediato).
+  // Con `onConfirm`, la foto NO se da por buena al capturarla: queda en
+  // pantalla para revisarla y el usuario elige "Retomar" o guardarla. La foto
+  // pendiente vive en quien llama (no acá) para que siga existiendo al ir y
+  // volver entre ángulos — ver captureDrafts en ExamenEsteticoTab.
+  draftUrl?: string | null;
+  onRetake?: () => void;
+  onConfirm?: () => void;
+  onBack?: () => void;
+  confirmLabel?: string;
+  // Salida anticipada: guarda esta foto y cierra, sin pasar al ángulo que
+  // sigue. Solo se ofrece cuando SÍ hay un ángulo siguiente — si éste ya es el
+  // último, el botón principal es el que termina y este sobra.
+  onFinish?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Selector de archivo propio del modal, usado solo en modo revisión: ahí
+  // subir un archivo NO puede cerrar la cámara, porque la foto elegida tiene
+  // que pasar por la misma previsualización que una tomada y dejar seguir con
+  // el resto de los ángulos. En equipos sin cámara éste es el único camino
+  // para completar el registro, así que no puede cortar la secuencia.
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [subjectDetected, setSubjectDetected] = useState(false);
@@ -618,6 +647,9 @@ export function CameraCaptureModal({
     };
   }, []);
 
+  // Hay una foto tomada esperando que el usuario la apruebe o la deseche.
+  const reviewing = Boolean(draftUrl);
+
   function handleCapture() {
     const video = videoRef.current;
     if (!video || video.videoWidth === 0) return;
@@ -711,10 +743,23 @@ export function CameraCaptureModal({
               {errorMessage}
             </div>
           )}
+          {/* La foto recién tomada tapa el video en vez de reemplazarlo: así la
+              cámara sigue viva detrás y "Retomar" vuelve al instante, sin
+              reiniciar el stream ni la detección. */}
+          {reviewing && (
+            <div className="absolute inset-0 z-10 bg-black">
+              <img src={draftUrl!} alt={`Foto tomada — ${label}`} className="h-full w-full object-cover" />
+            </div>
+          )}
         </div>
 
         <div className="px-4 py-3">
-          {status === 'ready' && aiStatus === 'active' && (
+          {reviewing && (
+            <p className="mb-3 text-center text-xs font-semibold text-slate-300">
+              Revisa la foto: si quedó bien, guárdala y sigue con la siguiente.
+            </p>
+          )}
+          {!reviewing && status === 'ready' && aiStatus === 'active' && (
             <p className={`mb-3 text-center text-xs font-semibold ${aligned ? 'text-green-400' : 'text-amber-300'}`}>
               {aligned
                 ? '✓ Posición correcta — puedes tomar la foto'
@@ -733,12 +778,12 @@ export function CameraCaptureModal({
                       : 'No se detecta un rostro — acércate y busca buena luz'}
             </p>
           )}
-          {status === 'ready' && aiStatus === 'loading' && (
+          {!reviewing && status === 'ready' && aiStatus === 'loading' && (
             <p className="mb-3 text-center text-xs font-semibold text-slate-400">
               {isBodyGuide(guide) ? 'Cargando detección de cuerpo...' : 'Cargando detección facial...'}
             </p>
           )}
-          {status === 'ready' && aiStatus === 'unavailable' && (
+          {!reviewing && status === 'ready' && aiStatus === 'unavailable' && (
             <div className="mb-3 text-center">
               <p className="text-xs font-semibold text-slate-400">
                 Solo guía visual — este navegador no soporta la detección automática. Usa la silueta para encuadrar.
@@ -747,25 +792,89 @@ export function CameraCaptureModal({
             </div>
           )}
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onFallbackToFile}
-              className="flex-1 rounded-lg border border-white/20 py-2.5 text-xs font-medium text-slate-200 hover:bg-white/10"
-            >
-              Subir archivo en su lugar
-            </button>
-            <button
-              type="button"
-              onClick={handleCapture}
-              disabled={status !== 'ready'}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-40 ${
-                aligned ? 'bg-green-600 hover:bg-green-700' : 'bg-brand-600 hover:bg-brand-700'
-              }`}
-            >
-              <CameraIcon className="h-4 w-4" />
-              Capturar
-            </button>
+            {/* "Atrás" existe en los dos estados (revisando o en vivo) para
+                poder volver al ángulo anterior aunque éste aún no se tome. */}
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                className="rounded-lg border border-white/20 px-3 py-2.5 text-xs font-medium text-slate-200 hover:bg-white/10"
+                aria-label="Volver a la foto anterior"
+              >
+                ← Atrás
+              </button>
+            )}
+            {reviewing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onRetake}
+                  className="flex-1 rounded-lg border border-white/20 py-2.5 text-xs font-medium text-slate-200 hover:bg-white/10"
+                >
+                  Retomar
+                </button>
+                <button
+                  type="button"
+                  onClick={onConfirm}
+                  className="flex flex-[2] items-center justify-center gap-2 rounded-lg bg-green-600 py-2.5 text-sm font-semibold text-white hover:bg-green-700"
+                >
+                  {confirmLabel ?? 'Guardar y siguiente'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => (onConfirm ? fileInputRef.current?.click() : onFallbackToFile())}
+                  className="flex-1 rounded-lg border border-white/20 py-2.5 text-xs font-medium text-slate-200 hover:bg-white/10"
+                >
+                  Subir archivo en su lugar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCapture}
+                  disabled={status !== 'ready'}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white disabled:opacity-40 ${
+                    aligned ? 'bg-green-600 hover:bg-green-700' : 'bg-brand-600 hover:bg-brand-700'
+                  }`}
+                >
+                  <CameraIcon className="h-4 w-4" />
+                  Capturar
+                </button>
+              </>
+            )}
           </div>
+          {/* Segunda fila, solo al revisar y solo si todavía quedan ángulos por
+              delante: el botón principal sigue la secuencia y éste permite
+              guardar y cortar ahí mismo, sin tener que cerrar con la ✕ (que
+              descartaría lo que aún no se ha guardado). */}
+          {reviewing && onFinish && (
+            <button
+              type="button"
+              onClick={onFinish}
+              className="mt-2 w-full rounded-lg border border-white/20 py-2 text-xs font-medium text-slate-300 hover:bg-white/10"
+            >
+              Guardar y terminar
+            </button>
+          )}
+          {onConfirm && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                // Se limpia el valor para que elegir DOS VECES el mismo archivo
+                // (ej. subir, retomar, volver a subir el mismo) dispare el
+                // change de nuevo en vez de quedarse sin hacer nada.
+                e.target.value = '';
+                // Entra por la misma puerta que una foto tomada con la cámara:
+                // queda como borrador para revisar, no se guarda todavía.
+                if (file) onCapture(file);
+              }}
+            />
+          )}
         </div>
       </div>
     </div>
