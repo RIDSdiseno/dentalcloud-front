@@ -30,7 +30,10 @@ const PROFILE_MIN_YAW = 45;
 // señal: si la cara desaparece justo después de venir girando fuerte, lo que
 // hay delante es un perfil. Sin esto, en perfil el escaneo solo dice "no se
 // detecta un rostro" y nunca confirma la pose.
-const PROFILE_HINT_YAW = 32;
+const PROFILE_HINT_YAW = 26;
+// Para SALIR del perfil hay que bajar bastante más de lo que costó entrar (ver
+// la histéresis en el bucle de detección).
+const PROFILE_EXIT_YAW = 34;
 // Cuánto se sostiene esa suposición tras perder la cara. Corto a propósito: si
 // el paciente se salió de cuadro o se dio vuelta entera, a los ~1,5 s vuelve a
 // decir honestamente que no ve a nadie.
@@ -178,6 +181,11 @@ export function FacialScanModal({
   const [assumedProfile, setAssumedProfile] = useState(false);
   // Última pose realmente medida, para poder interpretar la pérdida de cara.
   const lastGoodRef = useRef<{ pose: HeadPose; at: number } | null>(null);
+  // Si la pose está actualmente considerada "perfil" (con histéresis).
+  const inProfileRef = useRef(false);
+  // Copia en estado de lo anterior: el render no puede leer un ref y enterarse
+  // de que cambió, así que el bucle publica acá lo que decidió.
+  const [inProfile, setInProfile] = useState(false);
   // Foto tomada esperando el "¿Está correcta?" — guarda también a qué ángulo
   // corresponde, porque se puede capturar un ángulo distinto al pedido
   // (adelanto) y al confirmar hay que guardarlo en el correcto.
@@ -254,9 +262,22 @@ export function FacialScanModal({
             if (matrix && result.faceLandmarks?.length) {
               const measured = headPoseFromMatrix(matrix);
               lastGoodRef.current = { pose: measured, at: now };
+              const turned = Math.abs(measured.yaw);
+              // Histéresis: entrar al perfil exige PROFILE_MIN_YAW, pero salir
+              // exige bajar bastante más. En pleno perfil el ángulo medido
+              // tiembla mucho (el modelo ya está al borde de lo que reconoce),
+              // y sin esto cada temblor alrededor del umbral sacaba y volvía a
+              // meter la pose en "Perfil" — que es lo que hacía tan difícil
+              // dejarla quieta el tiempo suficiente para tomar la foto.
+              if (turned >= PROFILE_MIN_YAW) inProfileRef.current = true;
+              else if (turned < PROFILE_EXIT_YAW) inProfileRef.current = false;
               setFaceSeen(true);
-              setAssumedProfile(false);
               setPose(measured);
+              // La suposición de perfil solo se abandona cuando el rostro
+              // vuelve de verdad hacia el frente. Antes la mataba cualquier
+              // detección suelta: en perfil el modelo reaparece un frame con un
+              // ángulo cualquiera y eso bastaba para perder el estado.
+              setAssumedProfile((prev) => (prev ? turned >= PROFILE_EXIT_YAW : false));
             } else {
               // Sin cara. Si veníamos de un giro fuerte hace muy poco, es un
               // perfil, no una ausencia: se mantiene la última pose medida y se
@@ -265,15 +286,18 @@ export function FacialScanModal({
               const fromHardTurn =
                 last && now - last.at < PROFILE_GRACE_MS && Math.abs(last.pose.yaw) >= PROFILE_HINT_YAW;
               if (fromHardTurn) {
+                inProfileRef.current = true;
                 setFaceSeen(true);
                 setAssumedProfile(true);
                 setPose(last.pose);
               } else {
+                inProfileRef.current = false;
                 setFaceSeen(false);
                 setAssumedProfile(false);
                 setPose(null);
               }
             }
+            setInProfile(inProfileRef.current);
           } catch {
             // Un frame que falla no debe cortar el bucle: se ignora y se sigue.
           }
@@ -302,11 +326,12 @@ export function FacialScanModal({
   // Si la cara se perdió viniendo de un giro fuerte, es perfil aunque el último
   // ángulo medido no llegara al umbral: el giro siguió más allá de donde el
   // modelo alcanza a ver.
-  const detected = assumedProfile
-    ? { slot: 'perfilDerecho' as ScanSlot, name: 'Perfil' }
-    : pose
-      ? classifyPose(pose.yaw)
-      : null;
+  const detected =
+    assumedProfile || (inProfile && pose)
+      ? { slot: 'perfilDerecho' as ScanSlot, name: 'Perfil' }
+      : pose
+        ? classifyPose(pose.yaw)
+        : null;
   // En perfil supuesto no hay medición fresca de inclinación/ladeo, así que no
   // se exige: bloquear la toma por un dato que ya no se está midiendo dejaría
   // el perfil sin poder confirmarse nunca.
