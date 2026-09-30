@@ -8,6 +8,8 @@ import {
   fetchExamPhotoMarkups,
   uploadExamPhotoMarkup,
   deleteExamPhotoMarkup,
+  deleteExamPhoto,
+  deleteExamPhotoRound,
   type ExamPhoto,
   type ExamPhotoArea,
   type ExamPhotoMoment,
@@ -20,7 +22,7 @@ import { getErrorMessage } from '../../api/client';
 import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon, RefreshIcon, PenIcon, TrashIcon } from '../../components/icons';
 import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
 import { FacialScanModal } from '../../components/FacialScanModal';
-import { SCAN_SEQUENCE } from '../../components/facialScanConfig';
+import { SCAN_SEQUENCE, type ScanSlot } from '../../components/facialScanConfig';
 import { VideoCaptureModal } from '../../components/VideoCaptureModal';
 import { PhotoAnnotationModal } from './PhotoAnnotationModal';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
@@ -125,7 +127,23 @@ function computeRounds(photos: ExamPhoto[], area: ExamPhotoArea, pendingAvance: 
 // Miniaturas de solo lectura para el registro avanzado: acá no se retoma foto
 // por foto ni se marca sobre la imagen — se vuelve a entrar al escaneo, que es
 // quien decide qué ángulos faltan.
-function ScanRoundGrid({ photos, moment, round }: { photos: ExamPhoto[]; moment: ExamPhotoMoment; round: number }) {
+function ScanRoundGrid({
+  photos,
+  moment,
+  round,
+  onRetake,
+  onDelete,
+  deletingPhotoId,
+  disabled,
+}: {
+  photos: ExamPhoto[];
+  moment: ExamPhotoMoment;
+  round: number;
+  onRetake: (slot: ScanSlot) => void;
+  onDelete: (photoId: string, label: string) => void;
+  deletingPhotoId: string | null;
+  disabled?: boolean;
+}) {
   const bySlot = latestBySlot(photos, 'facialAvanzado', moment, round);
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -146,10 +164,57 @@ function ScanRoundGrid({ photos, moment, round }: { photos: ExamPhoto[]; moment:
               )}
             </div>
             <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{slot.label}</span>
+            {photo && (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onRetake(slot.slot)}
+                  disabled={disabled || deletingPhotoId === photo.id}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-400"
+                >
+                  Retomar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(photo.id, slot.label)}
+                  disabled={disabled || deletingPhotoId === photo.id}
+                  className="text-[11px] font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400"
+                >
+                  {deletingPhotoId === photo.id ? 'Borrando...' : 'Eliminar'}
+                </button>
+              </div>
+            )}
           </div>
         );
       })}
     </div>
+  );
+}
+
+// Botón para borrar una ronda de "Avance" completa. "Antes" no lo lleva: es la
+// línea base del registro y el backend tampoco lo permite.
+function DeleteRoundButton({
+  label,
+  busy,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  busy: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy || disabled}
+      className="flex items-center gap-1 text-[11px] font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400"
+      title={`Borrar ${label} completo`}
+    >
+      <TrashIcon className="h-3 w-3" />
+      {busy ? 'Borrando...' : 'Eliminar'}
+    </button>
   );
 }
 
@@ -252,6 +317,8 @@ function PhotoRoundGrid({
   onOpenCamera,
   onFileChange,
   onMark,
+  onDelete,
+  deletingPhotoId,
   disabled,
 }: {
   area: ExamPhotoArea;
@@ -269,6 +336,8 @@ function PhotoRoundGrid({
   onOpenCamera: (slot: ExamPhotoSlot, chain: boolean) => void;
   onFileChange: (slot: ExamPhotoSlot, file: File | null) => void;
   onMark: (photo: ExamPhoto) => void;
+  onDelete: (photoId: string, label: string) => void;
+  deletingPhotoId: string | null;
   disabled?: boolean;
 }) {
   const bySlot = latestBySlot(photos, area, moment, round);
@@ -323,6 +392,14 @@ function PhotoRoundGrid({
                   className="text-[11px] font-semibold text-brand-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-400"
                 >
                   Retomar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete(photo.id, slot.label)}
+                  disabled={disabled || uploading || deletingPhotoId === photo.id}
+                  className="text-[11px] font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400"
+                >
+                  {deletingPhotoId === photo.id ? 'Borrando...' : 'Eliminar'}
                 </button>
               </div>
             )}
@@ -493,7 +570,13 @@ export function ExamenEsteticoTab({
   // detección de orientación de cabeza. Vive en su propia área
   // ('facialAvanzado'), con sus propias rondas, para no mezclarse con el
   // registro fotográfico normal ni depender del switch Rostro/Cuerpo.
-  const [scanSession, setScanSession] = useState<{ moment: ExamPhotoMoment; round: number } | null>(null);
+  // `slots` es lo que va a pedir el escaneo: los ángulos que faltan al entrar
+  // normal, o uno solo cuando se entra desde "Retomar" de una foto puntual.
+  const [scanSession, setScanSession] = useState<{
+    moment: ExamPhotoMoment;
+    round: number;
+    slots: ScanSlot[];
+  } | null>(null);
   const [showOlderScans, setShowOlderScans] = useState(false);
   const [pendingScanAvanceRound, setPendingScanAvanceRound] = useState<number | null>(null);
   const [photoConsentChecked, setPhotoConsentChecked] = useState(false);
@@ -505,6 +588,10 @@ export function ExamenEsteticoTab({
   const [examPhotoMarkups, setExamPhotoMarkups] = useState<ExamPhotoMarkup[]>([]);
   const [annotatingPhoto, setAnnotatingPhoto] = useState<ExamPhoto | null>(null);
   const [deletingMarkupId, setDeletingMarkupId] = useState<string | null>(null);
+  const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null);
+  // Clave `area-round` de la ronda que se está borrando, para deshabilitar solo
+  // ese botón y no todos los de la pantalla.
+  const [deletingRound, setDeletingRound] = useState<string | null>(null);
 
   // Registro de video — mismo esquema de rondas que las fotos, pero
   // independiente (su propio contador de "Avance").
@@ -532,6 +619,39 @@ export function ExamenEsteticoTab({
     const updated = await uploadExamPhotoMarkup(patient.id, annotatingPhoto.id, blob);
     setExamPhotoMarkups(updated);
     setAnnotatingPhoto(null);
+  }
+
+  async function handleDeletePhoto(photoId: string, label: string) {
+    if (!window.confirm(`¿Borrar la foto "${label}"? Si tiene marcaciones, también se borran.`)) return;
+    setDeletingPhotoId(photoId);
+    try {
+      const updated = await deleteExamPhoto(patient.id, photoId);
+      setExamPhotos(updated.examPhotos);
+      setExamPhotoMarkups(updated.examPhotoMarkups);
+    } catch (err) {
+      setSaveError(getErrorMessage(err, 'No se pudo borrar la foto'));
+    } finally {
+      setDeletingPhotoId(null);
+    }
+  }
+
+  async function handleDeleteRound(area: ExamPhotoArea, round: number, label: string) {
+    if (!window.confirm(`¿Borrar "${label}" completo? Se borran sus fotos y las marcaciones hechas sobre ellas.`))
+      return;
+    setDeletingRound(`${area}-${round}`);
+    try {
+      const updated = await deleteExamPhotoRound(patient.id, area, round);
+      setExamPhotos(updated.examPhotos);
+      setExamPhotoMarkups(updated.examPhotoMarkups);
+      // Si había una ronda recién abierta y sin fotos, deja de tener sentido
+      // mantenerla apuntando a un número que acaba de desaparecer.
+      if (area === photoArea) setPendingAvanceRound(null);
+      else setPendingScanAvanceRound(null);
+    } catch (err) {
+      setSaveError(getErrorMessage(err, 'No se pudo borrar la ronda'));
+    } finally {
+      setDeletingRound(null);
+    }
   }
 
   async function handleDeleteMarkup(markupId: string) {
@@ -846,7 +966,17 @@ export function ExamenEsteticoTab({
         ) : null}
 
         <div className="mb-2">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{latestRound.label}</h3>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{latestRound.label}</h3>
+            {latestRound.moment === 'avance' && (
+              <DeleteRoundButton
+                label={latestRound.label}
+                busy={deletingRound === `${photoArea}-${latestRound.round}`}
+                disabled={!photoConsentSigned}
+                onClick={() => handleDeleteRound(photoArea, latestRound.round, latestRound.label)}
+              />
+            )}
+          </div>
           <PhotoRoundGrid
             area={photoArea}
             moment={latestRound.moment}
@@ -858,6 +988,8 @@ export function ExamenEsteticoTab({
             onOpenCamera={(slot, chain) => openCamera(slot, latestRound.moment, latestRound.round, chain)}
             onFileChange={(slot, file) => handlePhotoChange(slot, latestRound.moment, latestRound.round, file)}
             onMark={setAnnotatingPhoto}
+            onDelete={handleDeletePhoto}
+            deletingPhotoId={deletingPhotoId}
           />
         </div>
 
@@ -875,7 +1007,17 @@ export function ExamenEsteticoTab({
               <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4 dark:border-slate-800">
                 {olderRounds.map((r) => (
                   <div key={`${r.moment}-${r.round}`}>
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{r.label}</h3>
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{r.label}</h3>
+                      {r.moment === 'avance' && (
+                        <DeleteRoundButton
+                          label={r.label}
+                          busy={deletingRound === `${photoArea}-${r.round}`}
+                          disabled={!photoConsentSigned}
+                          onClick={() => handleDeleteRound(photoArea, r.round, r.label)}
+                        />
+                      )}
+                    </div>
                     <PhotoRoundGrid
                       area={photoArea}
                       moment={r.moment}
@@ -887,6 +1029,8 @@ export function ExamenEsteticoTab({
                       onOpenCamera={(slot, chain) => openCamera(slot, r.moment, r.round, chain)}
                       onFileChange={(slot, file) => handlePhotoChange(slot, r.moment, r.round, file)}
                       onMark={setAnnotatingPhoto}
+                      onDelete={handleDeletePhoto}
+                      deletingPhotoId={deletingPhotoId}
                     />
                   </div>
                 ))}
@@ -985,16 +1129,32 @@ export function ExamenEsteticoTab({
           </div>
         ) : null}
 
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-          {scan.latestRound.label}
-        </h3>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            {scan.latestRound.label}
+          </h3>
+          {scan.latestRound.moment === 'avance' && (
+            <DeleteRoundButton
+              label={scan.latestRound.label}
+              busy={deletingRound === `facialAvanzado-${scan.latestRound.round}`}
+              disabled={!photoConsentSigned}
+              onClick={() => handleDeleteRound('facialAvanzado', scan.latestRound.round, scan.latestRound.label)}
+            />
+          )}
+        </div>
 
         {/* El cuadro único para entrar al escaneo. Si la ronda ya está completa
             no hay nada que pedir, así que se dice en vez de abrir la cámara. */}
         {scanPending.length > 0 ? (
           <button
             type="button"
-            onClick={() => setScanSession({ moment: scan.latestRound.moment, round: scan.latestRound.round })}
+            onClick={() =>
+              setScanSession({
+                moment: scan.latestRound.moment,
+                round: scan.latestRound.round,
+                slots: scanPending,
+              })
+            }
             disabled={!photoConsentSigned}
             className="mb-4 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 py-8 text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-brand-500/40 dark:text-brand-400 dark:hover:bg-brand-500/10"
           >
@@ -1012,7 +1172,17 @@ export function ExamenEsteticoTab({
           </div>
         )}
 
-        <ScanRoundGrid photos={examPhotos} moment={scan.latestRound.moment} round={scan.latestRound.round} />
+        <ScanRoundGrid
+          photos={examPhotos}
+          moment={scan.latestRound.moment}
+          round={scan.latestRound.round}
+          deletingPhotoId={deletingPhotoId}
+          disabled={!photoConsentSigned}
+          onRetake={(slot) =>
+            setScanSession({ moment: scan.latestRound.moment, round: scan.latestRound.round, slots: [slot] })
+          }
+          onDelete={handleDeletePhoto}
+        />
 
         {scan.olderRounds.length > 0 && (
           <>
@@ -1028,10 +1198,28 @@ export function ExamenEsteticoTab({
               <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4 dark:border-slate-800">
                 {scan.olderRounds.map((r) => (
                   <div key={`${r.moment}-${r.round}`}>
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                      {r.label}
-                    </h3>
-                    <ScanRoundGrid photos={examPhotos} moment={r.moment} round={r.round} />
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        {r.label}
+                      </h3>
+                      {r.moment === 'avance' && (
+                        <DeleteRoundButton
+                          label={r.label}
+                          busy={deletingRound === `facialAvanzado-${r.round}`}
+                          disabled={!photoConsentSigned}
+                          onClick={() => handleDeleteRound('facialAvanzado', r.round, r.label)}
+                        />
+                      )}
+                    </div>
+                    <ScanRoundGrid
+                      photos={examPhotos}
+                      moment={r.moment}
+                      round={r.round}
+                      deletingPhotoId={deletingPhotoId}
+                      disabled={!photoConsentSigned}
+                      onRetake={(slot) => setScanSession({ moment: r.moment, round: r.round, slots: [slot] })}
+                      onDelete={handleDeletePhoto}
+                    />
                   </div>
                 ))}
               </div>
@@ -1064,7 +1252,7 @@ export function ExamenEsteticoTab({
         <FacialScanModal
           patientName={`${patient.firstName} ${patient.lastName}`}
           momentLabel={scanSession.moment === 'antes' ? 'Antes' : `Avance ${scanSession.round}`}
-          pending={scanPending}
+          pending={scanSession.slots}
           onClose={() => setScanSession(null)}
           onSave={(slot, file) => {
             handlePhotoChange(slot, scanSession.moment, scanSession.round, file, 'facialAvanzado');

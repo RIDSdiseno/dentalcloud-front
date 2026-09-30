@@ -269,6 +269,24 @@ export async function deleteExamPhotoMarkup(patientId: string, markupId: string)
   return data.examPhotoMarkups;
 }
 
+// Los dos borrados devuelven fotos Y marcaciones porque borrar una foto arrastra
+// las marcaciones hechas sobre ella: con solo las fotos, la pantalla seguiría
+// mostrando marcaciones huérfanas hasta recargar.
+export async function deleteExamPhoto(patientId: string, examPhotoId: string) {
+  const { data } = await api.delete<{ examPhotos: ExamPhoto[]; examPhotoMarkups: ExamPhotoMarkup[] }>(
+    `/patients/${patientId}/exam-photos/${examPhotoId}`
+  );
+  return data;
+}
+
+export async function deleteExamPhotoRound(patientId: string, area: ExamPhotoArea, round: number) {
+  const { data } = await api.delete<{ examPhotos: ExamPhoto[]; examPhotoMarkups: ExamPhotoMarkup[] }>(
+    `/patients/${patientId}/exam-photos/round`,
+    { params: { area, moment: 'avance', round } }
+  );
+  return data;
+}
+
 // Registro de video (14/09): mismo esquema de rondas que ExamPhoto (antes /
 // avance N), pero un solo video por ronda — no hay "slot" de ángulo.
 export type ExamVideo = {
