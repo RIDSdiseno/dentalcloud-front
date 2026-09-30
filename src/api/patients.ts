@@ -117,8 +117,11 @@ export type PatientInput = {
 
 export type ExamPhotoSlot = 'frontal' | 'perfilDerecho' | '45derecha' | '45izquierda' | 'espalda' | 'perfilIzquierdo';
 // 'facial' (rostro, de siempre) | 'corporal' (14/09, pedido explícito: switch
-// para alternar el registro fotográfico entre rostro y cuerpo).
-export type ExamPhotoArea = 'facial' | 'corporal';
+// para alternar el registro fotográfico entre rostro y cuerpo) |
+// 'facialAvanzado' (30/09, demo: mismos 4 ángulos del rostro, pero tomados con
+// el escaneo guiado que detecta la orientación de la cabeza en vivo — historia
+// propia, separada del registro facial normal).
+export type ExamPhotoArea = 'facial' | 'corporal' | 'facialAvanzado';
 
 export async function fetchPatients(search?: string) {
   const { data } = await api.get<{ patients: Patient[] }>('/patients', {

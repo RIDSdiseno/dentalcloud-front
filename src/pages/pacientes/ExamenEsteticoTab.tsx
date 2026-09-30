@@ -19,6 +19,8 @@ import {
 import { getErrorMessage } from '../../api/client';
 import { MicIcon, CameraIcon, LockIcon, ChevronDownIcon, RefreshIcon, PenIcon, TrashIcon } from '../../components/icons';
 import { CameraCaptureModal, type CaptureGuide } from '../../components/CameraCaptureModal';
+import { FacialScanModal } from '../../components/FacialScanModal';
+import { SCAN_SEQUENCE } from '../../components/facialScanConfig';
 import { VideoCaptureModal } from '../../components/VideoCaptureModal';
 import { PhotoAnnotationModal } from './PhotoAnnotationModal';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
@@ -61,9 +63,16 @@ const BODY_PHOTO_SLOTS: { key: ExamPhotoSlot; label: string; guide: CaptureGuide
 const PHOTO_SLOTS_BY_AREA: Record<ExamPhotoArea, typeof FACIAL_PHOTO_SLOTS> = {
   facial: FACIAL_PHOTO_SLOTS,
   corporal: BODY_PHOTO_SLOTS,
+  // Mismos 4 ángulos del rostro: el registro avanzado cambia CÓMO se toman
+  // (escaneo guiado por orientación), no qué se toma.
+  facialAvanzado: FACIAL_PHOTO_SLOTS,
 };
 
-const PHOTO_AREA_LABEL: Record<ExamPhotoArea, string> = { facial: 'Rostro', corporal: 'Cuerpo' };
+const PHOTO_AREA_LABEL: Record<ExamPhotoArea, string> = {
+  facial: 'Rostro',
+  corporal: 'Cuerpo',
+  facialAvanzado: 'Rostro (avanzado)',
+};
 
 // Última foto de cada ángulo para una ronda puntual (area + moment + round)
 // — si se retoma un ángulo dentro de la misma ronda, se usa la más reciente.
@@ -80,6 +89,65 @@ function latestBySlot(photos: ExamPhoto[], area: ExamPhotoArea, moment: ExamPhot
 function roundComplete(photos: ExamPhoto[], area: ExamPhotoArea, moment: ExamPhotoMoment, round: number) {
   const map = latestBySlot(photos, area, moment, round);
   return PHOTO_SLOTS_BY_AREA[area].every((s) => map.has(s.key));
+}
+
+// Rondas visibles de un área (la última arriba, "Antes" siempre al fondo) más
+// si se puede abrir un Avance nuevo. El registro fotográfico de arriba arma
+// esto mismo inline desde antes; acá vive como función porque el registro
+// avanzado necesita exactamente la misma lógica sobre su propia área, y
+// duplicarla a mano era pedir que las dos se fueran separando con el tiempo.
+function computeRounds(photos: ExamPhoto[], area: ExamPhotoArea, pendingAvance: number | null) {
+  const antesDone = roundComplete(photos, area, 'antes', 1);
+  const withPhotos = Array.from(
+    new Set(photos.filter((p) => p.area === area && p.moment === 'avance').map((p) => p.round))
+  ).sort((a, b) => a - b);
+  const lastAvanceRound = withPhotos[withPhotos.length - 1] ?? 0;
+  const lastAvanceDone = lastAvanceRound > 0 ? roundComplete(photos, area, 'avance', lastAvanceRound) : true;
+  const visible = pendingAvance
+    ? Array.from(new Set([...withPhotos, pendingAvance])).sort((a, b) => a - b)
+    : withPhotos;
+  const all: { moment: ExamPhotoMoment; round: number; label: string }[] = [
+    ...visible
+      .slice()
+      .reverse()
+      .map((round) => ({ moment: 'avance' as const, round, label: `Avance ${round}` })),
+    { moment: 'antes' as const, round: 1, label: 'Antes' },
+  ];
+  return {
+    antesDone,
+    lastAvanceRound,
+    canStartNewAvance: antesDone && lastAvanceDone && !pendingAvance,
+    latestRound: all[0],
+    olderRounds: all.slice(1),
+  };
+}
+
+// Miniaturas de solo lectura para el registro avanzado: acá no se retoma foto
+// por foto ni se marca sobre la imagen — se vuelve a entrar al escaneo, que es
+// quien decide qué ángulos faltan.
+function ScanRoundGrid({ photos, moment, round }: { photos: ExamPhoto[]; moment: ExamPhotoMoment; round: number }) {
+  const bySlot = latestBySlot(photos, 'facialAvanzado', moment, round);
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      {FACIAL_PHOTO_SLOTS.map((slot) => {
+        const photo = bySlot.get(slot.key) ?? null;
+        return (
+          <div key={slot.key} className="flex flex-col items-center gap-2">
+            <div className="flex h-24 w-full items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+              {photo ? (
+                <a href={photo.url} target="_blank" rel="noreferrer" className="h-full w-full">
+                  <img src={photo.url} alt={slot.label} className="h-full w-full object-cover" />
+                </a>
+              ) : (
+                <span className="text-xs text-slate-400 dark:text-slate-500">Pendiente</span>
+              )}
+            </div>
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{slot.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 // Registro de video: mismas rondas (antes / avance N) que el fotográfico,
@@ -418,6 +486,13 @@ export function ExamenEsteticoTab({
     setCaptureDrafts((prev) => (prev[key] ? { ...prev, [key]: { ...prev[key], uploaded: true } } : prev));
   }
   const [showOlderPhotos, setShowOlderPhotos] = useState(false);
+  // Registro "Fotográfico avanzado — demo" (30/09): escaneo guiado con
+  // detección de orientación de cabeza. Vive en su propia área
+  // ('facialAvanzado'), con sus propias rondas, para no mezclarse con el
+  // registro fotográfico normal ni depender del switch Rostro/Cuerpo.
+  const [scanSession, setScanSession] = useState<{ moment: ExamPhotoMoment; round: number } | null>(null);
+  const [showOlderScans, setShowOlderScans] = useState(false);
+  const [pendingScanAvanceRound, setPendingScanAvanceRound] = useState<number | null>(null);
   const [photoConsentChecked, setPhotoConsentChecked] = useState(false);
   const [photoConsentSigned, setPhotoConsentSigned] = useState(false);
   const fileInputs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -523,6 +598,13 @@ export function ExamenEsteticoTab({
   ];
   const [latestRound, ...olderRounds] = allRounds;
 
+  // Rondas del registro avanzado, sobre su propia área.
+  const scan = computeRounds(examPhotos, 'facialAvanzado', pendingScanAvanceRound);
+  const scanLatestTaken = latestBySlot(examPhotos, 'facialAvanzado', scan.latestRound.moment, scan.latestRound.round);
+  // Ángulos que le faltan a la ronda visible, en el orden en que el escaneo los
+  // va a pedir.
+  const scanPending = SCAN_SEQUENCE.map((s) => s.slot).filter((slot) => !scanLatestTaken.has(slot));
+
   const antesVideoDone = latestVideo(examVideos, 'antes', 1) !== null;
   const avanceVideoRoundsWithVideo = Array.from(
     new Set(examVideos.filter((v) => v.moment === 'avance').map((v) => v.round))
@@ -570,13 +652,16 @@ export function ExamenEsteticoTab({
     slot: ExamPhotoSlot,
     moment: ExamPhotoMoment,
     round: number,
-    file: File | null
+    file: File | null,
+    // El registro avanzado sube a su propia área, no a la que tenga
+    // seleccionada el switch Rostro/Cuerpo de arriba.
+    area: ExamPhotoArea = photoArea
   ) {
     if (!file) return;
-    const key = `${photoArea}-${moment}-${round}-${slot}`;
+    const key = `${area}-${moment}-${round}-${slot}`;
     setUploadingSlots((prev) => new Set(prev).add(key));
     try {
-      const updated = await uploadExamPhoto(patient.id, slot, file, moment, round, photoArea);
+      const updated = await uploadExamPhoto(patient.id, slot, file, moment, round, area);
       // Con las tomas encadenadas puede haber varias subidas en vuelo a la vez,
       // y cada respuesta trae la lista completa tal como estaba en el servidor
       // cuando se resolvió. Reemplazarla de plano haría desaparecer de pantalla
@@ -867,6 +952,123 @@ export function ExamenEsteticoTab({
           </div>
         )}
       </div>
+
+      <div id="registro-avanzado-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
+        <div className="mb-1 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Fotográfico avanzado</h2>
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+            Demo
+          </span>
+        </div>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+          Escaneo guiado: la cámara detecta cómo está puesta la cabeza y va pidiendo los 4 ángulos uno por uno,
+          avisando cuando la posición es la correcta. Mismas rondas de "Antes" y "Avance" que el registro de arriba,
+          pero con su propia historia.
+        </p>
+
+        {!photoConsentChecked ? (
+          <p className="mb-4 text-xs text-slate-400 dark:text-slate-500">Verificando consentimiento...</p>
+        ) : !photoConsentSigned ? (
+          <div className="mb-4 flex items-start gap-3 rounded-xl bg-amber-50 p-3 ring-1 ring-amber-200 dark:bg-amber-500/10">
+            <LockIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="text-xs text-amber-800 dark:text-amber-400">
+              <p className="font-semibold">
+                El paciente debe firmar el consentimiento de uso de imágenes antes de poder escanear.
+              </p>
+              <button type="button" onClick={onGoToConsents} className="mt-1.5 font-semibold underline">
+                Ir a Consentimientos
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          {scan.latestRound.label}
+        </h3>
+
+        {/* El cuadro único para entrar al escaneo. Si la ronda ya está completa
+            no hay nada que pedir, así que se dice en vez de abrir la cámara. */}
+        {scanPending.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setScanSession({ moment: scan.latestRound.moment, round: scan.latestRound.round })}
+            disabled={!photoConsentSigned}
+            className="mb-4 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-300 py-8 text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-brand-500/40 dark:text-brand-400 dark:hover:bg-brand-500/10"
+          >
+            <CameraIcon className="h-8 w-8" />
+            <span className="text-sm font-semibold">
+              {scanPending.length === 4 ? 'Iniciar escaneo facial' : `Continuar escaneo — faltan ${scanPending.length}`}
+            </span>
+            <span className="text-[11px] font-medium opacity-70">
+              La cámara le irá indicando la posición del rostro en todo momento
+            </span>
+          </button>
+        ) : (
+          <div className="mb-4 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-green-300 py-6 text-sm font-semibold text-green-700 dark:border-green-500/40 dark:text-green-400">
+            ✓ {scan.latestRound.label} completo — los 4 ángulos escaneados
+          </div>
+        )}
+
+        <ScanRoundGrid photos={examPhotos} moment={scan.latestRound.moment} round={scan.latestRound.round} />
+
+        {scan.olderRounds.length > 0 && (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowOlderScans((v) => !v)}
+              className="mt-4 flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              <ChevronDownIcon className={`h-3.5 w-3.5 transition-transform ${showOlderScans ? 'rotate-180' : ''}`} />
+              {showOlderScans ? 'Ocultar escaneos anteriores' : `Desplegar escaneos anteriores (${scan.olderRounds.length})`}
+            </button>
+            {showOlderScans && (
+              <div className="mt-4 flex flex-col gap-6 border-t border-slate-100 pt-4 dark:border-slate-800">
+                {scan.olderRounds.map((r) => (
+                  <div key={`${r.moment}-${r.round}`}>
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      {r.label}
+                    </h3>
+                    <ScanRoundGrid photos={examPhotos} moment={r.moment} round={r.round} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        <div className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+          {scan.canStartNewAvance ? (
+            <button
+              type="button"
+              onClick={() => setPendingScanAvanceRound(scan.lastAvanceRound + 1)}
+              disabled={!photoConsentSigned}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-brand-300 py-3 text-sm font-semibold text-brand-600 hover:bg-brand-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-brand-400 dark:hover:bg-brand-500/10"
+            >
+              <CameraIcon className="h-4 w-4" />+ Agregar Avance {scan.lastAvanceRound + 1}
+            </button>
+          ) : (
+            <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-200 py-3 text-sm font-medium text-slate-400 dark:border-slate-700 dark:text-slate-500">
+              <LockIcon className="h-4 w-4" />
+              {scan.antesDone
+                ? 'Completa los 4 ángulos del Avance actual para poder agregar uno nuevo'
+                : 'Completa los 4 ángulos de "Antes" primero para desbloquear el Avance'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {scanSession && (
+        <FacialScanModal
+          patientName={`${patient.firstName} ${patient.lastName}`}
+          momentLabel={scanSession.moment === 'antes' ? 'Antes' : `Avance ${scanSession.round}`}
+          pending={scanPending}
+          onClose={() => setScanSession(null)}
+          onSave={(slot, file) => {
+            handlePhotoChange(slot, scanSession.moment, scanSession.round, file, 'facialAvanzado');
+            if (scanSession.moment === 'avance') setPendingScanAvanceRound(null);
+          }}
+        />
+      )}
 
       <div id="registro-video-card" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800 lg:col-span-3">
         <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Registro de video</h2>
