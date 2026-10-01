@@ -28,16 +28,22 @@ const MODULE_LABELS: Record<ClinicaModuleKey, string> = {
   consentimientos: 'Consentimientos informados',
 };
 
-const PERMISSION_ORDER: PermissionKey[] = [
-  'pacientes',
-  'agenda',
+// Pantallas reales del menú lateral. Las pestañas de la ficha se agruparon
+// aparte, con las mismas llaves — mismo criterio que PermisosPerfilPanel.
+const PERMISSION_ORDER: PermissionKey[] = ['pacientes', 'agenda'];
+
+// Las 10 pestañas de la ficha, en el orden en que se ven en pantalla.
+const PATIENT_TAB_ORDER: PermissionKey[] = [
+  'fichaDatos',
+  'fichaExamenEstetico',
+  'fichaHoras',
   'tratamientos',
-  'documentosClinicos',
-  'cartola',
   'evoluciones',
+  'cartola',
   'observaciones',
-  'consentimientos',
+  'documentosClinicos',
   'rx',
+  'consentimientos',
 ];
 
 const MODULE_ORDER: ClinicaModuleKey[] = [
@@ -167,7 +173,27 @@ export function PermisosUsuarioModal({ user, onClose }: { user: StaffUser; onClo
               </div>
 
               <div>
-                <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Permisos generales (ficha del paciente)</h3>
+                <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Ficha del paciente</h3>
+                <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
+                  Pestañas de la ficha. La que quede en "No" no aparece, y sus datos tampoco se entregan.
+                </p>
+                <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
+                  {PATIENT_TAB_ORDER.map((key) => (
+                    <div key={key} className="flex items-center justify-between gap-3 py-2">
+                      <span className="text-sm text-slate-700 dark:text-slate-200">{PERMISSION_LABELS[key]}</span>
+                      <OverrideToggle
+                        value={info.permissionOverrides[key]}
+                        defaultValue={info.permissionDefaults[key]}
+                        disabled={busyKey === `p-${key}`}
+                        onChange={(value) => handlePermissionChange(key, value)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Datos del paciente</h3>
                 <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
                   {GENERAL_PERMISSION_ORDER.map((key) => (
                     <div key={key} className="flex items-center justify-between gap-3 py-2">

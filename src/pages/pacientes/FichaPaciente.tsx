@@ -115,6 +115,15 @@ const TAB_MODULE_KEYS: Partial<Record<TabKey, 'tratamientos' | 'evoluciones' | '
   consentimientos: 'consentimientos',
 };
 
+// Las tres pestañas que no dependen de un módulo de la clínica y hasta ahora se
+// veían siempre. Ahora tienen permiso propio, para poder ocultarlas por perfil
+// igual que las otras siete.
+const TAB_PERMISSION_KEYS: Partial<Record<TabKey, 'fichaDatos' | 'fichaExamenEstetico' | 'fichaHoras'>> = {
+  datos: 'fichaDatos',
+  examen: 'fichaExamenEstetico',
+  horas: 'fichaHoras',
+};
+
 function calculateAge(birthDate: string | null): number | null {
   if (!birthDate) return null;
   const birth = new Date(birthDate);
@@ -998,6 +1007,11 @@ export default function FichaPaciente() {
   const location = useLocation();
   const { user } = useAuth();
   const visibleTabs = TABS.filter((tab) => {
+    // El permiso por perfil se aplica a TODAS las pestañas; lo de abajo son
+    // condiciones adicionales propias de cada una (plan de la clínica, tipo de
+    // clínica), no sustitutos del permiso.
+    const permissionKey = TAB_PERMISSION_KEYS[tab.key];
+    if (permissionKey && user?.permissions?.[permissionKey] === false) return false;
     if (tab.key === 'rx') return user?.rxEnabled !== false && user?.permissions?.rx !== false;
     if (tab.key === 'examen') return user?.clinicaTipo === 'estetica' || user?.clinicaTipo === 'ambas';
     const moduleKey = TAB_MODULE_KEYS[tab.key];

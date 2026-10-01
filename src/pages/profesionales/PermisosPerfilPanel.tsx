@@ -11,20 +11,28 @@ import {
 import { getErrorMessage } from '../../api/client';
 import { roleLabel } from '../../utils/roles';
 
-const PERMISSION_ORDER: PermissionKey[] = [
-  'pacientes',
-  'agenda',
+// Pantallas reales del menú lateral. Antes acá estaban también los módulos que
+// en realidad solo controlan pestañas de la ficha (cartola, evoluciones, etc.),
+// lo que hacía difícil saber qué apagaba cada interruptor: se movieron a la
+// sección "Ficha del paciente" con las MISMAS llaves — no son duplicados.
+const PERMISSION_ORDER: PermissionKey[] = ['pacientes', 'agenda', 'crearPresupuestos'];
+
+// Las 10 pestañas de la ficha, en el orden en que se ven en pantalla. Las tres
+// primeras son llaves nuevas; las otras siete ya existían como módulos.
+const PATIENT_TAB_ORDER: PermissionKey[] = [
+  'fichaDatos',
+  'fichaExamenEstetico',
+  'fichaHoras',
   'tratamientos',
-  'crearPresupuestos',
-  'documentosClinicos',
-  'cartola',
   'evoluciones',
+  'cartola',
   'observaciones',
-  'consentimientos',
+  'documentosClinicos',
   'rx',
+  'consentimientos',
 ];
 
-// Grupos de campos DENTRO de la ficha del paciente (no pantallas completas)
+// Grupos de campos DENTRO de la ficha del paciente (no pestañas completas)
 // — ej. "Motivo de consulta" parte apagado para Operador (recepción) de
 // fábrica, sin bloquearle el resto de "Pacientes".
 const GENERAL_PERMISSION_ORDER: PermissionKey[] = [...GENERAL_PATIENT_PERMISSION_KEYS];
@@ -45,6 +53,9 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   antecedentesMedicos: 'Antecedentes médicos',
   motivoConsulta: 'Motivo de consulta',
   contactoEmergencia: 'Contacto de emergencia',
+  fichaDatos: 'Datos paciente',
+  fichaExamenEstetico: 'Examen Estético',
+  fichaHoras: 'Horas',
 };
 
 export function PermisosPerfilPanel() {
@@ -127,11 +138,21 @@ export function PermisosPerfilPanel() {
 
         {error && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-500/10 dark:text-red-400">{error}</p>}
 
-        {renderTable(PERMISSION_ORDER, 'Módulo')}
+        {renderTable(PERMISSION_ORDER, 'Pantalla')}
       </div>
 
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Permisos generales</h2>
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Ficha del paciente</h2>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+          Qué pestañas de la ficha ve cada perfil. La pestaña que quede en "No" simplemente no aparece, y sus datos
+          tampoco se entregan.
+        </p>
+
+        {renderTable(PATIENT_TAB_ORDER, 'Pestaña')}
+      </div>
+
+      <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Datos del paciente</h2>
         <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Qué puede editar cada perfil DENTRO de la ficha del paciente. "Motivo de consulta" parte apagado para
           Operador de fábrica — solo el profesional lo completa durante la atención.

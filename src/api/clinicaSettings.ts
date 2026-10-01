@@ -16,7 +16,17 @@ export const GENERAL_PATIENT_PERMISSION_KEYS = [
 ] as const;
 export type GeneralPatientPermissionKey = (typeof GENERAL_PATIENT_PERMISSION_KEYS)[number];
 
-export type PermissionKey = ClinicaModuleKey | 'rx' | 'crearPresupuestos' | GeneralPatientPermissionKey;
+// Pestañas de la ficha del paciente que no dependen de un módulo del plan —
+// ver PATIENT_TAB_PERMISSION_KEYS en el backend (rolePermissions.ts).
+export const PATIENT_TAB_PERMISSION_KEYS = ['fichaDatos', 'fichaExamenEstetico', 'fichaHoras'] as const;
+export type PatientTabPermissionKey = (typeof PATIENT_TAB_PERMISSION_KEYS)[number];
+
+export type PermissionKey =
+  | ClinicaModuleKey
+  | 'rx'
+  | 'crearPresupuestos'
+  | GeneralPatientPermissionKey
+  | PatientTabPermissionKey;
 
 export type RolePermissions = Record<PermissionedRole, Record<PermissionKey, boolean>>;
 
