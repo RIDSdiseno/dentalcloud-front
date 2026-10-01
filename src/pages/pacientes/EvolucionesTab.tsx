@@ -6,7 +6,7 @@ import {
   updateEvolution,
   uploadEvolutionPhoto,
   deleteEvolutionPhoto,
-  deleteEvolution,
+  annulEvolution,
   type Evolution,
   type EnabledFilter,
 } from '../../api/evolutions';
@@ -23,7 +23,7 @@ import { NewAppointmentModal } from '../agenda/NewAppointmentModal';
 import { Modal } from '../../components/Modal';
 import { ReasonModal } from '../../components/ReasonModal';
 import { RichTextEditor } from '../../components/RichTextEditor';
-import { ActivityIcon, CalendarIcon, EyeIcon, EyeOffIcon, PrinterIcon, TrashIcon, UploadIcon } from '../../components/icons';
+import { ActivityIcon, BanIcon, CalendarIcon, EyeIcon, EyeOffIcon, PrinterIcon, TrashIcon, UploadIcon } from '../../components/icons';
 import { PHOTO_LABELS, missingRequiredProductFields, type PhotoLabel } from './photoLabels';
 import { sanitizeHtml } from '../../utils/sanitizeHtml';
 
@@ -41,18 +41,30 @@ function EvolutionCard({
   evolution,
   onToggle,
   onDeletePhoto,
-  onRequestDelete,
-  canDelete,
+  onRequestAnnul,
+  canAnnul,
 }: {
   evolution: Evolution;
   onToggle: (evolution: Evolution) => void;
   onDeletePhoto: (photoId: string, label: string | null) => void;
-  onRequestDelete: (evolution: Evolution) => void;
+  onRequestAnnul: (evolution: Evolution) => void;
   /** Las evoluciones son registro clínico: el permiso viene apagado de fábrica. */
-  canDelete: boolean;
+  canAnnul: boolean;
 }) {
+  // Una evolución anulada es solo lectura: no se deshabilita, no se vuelve a
+  // anular y no se le borran fotos. Queda a la vista, tachada, como respaldo.
+  const anulada = evolution.anuladaAt !== null;
+
   return (
-    <div className={`rounded-xl border p-4 ${evolution.enabled ? 'border-slate-200 dark:border-slate-700' : 'border-slate-100 bg-slate-50 opacity-70 dark:border-slate-800 dark:bg-slate-800'}`}>
+    <div
+      className={`rounded-xl border p-4 ${
+        anulada
+          ? 'border-red-200 bg-red-50/40 dark:border-red-500/30 dark:bg-red-500/5'
+          : evolution.enabled
+            ? 'border-slate-200 dark:border-slate-700'
+            : 'border-slate-100 bg-slate-50 opacity-70 dark:border-slate-800 dark:bg-slate-800'
+      }`}
+    >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <span className="font-semibold text-slate-700 dark:text-slate-200">{evolution.professional.name}</span>
@@ -60,34 +72,48 @@ function EvolutionCard({
             <CalendarIcon className="h-3.5 w-3.5" />
             {new Date(evolution.createdAt).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onToggle(evolution)}
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
-          >
-            {evolution.enabled ? (
-              <>
-                <EyeIcon className="h-3.5 w-3.5" /> Deshabilitar
-              </>
-            ) : (
-              <>
-                <EyeOffIcon className="h-3.5 w-3.5" /> Habilitar
-              </>
-            )}
-          </button>
-          {canDelete && (
-            <button
-              type="button"
-              onClick={() => onRequestDelete(evolution)}
-              className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-            >
-              <TrashIcon className="h-3.5 w-3.5" /> Eliminar
-            </button>
+          {anulada && (
+            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-bold tracking-wide text-red-700 uppercase dark:bg-red-500/20 dark:text-red-300">
+              Anulada
+            </span>
           )}
         </div>
+        {!anulada && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onToggle(evolution)}
+              className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              {evolution.enabled ? (
+                <>
+                  <EyeIcon className="h-3.5 w-3.5" /> Deshabilitar
+                </>
+              ) : (
+                <>
+                  <EyeOffIcon className="h-3.5 w-3.5" /> Habilitar
+                </>
+              )}
+            </button>
+            {canAnnul && (
+              <button
+                type="button"
+                onClick={() => onRequestAnnul(evolution)}
+                className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+              >
+                <BanIcon className="h-3.5 w-3.5" /> Anular
+              </button>
+            )}
+          </div>
+        )}
       </div>
+      {anulada && (
+        <p className="mb-2 rounded-lg bg-red-100/70 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-300">
+          Anulada por <span className="font-semibold">{evolution.anuladaPor?.name ?? 'un usuario eliminado'}</span> el{' '}
+          {new Date(evolution.anuladaAt!).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' })}
+          {evolution.anulacionMotivo && <> &middot; Motivo: {evolution.anulacionMotivo}</>}
+        </p>
+      )}
       {evolution.treatmentItem && (
         <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
           Procedimiento realizado: {evolution.treatmentItem.description}
@@ -101,7 +127,12 @@ function EvolutionCard({
           {evolution.productExpiresAt && ` · Vence: ${new Date(evolution.productExpiresAt).toLocaleDateString('es-CL')}`}
         </p>
       )}
-      <div className="prose-sm text-sm text-slate-700 dark:text-slate-200" dangerouslySetInnerHTML={{ __html: sanitizeHtml(evolution.content) }} />
+      <div
+        className={`prose-sm text-sm ${
+          anulada ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'
+        }`}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(evolution.content) }}
+      />
       {evolution.photos.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {evolution.photos.map((photo) => (
@@ -114,14 +145,16 @@ function EvolutionCard({
                   {photo.label}
                 </span>
               )}
-              <button
-                type="button"
-                onClick={() => onDeletePhoto(photo.id, photo.label)}
-                aria-label="Eliminar foto"
-                className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
-              >
-                <TrashIcon className="h-3 w-3" />
-              </button>
+              {!anulada && (
+                <button
+                  type="button"
+                  onClick={() => onDeletePhoto(photo.id, photo.label)}
+                  aria-label="Eliminar foto"
+                  className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                >
+                  <TrashIcon className="h-3 w-3" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -161,7 +194,7 @@ export function EvolucionesTab({
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [evolutions, setEvolutions] = useState<Evolution[]>([]);
-  const [deletingEvolution, setDeletingEvolution] = useState<Evolution | null>(null);
+  const [annullingEvolution, setAnnullingEvolution] = useState<Evolution | null>(null);
   const [filterProfessionalId, setFilterProfessionalId] = useState('');
   const [statusFilter, setStatusFilter] = useState<EnabledFilter>('true');
   const [isLoading, setIsLoading] = useState(true);
@@ -360,16 +393,16 @@ export function EvolucionesTab({
     }
   }
 
-  // Borrar (a diferencia de deshabilitar) exige un motivo — queda guardado
-  // para auditoría (ver EvolutionDeletion en el backend).
-  async function handleDelete(reason: string) {
-    if (!deletingEvolution) return;
+  // Anular (a diferencia de deshabilitar) exige un motivo y es definitivo: la
+  // evolución se queda en la ficha tachada, no desaparece.
+  async function handleAnnul(reason: string) {
+    if (!annullingEvolution) return;
     try {
-      await deleteEvolution(deletingEvolution.id, reason);
-      setEvolutions((prev) => prev.filter((e) => e.id !== deletingEvolution.id));
-      setDeletingEvolution(null);
+      const updated = await annulEvolution(annullingEvolution.id, reason);
+      setEvolutions((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+      setAnnullingEvolution(null);
     } catch (err) {
-      setListError(getErrorMessage(err, 'No se pudo eliminar la evolución'));
+      setListError(getErrorMessage(err, 'No se pudo anular la evolución'));
     }
   }
 
@@ -673,8 +706,8 @@ export function EvolucionesTab({
               evolution={evolution}
               onToggle={handleToggle}
               onDeletePhoto={handleDeletePhoto}
-              onRequestDelete={setDeletingEvolution}
-              canDelete={user?.permissions?.eliminarEvoluciones !== false}
+              onRequestAnnul={setAnnullingEvolution}
+              canAnnul={user?.permissions?.eliminarEvoluciones !== false}
             />
           ))}
         </div>
@@ -712,14 +745,14 @@ export function EvolucionesTab({
         </Modal>
       )}
 
-      {deletingEvolution && (
+      {annullingEvolution && (
         <ReasonModal
-          title="Eliminar evolución"
-          description="Esta acción no se puede deshacer. Indica el motivo por el que la vas a eliminar."
+          title="Anular evolución"
+          description="La evolución no se borra: queda en la ficha tachada, con tu nombre, la fecha y el motivo. No se puede deshacer."
           placeholder="Ej: se creó por error, es una nota duplicada."
-          acceptLabel="Eliminar"
-          onClose={() => setDeletingEvolution(null)}
-          onAccept={handleDelete}
+          acceptLabel="Anular"
+          onClose={() => setAnnullingEvolution(null)}
+          onAccept={handleAnnul}
         />
       )}
     </div>

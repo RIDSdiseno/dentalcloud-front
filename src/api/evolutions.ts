@@ -17,6 +17,12 @@ export type Evolution = {
   createdAt: string;
   updatedAt: string;
   professional: { id: string; name: string };
+  // Anulación. Una evolución es registro clínico: no se borra, se anula — se
+  // queda en la ficha, tachada, con quién, cuándo y por qué (ver backend).
+  // `anuladaAt === null` significa vigente.
+  anuladaAt: string | null;
+  anulacionMotivo: string | null;
+  anuladaPor: { id: string; name: string } | null;
   // Procedimiento del presupuesto que esta evolución documenta — al crearla
   // con esto, el procedimiento queda marcado como realizado (ver backend).
   treatmentItem: { id: string; description: string; treatmentPlanId: string } | null;
@@ -77,8 +83,10 @@ export async function deleteEvolutionPhoto(photoId: string) {
   return data.evolution;
 }
 
-// Borra la evolución de verdad (no es deshabilitar) — exige un motivo, que
-// queda guardado para auditoría (ver EvolutionDeletion en el backend).
-export async function deleteEvolution(id: string, reason: string) {
-  await api.delete(`/evolutions/${id}`, { data: { reason } });
+// Anula la evolución (no es deshabilitar, y no la borra): exige un motivo y
+// devuelve la evolución ya anulada, que sigue apareciendo en la ficha. El
+// endpoint sigue siendo DELETE por compatibilidad con el resto del front.
+export async function annulEvolution(id: string, reason: string) {
+  const { data } = await api.delete<{ evolution: Evolution }>(`/evolutions/${id}`, { data: { reason } });
+  return data.evolution;
 }

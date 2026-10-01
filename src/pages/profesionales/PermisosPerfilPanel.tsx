@@ -42,7 +42,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   agenda: 'Agenda y citas',
   tratamientos: 'Planes de tratamiento',
   crearPresupuestos: 'Crear presupuestos',
-  eliminarEvoluciones: 'Eliminar evoluciones',
+  eliminarEvoluciones: 'Anular evoluciones',
   documentosClinicos: 'Documentos clínicos',
   cartola: 'Cartola',
   evoluciones: 'Evoluciones',
