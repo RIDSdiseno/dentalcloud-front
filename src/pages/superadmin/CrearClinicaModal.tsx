@@ -3,7 +3,8 @@ import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createClinica, type Clinica } from '../../api/clinicas';
 import { CameraIcon, PlusIcon, TrashIcon } from '../../components/icons';
-import { formatRutInput, isValidRut } from '../../utils/rut';
+import { DocumentoInput } from '../../components/DocumentoInput';
+import { COMPANY_DOCUMENT_TYPES, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { PAIS_OPTIONS, TIPO_LABELS, Toggle } from './clinicaShared';
 
 type CrearClinicaModalProps = {
@@ -16,7 +17,8 @@ const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps) {
   const [name, setName] = useState('');
   const [rut, setRut] = useState('');
-  const [rutTouched, setRutTouched] = useState(false);
+  // La clínica es una EMPRESA: en España le corresponde CIF, no DNI.
+  const [documentType, setDocumentType] = useState<DocumentType>('RUT');
   const [tipo, setTipo] = useState<'dental' | 'estetica' | 'ambas'>('dental');
   const [pais, setPais] = useState(PAIS_OPTIONS[0]);
   const [adminName, setAdminName] = useState('');
@@ -39,8 +41,6 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
     setLogoPreview(file ? URL.createObjectURL(file) : null);
   }
 
-  const rutIsValid = rut.trim() === '' ? true : isValidRut(rut);
-
   function updateSucursal(index: number, patch: Partial<{ name: string; sync: boolean }>) {
     setSucursales((current) => current.map((s, i) => (i === index ? { ...s, ...patch } : s)));
   }
@@ -53,10 +53,9 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setRutTouched(true);
     setError(null);
 
-    if (rut.trim() && !isValidRut(rut)) {
+    if (rut.trim() && !isValidDocument(documentType, rut)) {
       setError('El RUT ingresado no es válido');
       return;
     }
@@ -65,7 +64,8 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
     try {
       const clinica = await createClinica({
         name,
-        rut: rut.trim() || undefined,
+        rut: rut.trim() ? normalizeDocument(documentType, rut) : undefined,
+        documentType,
         tipo,
         pais,
         adminName,
@@ -123,26 +123,15 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
           />
         </div>
 
-        <div>
-          <label htmlFor="clinica-rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            RUT
-          </label>
-          <input
-            id="clinica-rut"
-            value={rut}
-            onChange={(e) => setRut(formatRutInput(e.target.value))}
-            onBlur={() => setRutTouched(true)}
-            placeholder="76.123.456-7"
-            inputMode="text"
-            maxLength={12}
-            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-              rutTouched && !rutIsValid
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
-                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-slate-700'
-            }`}
-          />
-          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600 dark:text-red-400">RUT inválido</p>}
-        </div>
+        <DocumentoInput
+          id="clinica-rut"
+          label="Documento de la clínica"
+          type={documentType}
+          value={rut}
+          types={COMPANY_DOCUMENT_TYPES}
+          onTypeChange={setDocumentType}
+          onValueChange={setRut}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <div>

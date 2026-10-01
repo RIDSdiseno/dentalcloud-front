@@ -2,7 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createUser, type StaffUser } from '../../api/users';
-import { formatRutInput, isValidRut } from '../../utils/rut';
+import { DocumentoInput } from '../../components/DocumentoInput';
+import { PERSON_DOCUMENT_TYPES, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { SignaturePad } from '../../components/SignaturePad';
 
 type ProfessionalFormModalProps = {
@@ -16,18 +17,15 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'odontologo' | 'admin' | 'radiologo' | 'operador'>('odontologo');
   const [rut, setRut] = useState('');
-  const [rutTouched, setRutTouched] = useState(false);
+  const [documentType, setDocumentType] = useState<DocumentType>('RUT');
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const rutIsValid = rut.trim() === '' ? true : isValidRut(rut);
-
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setRutTouched(true);
     setError(null);
-    if (rut.trim() && !isValidRut(rut)) {
+    if (rut.trim() && !isValidDocument(documentType, rut)) {
       setError('El RUT ingresado no es válido');
       return;
     }
@@ -38,7 +36,8 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
         email,
         password,
         role,
-        rut: rut.trim() || undefined,
+        rut: rut.trim() ? normalizeDocument(documentType, rut) : undefined,
+        documentType,
         signatureDataUrl,
       });
       onCreated(user, dimageGeneratedPassword);
@@ -113,23 +112,15 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
         </div>
 
         <div>
-          <label htmlFor="prof-rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            RUT
-          </label>
-          <input
+          <DocumentoInput
             id="prof-rut"
+            label="Documento"
+            type={documentType}
             value={rut}
-            onChange={(e) => setRut(formatRutInput(e.target.value))}
-            onBlur={() => setRutTouched(true)}
-            placeholder="76.123.456-7"
-            maxLength={12}
-            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-              rutTouched && !rutIsValid
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
-                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-slate-700'
-            }`}
+            types={PERSON_DOCUMENT_TYPES}
+            onTypeChange={setDocumentType}
+            onValueChange={setRut}
           />
-          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600 dark:text-red-400">RUT inválido</p>}
           {(role === 'odontologo' || role === 'radiologo') && (
             <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
               Opcional, pero si tu clínica tiene el módulo Rx habilitado y lo completas ahora, este profesional queda

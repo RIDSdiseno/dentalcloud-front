@@ -6,6 +6,8 @@ export type PrivacyConsentStatus = 'pendiente' | 'firmado' | 'rechazado' | 'expi
 
 export type Patient = {
   id: string;
+  // Tipo del documento guardado en `rut`: RUT | DNI | NIE | PASAPORTE.
+  documentType: string;
   rut: string;
   firstName: string;
   lastName: string;
@@ -74,6 +76,7 @@ export type Patient = {
 };
 
 export type PatientInput = {
+  documentType?: string;
   rut: string;
   firstName: string;
   lastName: string;

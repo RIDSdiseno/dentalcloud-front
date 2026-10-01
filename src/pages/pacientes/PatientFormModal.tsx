@@ -6,7 +6,14 @@ import { ALLERGY_OPTIONS, type AllergyKey } from '../../data/allergies';
 import { getErrorMessage } from '../../api/client';
 import { createPatient, updatePatient, uploadPatientPhoto, type Patient } from '../../api/patients';
 import { findConsultationPaymentByRut } from '../../api/consultationPayments';
-import { formatRut, formatRutInput, isValidRut } from '../../utils/rut';
+import { DocumentoInput } from '../../components/DocumentoInput';
+import {
+  PERSON_DOCUMENT_TYPES,
+  formatDocument,
+  isValidDocument,
+  normalizeDocument,
+  type DocumentType,
+} from '../../utils/documento';
 import { CameraIcon } from '../../components/icons';
 
 type PatientFormModalProps = {
@@ -28,7 +35,15 @@ function parsePhone(phone: string | null | undefined) {
 export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModalProps) {
   const isEditing = Boolean(patient);
   const initialPhone = parsePhone(patient?.phone);
-  const [rut, setRut] = useState(patient ? formatRut(patient.rut) : '');
+  // Al editar se respeta el tipo guardado; al crear parte en RUT. Cuando el
+  // país de la clínica llegue al frontend (tarea 6), el default debería salir de
+  // ahí: en España el paciente no tiene RUT y hoy hay que cambiarlo a mano.
+  const [documentType, setDocumentType] = useState<DocumentType>(
+    (patient?.documentType as DocumentType) ?? 'RUT'
+  );
+  const [rut, setRut] = useState(
+    patient ? formatDocument((patient.documentType as DocumentType) ?? 'RUT', patient.rut) : ''
+  );
   const [firstName, setFirstName] = useState(patient?.firstName ?? '');
   const [lastName, setLastName] = useState(patient?.lastName ?? '');
   const [dialCode, setDialCode] = useState(initialPhone.dialCode);
@@ -59,18 +74,14 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(patient?.photoUrl ?? null);
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const [rutTouched, setRutTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const rutIsValid = rut.trim() === '' ? true : isValidRut(rut);
 
   // Si el RUT ya pagó su consulta (apartado "Pagos de Consulta"), se
   // autocompletan nombre y correo — solo al crear (no editar), y solo si
   // esos campos siguen vacíos, para no pisar algo que ya se escribió.
   async function handleRutBlur() {
-    setRutTouched(true);
-    if (isEditing || !isValidRut(rut) || (firstName.trim() && lastName.trim())) return;
+    if (isEditing || !isValidDocument(documentType, rut) || (firstName.trim() && lastName.trim())) return;
     try {
       const payment = await findConsultationPaymentByRut(rut);
       if (payment) {
@@ -85,18 +96,18 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    setRutTouched(true);
     setError(null);
 
-    if (!isValidRut(rut)) {
-      setError('El RUT ingresado no es válido');
+    if (!isValidDocument(documentType, rut)) {
+      setError('El documento ingresado no es válido');
       return;
     }
 
     setIsSubmitting(true);
     try {
       const input = {
-        rut,
+        documentType,
+        rut: normalizeDocument(documentType, rut),
         firstName,
         lastName,
         phone: localPhone.trim() ? `${dialCode} ${localPhone.trim()}` : undefined,
@@ -192,29 +203,17 @@ export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModal
           </button>
         </div>
 
-        <div>
-          <label htmlFor="rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            RUT
-          </label>
-          <input
-            id="rut"
-            value={rut}
-            onChange={(e) => setRut(formatRutInput(e.target.value))}
-            onBlur={handleRutBlur}
-            placeholder="12.345.678-9"
-            inputMode="text"
-            maxLength={12}
-            required
-            className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-              rutTouched && !rutIsValid
-                ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
-                : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-slate-700'
-            }`}
-          />
-          {rutTouched && !rutIsValid && (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-400">RUT inválido</p>
-          )}
-        </div>
+        <DocumentoInput
+          id="rut"
+          label="Documento"
+          required
+          type={documentType}
+          value={rut}
+          types={PERSON_DOCUMENT_TYPES}
+          onTypeChange={setDocumentType}
+          onValueChange={setRut}
+          onBlur={handleRutBlur}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div>

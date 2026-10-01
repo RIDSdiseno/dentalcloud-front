@@ -3,6 +3,7 @@ import type { ClinicaModuleKey } from './clinicas';
 import type { PermissionKey } from './clinicaSettings';
 
 export type StaffUser = {
+  documentType?: string;
   id: string;
   email: string;
   name: string;
@@ -14,6 +15,7 @@ export type StaffUser = {
 };
 
 export type CreateUserInput = {
+  documentType?: string;
   name: string;
   email: string;
   password: string;
@@ -65,8 +67,8 @@ export async function createUser(input: CreateUserInput) {
   return data;
 }
 
-export async function updateUserRut(id: string, rut: string | null) {
-  const { data } = await api.patch<{ user: StaffUser } & DimageSyncResult>(`/users/${id}`, { rut });
+export async function updateUserRut(id: string, rut: string | null, documentType?: string) {
+  const { data } = await api.patch<{ user: StaffUser } & DimageSyncResult>(`/users/${id}`, { rut, documentType });
   return data;
 }
 

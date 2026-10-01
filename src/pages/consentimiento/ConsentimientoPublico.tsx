@@ -6,7 +6,8 @@ import {
   respondPublicConsent,
   type PublicConsent,
 } from '../../api/publicConsent';
-import { formatRutInput, isValidRut } from '../../utils/rut';
+import { DocumentoInput } from '../../components/DocumentoInput';
+import { PERSON_DOCUMENT_TYPES, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { ShieldIcon } from '../../components/icons';
 import { SignaturePad } from '../../components/SignaturePad';
 
@@ -43,6 +44,7 @@ export default function ConsentimientoPublico() {
 
   const [signerName, setSignerName] = useState('');
   const [signerRut, setSignerRut] = useState('');
+  const [signerDocumentType, setSignerDocumentType] = useState<DocumentType>('RUT');
   const [readConfirmed, setReadConfirmed] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -57,7 +59,7 @@ export default function ConsentimientoPublico() {
       .catch((err) => setState(statusFromError(err)));
   }, [token]);
 
-  const canSubmit = readConfirmed && signerName.trim().length > 0 && isValidRut(signerRut);
+  const canSubmit = readConfirmed && signerName.trim().length > 0 && isValidDocument(signerDocumentType, signerRut);
   const canAccept = canSubmit && Boolean(signatureDataUrl);
 
   async function handleDecision(decision: 'firmado' | 'rechazado') {
@@ -75,7 +77,8 @@ export default function ConsentimientoPublico() {
       await respondPublicConsent(token, {
         decision,
         signerName: signerName.trim(),
-        signerRut,
+        signerRut: normalizeDocument(signerDocumentType, signerRut),
+        signerDocumentType,
         readConfirmed,
         signatureDataUrl: decision === 'firmado' ? signatureDataUrl : undefined,
       });
@@ -189,18 +192,15 @@ export default function ConsentimientoPublico() {
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
-        <div>
-          <label htmlFor="signerRut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            RUT
-          </label>
-          <input
-            id="signerRut"
-            value={signerRut}
-            onChange={(e) => setSignerRut(formatRutInput(e.target.value))}
-            placeholder="12.345.678-9"
-            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-          />
-        </div>
+        <DocumentoInput
+          id="signerRut"
+          label="Documento de quien firma"
+          type={signerDocumentType}
+          value={signerRut}
+          types={PERSON_DOCUMENT_TYPES}
+          onTypeChange={setSignerDocumentType}
+          onValueChange={setSignerRut}
+        />
         <label className="mt-1 flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
           <input
             type="checkbox"

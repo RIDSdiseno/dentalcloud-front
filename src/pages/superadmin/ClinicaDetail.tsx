@@ -21,7 +21,8 @@ const FEDERATION_SYNC_ITEMS: { key: FederationSyncKey; label: string; descriptio
 ];
 import { getErrorMessage } from '../../api/client';
 import { formatCLP } from '../../utils/treatmentStatus';
-import { formatRut, formatRutInput, isValidRut } from '../../utils/rut';
+import { DocumentoInput } from '../../components/DocumentoInput';
+import { COMPANY_DOCUMENT_TYPES, formatDocument, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { MODULE_ICONS, MODULE_LABELS, MODULE_ORDER, PAIS_OPTIONS, StatTile, TIPO_LABELS, Toggle } from './clinicaShared';
 import {
   ActivityIcon,
@@ -55,7 +56,7 @@ export default function ClinicaDetail() {
   const [busyField, setBusyField] = useState<string | null>(null);
 
   const [rut, setRut] = useState('');
-  const [rutTouched, setRutTouched] = useState(false);
+  const [documentType, setDocumentType] = useState<DocumentType>('RUT');
   const [rutError, setRutError] = useState<string | null>(null);
 
   const [aiTokenLimit, setAiTokenLimit] = useState('');
@@ -71,7 +72,9 @@ export default function ClinicaDetail() {
       .then((clinicas) => {
         const found = clinicas.find((c) => c.id === id) ?? null;
         setClinica(found);
-        setRut(found?.rut ? formatRut(found.rut) : '');
+        const foundType = ((found?.documentType as DocumentType) ?? 'RUT');
+        setDocumentType(foundType);
+        setRut(found?.rut ? formatDocument(foundType, found.rut) : '');
         setAiTokenLimit(found ? String(found.aiTokenLimitMonthly) : '');
         setError(found ? null : 'Holding no encontrado');
       })
@@ -130,13 +133,15 @@ export default function ClinicaDetail() {
   }
 
   async function handleRutSave() {
-    setRutTouched(true);
     setRutError(null);
-    if (rut.trim() && !isValidRut(rut)) {
+    if (rut.trim() && !isValidDocument(documentType, rut)) {
       setRutError('RUT inválido');
       return;
     }
-    await applyUpdate({ rut: rut.trim() || undefined }, 'rut');
+    await applyUpdate(
+      { rut: rut.trim() ? normalizeDocument(documentType, rut) : undefined, documentType },
+      'rut'
+    );
   }
 
   // Regulador manual de tokens de IA (14/09): todas las clínicas comparten
@@ -169,8 +174,6 @@ export default function ClinicaDetail() {
       </div>
     );
   }
-
-  const rutIsValid = rut.trim() === '' ? true : isValidRut(rut);
   const consentTotal = clinica.consentStats.firmado + clinica.consentStats.pendiente + clinica.consentStats.rechazado;
 
   return (
@@ -342,23 +345,18 @@ export default function ClinicaDetail() {
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-          <label htmlFor="detail-rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            RUT
-          </label>
-          <div className="mt-1 flex gap-2">
-            <input
-              id="detail-rut"
-              value={rut}
-              onChange={(e) => setRut(formatRutInput(e.target.value))}
-              onBlur={() => setRutTouched(true)}
-              placeholder="76.123.456-7"
-              maxLength={12}
-              className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition-colors focus:ring-3 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 ${
-                rutTouched && !rutIsValid
-                  ? 'border-red-300 focus:border-red-500 focus:ring-red-500/15'
-                  : 'border-slate-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-slate-700'
-              }`}
-            />
+          <div className="flex gap-2">
+            <div className="w-full">
+              <DocumentoInput
+                id="detail-rut"
+                label="Documento de la clínica"
+                type={documentType}
+                value={rut}
+                types={COMPANY_DOCUMENT_TYPES}
+                onTypeChange={setDocumentType}
+                onValueChange={setRut}
+              />
+            </div>
             <button
               type="button"
               onClick={handleRutSave}
@@ -368,7 +366,6 @@ export default function ClinicaDetail() {
               Guardar
             </button>
           </div>
-          {rutTouched && !rutIsValid && <p className="mt-1 text-xs text-red-600 dark:text-red-400">RUT inválido</p>}
           {rutError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{rutError}</p>}
         </div>
 

@@ -4,7 +4,7 @@ import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { CheckIcon, ClockIcon, DownloadIcon, LockIcon, PlusIcon, ShieldIcon, UsersIcon } from '../../components/icons';
 import { roleLabel } from '../../utils/roles';
-import { formatRutInput } from '../../utils/rut';
+import { DOCUMENT_LABELS, PERSON_DOCUMENT_TYPES, formatDocument, formatDocumentInput, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { ProfessionalFormModal } from './ProfessionalFormModal';
 import { ScheduleModal } from './ScheduleModal';
 import { PermisosPerfilPanel } from './PermisosPerfilPanel';
@@ -20,19 +20,27 @@ function RutCell({
   user: StaffUser;
   onUpdated: (user: StaffUser, dimageGeneratedPassword?: string | null) => void;
 }) {
-  const [value, setValue] = useState(user.rut ? formatRutInput(user.rut) : '');
+  const [documentType, setDocumentType] = useState<DocumentType>((user.documentType as DocumentType) ?? 'RUT');
+  const [value, setValue] = useState(
+    user.rut ? formatDocument((user.documentType as DocumentType) ?? 'RUT', user.rut) : ''
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleBlur() {
     const trimmed = value.trim();
-    if (trimmed === (user.rut ? formatRutInput(user.rut) : '')) return;
+    const saved = user.rut ? formatDocument((user.documentType as DocumentType) ?? 'RUT', user.rut) : '';
+    if (trimmed === saved && documentType === ((user.documentType as DocumentType) ?? 'RUT')) return;
     setIsSaving(true);
     setError(null);
     try {
-      const { user: updated, dimageGeneratedPassword } = await updateUserRut(user.id, trimmed || null);
+      const { user: updated, dimageGeneratedPassword } = await updateUserRut(
+        user.id,
+        trimmed ? normalizeDocument(documentType, trimmed) : null,
+        documentType
+      );
       onUpdated(updated, dimageGeneratedPassword);
-      setValue(updated.rut ? formatRutInput(updated.rut) : '');
+      setValue(updated.rut ? formatDocument((updated.documentType as DocumentType) ?? documentType, updated.rut) : '');
     } catch (err) {
       setError(getErrorMessage(err, 'RUT inválido'));
     } finally {
@@ -42,14 +50,33 @@ function RutCell({
 
   return (
     <div>
-      <input
+      <div className="flex items-center gap-1">
+        <select
+          value={documentType}
+          disabled={isSaving}
+          aria-label="Tipo de documento"
+          onChange={(e) => {
+            const next = e.target.value as DocumentType;
+            setDocumentType(next);
+            setValue(formatDocumentInput(next, value));
+          }}
+          className="rounded-lg border border-transparent bg-transparent px-1 py-1 text-xs text-slate-500 outline-none hover:border-slate-200 focus:border-brand-500 dark:text-slate-400 dark:hover:border-slate-700"
+        >
+          {PERSON_DOCUMENT_TYPES.map((t) => (
+            <option key={t} value={t}>
+              {DOCUMENT_LABELS[t]}
+            </option>
+          ))}
+        </select>
+        <input
         value={value}
-        onChange={(e) => setValue(formatRutInput(e.target.value))}
+        onChange={(e) => setValue(formatDocumentInput(documentType, e.target.value))}
         onBlur={handleBlur}
-        placeholder="Sin RUT"
+        placeholder="Sin documento"
         disabled={isSaving}
         className="w-32 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-slate-600 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15 dark:text-slate-300 dark:hover:border-slate-700 dark:focus:bg-slate-800 dark:focus:text-slate-100"
-      />
+        />
+      </div>
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );

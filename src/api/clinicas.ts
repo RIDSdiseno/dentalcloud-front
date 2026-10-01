@@ -26,6 +26,7 @@ export type FederationSyncKey = 'patients' | 'appointments' | 'treatmentPlans' |
 export type FederationSyncSettings = Record<FederationSyncKey, boolean>;
 
 export type Clinica = {
+  documentType?: string;
   id: string;
   name: string;
   rut: string | null;
@@ -180,6 +181,7 @@ export async function updateClinica(
   id: string,
   patch: {
     name?: string;
+    documentType?: string;
     rut?: string;
     active?: boolean;
     tipo?: string;
@@ -217,6 +219,7 @@ export async function updateClinicaLogo(id: string, logo: File) {
 
 export async function createClinica(input: {
   name: string;
+  documentType?: string;
   rut?: string;
   tipo: string;
   pais: string;
@@ -229,6 +232,7 @@ export async function createClinica(input: {
   const formData = new FormData();
   formData.append('name', input.name);
   if (input.rut) formData.append('rut', input.rut);
+  if (input.documentType) formData.append('documentType', input.documentType);
   formData.append('tipo', input.tipo);
   formData.append('pais', input.pais);
   formData.append('adminName', input.adminName);

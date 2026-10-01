@@ -24,6 +24,7 @@ export async function respondPublicConsent(
     decision: 'firmado' | 'rechazado';
     signerName: string;
     signerRut: string;
+    signerDocumentType?: string;
     readConfirmed: boolean;
     signatureDataUrl?: string | null;
   }

@@ -9,7 +9,8 @@ import {
   type PatientConsent,
 } from '../../api/dataConsents';
 import type { Patient } from '../../api/patients';
-import { formatRutInput, isValidRut } from '../../utils/rut';
+import { DocumentoInput } from '../../components/DocumentoInput';
+import { PERSON_DOCUMENT_TYPES, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { SignaturePad } from '../../components/SignaturePad';
 
 export function ConsentimientoPreviewModal({
@@ -31,6 +32,10 @@ export function ConsentimientoPreviewModal({
 
   const [signerName, setSignerName] = useState(`${patient.firstName} ${patient.lastName}`);
   const [signerRut, setSignerRut] = useState(patient.rut);
+  // Por defecto hereda el tipo del paciente: casi siempre firma él mismo.
+  const [signerDocumentType, setSignerDocumentType] = useState<DocumentType>(
+    (patient.documentType as DocumentType) ?? 'RUT'
+  );
   const [readConfirmed, setReadConfirmed] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -46,7 +51,7 @@ export function ConsentimientoPreviewModal({
   }, [consentType.id]);
 
   const alreadyResponded = consent?.status === 'firmado' || consent?.status === 'rechazado';
-  const canSubmit = !alreadyResponded && readConfirmed && signerName.trim().length > 0 && isValidRut(signerRut) && !isSubmitting;
+  const canSubmit = !alreadyResponded && readConfirmed && signerName.trim().length > 0 && isValidDocument(signerDocumentType, signerRut) && !isSubmitting;
   const canAccept = canSubmit && Boolean(signatureDataUrl);
 
   async function handleDecision(decision: 'firmado' | 'rechazado') {
@@ -64,7 +69,8 @@ export function ConsentimientoPreviewModal({
       const result = await respondDataConsentInPerson(patient.id, consentType.id, {
         decision,
         signerName: signerName.trim(),
-        signerRut,
+        signerRut: normalizeDocument(signerDocumentType, signerRut),
+        signerDocumentType,
         readConfirmed,
         signatureDataUrl: decision === 'firmado' ? signatureDataUrl : undefined,
       });
@@ -129,18 +135,15 @@ export function ConsentimientoPreviewModal({
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
           </div>
-          <div>
-            <label htmlFor="preview-signer-rut" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-              RUT
-            </label>
-            <input
-              id="preview-signer-rut"
-              value={signerRut}
-              onChange={(e) => setSignerRut(formatRutInput(e.target.value))}
-              placeholder="12.345.678-9"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-            />
-          </div>
+          <DocumentoInput
+            id="preview-signer-rut"
+            label="Documento de quien firma"
+            type={signerDocumentType}
+            value={signerRut}
+            types={PERSON_DOCUMENT_TYPES}
+            onTypeChange={setSignerDocumentType}
+            onValueChange={setSignerRut}
+          />
           <label className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
             <input
               type="checkbox"
