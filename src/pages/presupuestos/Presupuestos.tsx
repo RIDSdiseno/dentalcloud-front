@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchTreatmentPlansForClinic, type TreatmentPlanSummary, type TreatmentPlan } from '../../api/treatmentPlans';
 import { getErrorMessage } from '../../api/client';
-import { formatCLP, TREATMENT_STATUS_CLASSES, TREATMENT_STATUS_LABELS } from '../../utils/treatmentStatus';
+import { TREATMENT_STATUS_CLASSES, TREATMENT_STATUS_LABELS } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import { formatRut } from '../../utils/rut';
 import { Modal } from '../../components/Modal';
 import { PatientPicker } from '../agenda/PatientPicker';
@@ -107,7 +108,7 @@ export default function Presupuestos() {
                     <p className="text-xs text-slate-400 dark:text-slate-500">{formatRut(plan.patient.rut)}</p>
                   </td>
                   <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{plan.professional?.name ?? '—'}</td>
-                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{formatCLP(plan.amount)}</td>
+                  <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{formatMoney(plan.amount)}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${TREATMENT_STATUS_CLASSES[plan.status]}`}>
                       {TREATMENT_STATUS_LABELS[plan.status]}

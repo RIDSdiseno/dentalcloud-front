@@ -14,10 +14,3 @@ export const TREATMENT_STATUS_CLASSES: Record<TreatmentStatus, string> = {
   alta: 'bg-brand-100 text-brand-700',
 };
 
-export function formatCLP(amount: number): string {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}

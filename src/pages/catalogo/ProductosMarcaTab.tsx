@@ -1,3 +1,4 @@
+import { formatMoney } from '../../utils/paises';
 import { useEffect, useState } from 'react';
 import {
   fetchAllProductosMarca,
@@ -15,9 +16,6 @@ import { ExcelImportExportBar } from '../../components/ExcelImportExportBar';
 import { ImportSummaryModal } from '../../components/ImportSummaryModal';
 import type { ImportSummary } from '../../utils/importPrestacionesExcel';
 
-function formatCLP(value: number) {
-  return value.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
-}
 
 export function ProductosMarcaTab() {
   const { user } = useAuth();
@@ -213,7 +211,7 @@ export function ProductosMarcaTab() {
         <div className="w-28">
           <label className="text-xs font-medium text-slate-500 dark:text-slate-400">Precio de venta</label>
           <p className="mt-1 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-800">
-            {formatCLP(previewPrecio)}
+            {formatMoney(previewPrecio)}
           </p>
         </div>
         <button
@@ -294,7 +292,7 @@ export function ProductosMarcaTab() {
                       <span className="text-slate-400 dark:text-slate-500">%</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold text-slate-800 dark:text-slate-100">{formatCLP(p.precioVenta)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-slate-800 dark:text-slate-100">{formatMoney(p.precioVenta)}</td>
                   <td className="px-4 py-3">
                     <button
                       type="button"

@@ -5,6 +5,7 @@ import { createClinica, type Clinica } from '../../api/clinicas';
 import { CameraIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { DocumentoInput } from '../../components/DocumentoInput';
 import { COMPANY_DOCUMENT_TYPES, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
+import { paisConfig } from '../../utils/paises';
 import { PAIS_OPTIONS, TIPO_LABELS, Toggle } from './clinicaShared';
 
 type CrearClinicaModalProps = {
@@ -18,7 +19,9 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
   const [name, setName] = useState('');
   const [rut, setRut] = useState('');
   // La clínica es una EMPRESA: en España le corresponde CIF, no DNI.
-  const [documentType, setDocumentType] = useState<DocumentType>('RUT');
+  const [documentType, setDocumentType] = useState<DocumentType>(
+    paisConfig(PAIS_OPTIONS[0]).defaultCompanyDocument
+  );
   const [tipo, setTipo] = useState<'dental' | 'estetica' | 'ambas'>('dental');
   const [pais, setPais] = useState(PAIS_OPTIONS[0]);
   const [adminName, setAdminName] = useState('');
@@ -159,7 +162,13 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
             <select
               id="clinica-pais"
               value={pais}
-              onChange={(e) => setPais(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setPais(next);
+                // El país manda: cambiarlo reajusta el tipo de documento de la
+                // clínica, para no dejar una española pidiendo RUT.
+                setDocumentType(paisConfig(next).defaultCompanyDocument);
+              }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
             >
               {PAIS_OPTIONS.map((option) => (
@@ -168,6 +177,10 @@ export function CrearClinicaModal({ onClose, onCreated }: CrearClinicaModalProps
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Define la moneda ({paisConfig(pais).currency}) y los documentos de esta clínica. No se puede cambiar
+              después desde la clínica.
+            </p>
           </div>
         </div>
 

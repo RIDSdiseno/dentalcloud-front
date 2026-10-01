@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { sendCartolaEmail } from '../../api/ledger';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import { AlertTriangleIcon } from '../../components/icons';
 
 // Sin librería de sonidos ni assets en el proyecto — se genera un tono corto
@@ -78,7 +78,7 @@ export function DebtNotificationModal({
         <div className="flex items-start gap-3 rounded-lg bg-amber-50 px-4 py-3 ring-1 ring-amber-200 dark:bg-amber-500/10 dark:ring-amber-500/30">
           <AlertTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
           <p className="text-sm text-amber-800 dark:text-amber-400">
-            Este paciente tiene un saldo pendiente de <strong>{formatCLP(saldoTotal)}</strong>.
+            Este paciente tiene un saldo pendiente de <strong>{formatMoney(saldoTotal)}</strong>.
           </p>
         </div>
 

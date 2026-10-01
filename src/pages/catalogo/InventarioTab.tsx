@@ -14,7 +14,7 @@ import {
   type InventorySupplyStatus,
   type SupplyClinicalArea,
 } from '../../api/inventory';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import { BoxIcon, PlusIcon, EditIcon, TrashIcon } from '../../components/icons';
 import { InsumoFormModal } from './InsumoFormModal';
 import { LotesModal } from './LotesModal';
@@ -322,7 +322,7 @@ export function InventarioTab() {
                     {insumo.currentStock ?? 0}
                     {insumo.minimumStock != null && <span className="text-xs text-slate-400 dark:text-slate-500"> / mín. {insumo.minimumStock}</span>}
                   </td>
-                  <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{insumo.totalCost != null ? formatCLP(insumo.totalCost) : '—'}</td>
+                  <td className="px-4 py-3 text-slate-700 dark:text-slate-200">{insumo.totalCost != null ? formatMoney(insumo.totalCost) : '—'}</td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE[insumo.status]}`}>
                       {STATUS_LABEL[insumo.status]}

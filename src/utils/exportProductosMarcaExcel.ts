@@ -1,9 +1,7 @@
+import { formatMoney } from './paises';
 import type { ProductoMarca } from '../api/catalogs';
 import { addDataSheet, addInstructionsSheet, createWorkbook, downloadWorkbook, writeDataRow } from './excelCommon';
 
-function formatCLP(value: number) {
-  return value.toLocaleString('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
-}
 
 export async function exportProductosMarcaExcel(productos: ProductoMarca[], clinicaNombre?: string) {
   const workbook = createWorkbook();
@@ -48,7 +46,7 @@ export async function exportProductosMarcaExcel(productos: ProductoMarca[], clin
   productos.forEach((p, index) => {
     const row = writeDataRow(
       sheet,
-      [p.nombreGenerico, p.marca, p.unidad, p.costo, p.rendimientoPorEnvase, p.margenPercent, formatCLP(p.precioVenta), p.active ? 'Activo' : 'Desactivado'],
+      [p.nombreGenerico, p.marca, p.unidad, p.costo, p.rendimientoPorEnvase, p.margenPercent, formatMoney(p.precioVenta), p.active ? 'Activo' : 'Desactivado'],
       index
     );
     row.getCell(4).numFmt = '$#,##0';

@@ -3,6 +3,8 @@ import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
 import { createUser, type StaffUser } from '../../api/users';
 import { DocumentoInput } from '../../components/DocumentoInput';
+import { paisConfig } from '../../utils/paises';
+import { useAuth } from '../../context/AuthContext';
 import { PERSON_DOCUMENT_TYPES, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { SignaturePad } from '../../components/SignaturePad';
 
@@ -12,12 +14,15 @@ type ProfessionalFormModalProps = {
 };
 
 export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormModalProps) {
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'odontologo' | 'admin' | 'radiologo' | 'operador'>('odontologo');
   const [rut, setRut] = useState('');
-  const [documentType, setDocumentType] = useState<DocumentType>('RUT');
+  const [documentType, setDocumentType] = useState<DocumentType>(
+    paisConfig(user?.clinicaPais).defaultPersonDocument
+  );
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

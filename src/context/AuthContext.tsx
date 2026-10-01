@@ -1,3 +1,4 @@
+import { setCurrentPais } from '../utils/paises';
 import {
   createContext,
   useContext,
@@ -18,6 +19,9 @@ export type User = {
   clinicaId: string | null;
   clinicaModules: ClinicaModules | null;
   clinicaTipo: string | null;
+  // País de la clínica: define moneda y tipo de documento (ver utils/paises.ts).
+  clinicaPais: string | null;
+  clinicaCurrency: string | null;
   clinicaName: string | null;
   clinicaLogoUrl: string | null;
   rxEnabled: boolean | null;
@@ -38,6 +42,13 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+
+  // El país de la clínica alimenta el formateo de montos, que ocurre en
+  // decenas de lugares fuera de componentes (ver utils/paises.ts). Se
+  // sincroniza acá para que nunca quede desfasado respecto de la sesión.
+  useEffect(() => {
+    setCurrentPais(user?.clinicaPais ?? null);
+  }, [user?.clinicaPais]);
   const [isLoading, setIsLoading] = useState(true);
   const authenticatedRef = useRef(false);
 

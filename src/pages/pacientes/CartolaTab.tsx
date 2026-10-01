@@ -8,7 +8,7 @@ import {
   type LedgerSummary,
   type LedgerMovementType,
 } from '../../api/ledger';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import { ChevronDownIcon, DownloadIcon, MailIcon, PlusIcon, TrashIcon } from '../../components/icons';
 import { LedgerMovementFormModal } from './LedgerMovementFormModal';
 import { useAuth } from '../../context/AuthContext';
@@ -178,17 +178,17 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                     <td className="px-4 py-2 font-medium text-slate-700 dark:text-slate-200">{plan.number}</td>
                     <td className="px-4 py-2 text-slate-500 dark:text-slate-400">{new Date(plan.createdAt).toLocaleDateString('es-CL')}</td>
                     <td className="px-4 py-2 text-slate-500 dark:text-slate-400">{plan.professional ?? '—'}</td>
-                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatCLP(plan.subtotal)}</td>
-                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatCLP(plan.interes)}</td>
-                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatCLP(plan.ajustes)}</td>
-                    <td className="px-4 py-2 text-right font-medium text-slate-700 dark:text-slate-200">{formatCLP(plan.total)}</td>
-                    <td className="px-4 py-2 text-right text-emerald-600 dark:text-emerald-400">{formatCLP(plan.abonado)}</td>
+                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatMoney(plan.subtotal)}</td>
+                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatMoney(plan.interes)}</td>
+                    <td className="px-4 py-2 text-right text-slate-600 dark:text-slate-300">{formatMoney(plan.ajustes)}</td>
+                    <td className="px-4 py-2 text-right font-medium text-slate-700 dark:text-slate-200">{formatMoney(plan.total)}</td>
+                    <td className="px-4 py-2 text-right text-emerald-600 dark:text-emerald-400">{formatMoney(plan.abonado)}</td>
                     <td
                       className={`px-4 py-2 text-right font-semibold ${
                         plan.saldo > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'
                       }`}
                     >
-                      {formatCLP(plan.saldo)}
+                      {formatMoney(plan.saldo)}
                     </td>
                   </tr>
                   {plan.items.length > 0 && (
@@ -219,12 +219,12 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                   <td className="px-4 py-2" colSpan={3}>
                     Totales
                   </td>
-                  <td className="px-4 py-2 text-right">{formatCLP(summary.totals.subtotal)}</td>
-                  <td className="px-4 py-2 text-right">{formatCLP(summary.totals.interes)}</td>
-                  <td className="px-4 py-2 text-right">{formatCLP(summary.totals.ajustes)}</td>
-                  <td className="px-4 py-2 text-right">{formatCLP(summary.totals.total)}</td>
-                  <td className="px-4 py-2 text-right text-emerald-600 dark:text-emerald-400">{formatCLP(summary.totals.abonado)}</td>
-                  <td className="px-4 py-2 text-right">{formatCLP(summary.totals.saldo)}</td>
+                  <td className="px-4 py-2 text-right">{formatMoney(summary.totals.subtotal)}</td>
+                  <td className="px-4 py-2 text-right">{formatMoney(summary.totals.interes)}</td>
+                  <td className="px-4 py-2 text-right">{formatMoney(summary.totals.ajustes)}</td>
+                  <td className="px-4 py-2 text-right">{formatMoney(summary.totals.total)}</td>
+                  <td className="px-4 py-2 text-right text-emerald-600 dark:text-emerald-400">{formatMoney(summary.totals.abonado)}</td>
+                  <td className="px-4 py-2 text-right">{formatMoney(summary.totals.saldo)}</td>
                 </tr>
               </tfoot>
             )}
@@ -247,7 +247,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCLP(m.haber)}</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMoney(m.haber)}</span>
                   {canDelete(m.registeredBy.id) && (
                     <button
                       type="button"
@@ -281,7 +281,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-semibold text-amber-600 dark:text-amber-400">{formatCLP(m.debe)}</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">{formatMoney(m.debe)}</span>
                   {canDelete(m.registeredBy.id) && (
                     <button
                       type="button"
@@ -316,7 +316,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className={`font-semibold ${m.debe > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                    {m.debe > 0 ? formatCLP(m.debe) : `-${formatCLP(m.haber)}`}
+                    {m.debe > 0 ? formatMoney(m.debe) : `-${formatMoney(m.haber)}`}
                   </span>
                   {canDelete(m.registeredBy.id) && (
                     <button
@@ -366,8 +366,8 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                   <td className="px-2 py-2 text-slate-600 dark:text-slate-300">{row.comprobante}</td>
                   <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.number}</td>
                   <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{new Date(row.createdAt).toLocaleDateString('es-CL')}</td>
-                  <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">{row.debe > 0 ? formatCLP(row.debe) : '—'}</td>
-                  <td className="px-2 py-2 text-right text-emerald-600 dark:text-emerald-400">{row.haber > 0 ? formatCLP(row.haber) : '—'}</td>
+                  <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">{row.debe > 0 ? formatMoney(row.debe) : '—'}</td>
+                  <td className="px-2 py-2 text-right text-emerald-600 dark:text-emerald-400">{row.haber > 0 ? formatMoney(row.haber) : '—'}</td>
                   <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.planNumber ?? '—'}</td>
                   <td className="px-2 py-2 text-slate-600 dark:text-slate-300">{row.description ?? '—'}</td>
                   <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{row.paymentMethod ?? '—'}</td>
@@ -394,7 +394,7 @@ export function CartolaTab({ patientId }: { patientId: string }) {
                   <td colSpan={10} className="px-2 py-2 text-right">
                     Saldo total
                   </td>
-                  <td className="px-2 py-2 text-right text-brand-600 dark:text-brand-400">{formatCLP(summary.saldoTotal)}</td>
+                  <td className="px-2 py-2 text-right text-brand-600 dark:text-brand-400">{formatMoney(summary.saldoTotal)}</td>
                 </tr>
               </tfoot>
             )}

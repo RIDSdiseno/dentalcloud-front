@@ -16,7 +16,8 @@ import {
 } from '../../api/treatmentPlans';
 import type { Patient } from '../../api/patients';
 import { getErrorMessage } from '../../api/client';
-import { TREATMENT_STATUS_LABELS, TREATMENT_STATUS_CLASSES, formatCLP } from '../../utils/treatmentStatus';
+import { TREATMENT_STATUS_LABELS, TREATMENT_STATUS_CLASSES, } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import {
   ActivityIcon,
   CalendarIcon,
@@ -792,7 +793,7 @@ function PlanCard({
           </span>
         )}
 
-        <span className="ml-auto text-sm font-semibold text-slate-800 dark:text-slate-100">{formatCLP(plan.amount)}</span>
+        <span className="ml-auto text-sm font-semibold text-slate-800 dark:text-slate-100">{formatMoney(plan.amount)}</span>
 
         <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
           {completedCount}/{plan.items.length} · {Math.round(percent)}%
@@ -916,7 +917,7 @@ function PlanCard({
                       );
                     })()}
                   </span>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">{formatCLP(item.cost)}</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">{formatMoney(item.cost)}</span>
                   {!isAlta && (
                     <button
                       type="button"
@@ -1000,7 +1001,7 @@ function PlanCard({
                           className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50 dark:hover:bg-brand-500/10"
                         >
                           <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
-                          <span className="text-slate-500 dark:text-slate-400">{formatCLP(p.basePrice)}</span>
+                          <span className="text-slate-500 dark:text-slate-400">{formatMoney(p.basePrice)}</span>
                         </button>
                       ))}
                     </div>
@@ -1227,7 +1228,7 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Total</p>
-            <p className="text-sm font-semibold text-brand-600">{formatCLP(plan.amount)}</p>
+            <p className="text-sm font-semibold text-brand-600">{formatMoney(plan.amount)}</p>
           </div>
         </div>
 
@@ -1260,7 +1261,7 @@ function PlanDetailModal({ plan, onClose }: { plan: TreatmentPlan; onClose: () =
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{item.description}</p>
                     {item.toothNumber && <p className="text-xs text-brand-600">{item.toothNumber}</p>}
                   </div>
-                  <span className="shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-200">{formatCLP(item.cost)}</span>
+                  <span className="shrink-0 text-sm font-semibold text-slate-700 dark:text-slate-200">{formatMoney(item.cost)}</span>
                 </div>
 
                 {item.completed && item.treatedBy && (
@@ -1355,7 +1356,7 @@ function PlanHistoryModal({ plans, onClose }: { plans: TreatmentPlan[]; onClose:
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${TREATMENT_STATUS_CLASSES[plan.status]}`}>
                   {TREATMENT_STATUS_LABELS[plan.status]}
                 </span>
-                {formatCLP(plan.amount)}
+                {formatMoney(plan.amount)}
               </p>
             </div>
             <button

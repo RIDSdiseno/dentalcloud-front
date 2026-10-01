@@ -15,7 +15,13 @@ import {
   type ClinicaModuleKey,
 } from '../../api/clinicas';
 import { getErrorMessage } from '../../api/client';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoneyIn } from '../../utils/paises';
+
+// Estas cifras SUMAN varias clínicas, así que no hay una moneda "correcta":
+// se muestran en pesos chilenos porque hoy todas las clínicas son de Chile.
+// El día que convivan monedas distintas, sumarlas deja de tener sentido y hay
+// que mostrarlas separadas por moneda, no convertidas.
+const formatCLP = (amount: number) => formatMoneyIn(amount, 'Chile');
 import { formatRut } from '../../utils/rut';
 import { ArrowLeftIcon, SearchIcon, StarIcon } from '../../components/icons';
 

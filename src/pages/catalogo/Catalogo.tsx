@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fetchAllPrestaciones, updatePrestacion, deletePrestacion, type Prestacion } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import { ClipboardIcon, EditIcon, PlusIcon, SearchIcon, TrashIcon } from '../../components/icons';
 import { FACIAL_ZONE_LABELS, type FacialZoneKey } from '../pacientes/facialZoneConfig';
 import { ODONTOGRAM_MODE_LABELS } from '../pacientes/odontogramConfig';
@@ -290,7 +290,7 @@ export default function Catalogo() {
                   </td>
                   <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{p.code ?? '—'}</td>
                   <td className="px-4 py-3 text-slate-700 dark:text-slate-200">
-                    {p.zonePrices ? <span title="Cada zona tiene su propio precio">Según zona</span> : formatCLP(p.basePrice)}
+                    {p.zonePrices ? <span title="Cada zona tiene su propio precio">Según zona</span> : formatMoney(p.basePrice)}
                   </td>
                   {showCategoryColumn && (
                     <td className="px-4 py-3">

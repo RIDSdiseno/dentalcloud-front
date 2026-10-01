@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchClinicas, type Clinica } from '../../api/clinicas';
 import { getErrorMessage } from '../../api/client';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoneyIn } from '../../utils/paises';
 import { formatRut } from '../../utils/rut';
 import { CrearClinicaModal } from './CrearClinicaModal';
 import { TIPO_LABELS } from './clinicaShared';
@@ -117,7 +117,7 @@ export default function Clinicas() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right font-semibold text-slate-800 dark:text-slate-100">
-                    {formatCLP(clinica.treatmentPlansAmount)}
+                    {formatMoneyIn(clinica.treatmentPlansAmount, clinica.pais)}
                   </td>
                   <td className="px-4 py-3 text-right text-xs text-slate-500 dark:text-slate-400">
                     {clinica.aiTokensUsedThisMonth.toLocaleString('es-CL')}

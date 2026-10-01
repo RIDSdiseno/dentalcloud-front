@@ -9,7 +9,7 @@ function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
 }
 
-function formatCLP(amount: number) {
+function formatMoney(amount: number) {
   return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
 }
 
@@ -181,7 +181,7 @@ export default function PagosConsulta() {
                   <td className="py-2.5 text-slate-500 dark:text-slate-400">{formatRut(p.rut)}</td>
                   <td className="py-2.5 text-slate-500 dark:text-slate-400">{p.email || '—'}</td>
                   <td className="py-2.5 text-slate-500 dark:text-slate-400">{formatDateTime(p.createdAt)}</td>
-                  <td className="py-2.5 text-slate-500 dark:text-slate-400">{formatCLP(p.amount)}</td>
+                  <td className="py-2.5 text-slate-500 dark:text-slate-400">{formatMoney(p.amount)}</td>
                   <td className="py-2.5 text-right">
                     <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:ring-emerald-500/20">
                       Pagado

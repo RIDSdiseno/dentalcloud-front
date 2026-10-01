@@ -1,3 +1,4 @@
+import { paisConfig } from '../../utils/paises';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { fetchCompanyInfo, updateCompanyInfo, uploadCompanyLogo, type CompanyInfo } from '../../api/clinicaSettings';
 import { getErrorMessage } from '../../api/client';
@@ -91,7 +92,6 @@ export function CompaniaPanel() {
       const updated = await updateCompanyInfo({
         name,
         rut,
-        pais,
         address,
         email,
         phone,
@@ -178,7 +178,22 @@ export function CompaniaPanel() {
           <Field label="Nombre" value={name} onChange={setName} placeholder="Clínica Dental Providencia" />
           <Field label="RUT" value={rut} onChange={setRut} placeholder="76.123.456-7" />
           <Field label="Dirección" value={address} onChange={setAddress} placeholder="Av. Providencia 1234, Santiago" />
-          <Field label="País" value={pais} onChange={setPais} />
+          {/* El país se fija al crear la clínica: de él salen la moneda y los
+              tipos de documento, y cambiarlo no convierte los montos ya
+              cargados. Se muestra para que se vea cuál rige, pero solo lo puede
+              corregir el administrador de la plataforma. */}
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">País</span>
+            <input
+              value={pais}
+              disabled
+              className="w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400"
+            />
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              Define la moneda ({paisConfig(pais).currency}) y los documentos. Para cambiarlo, contacta al
+              administrador de la plataforma.
+            </span>
+          </div>
           <Field label="Email" value={email} onChange={setEmail} type="email" placeholder="contacto@clinica.cl" />
           <Field label="Teléfono" value={phone} onChange={setPhone} placeholder="+56 2 2345 6789" />
           <Field label="Sitio web" value={website} onChange={setWebsite} placeholder="www.clinica.cl" />

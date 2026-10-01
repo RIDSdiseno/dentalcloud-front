@@ -1,5 +1,5 @@
 import { Modal } from '../../components/Modal';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import type { TreatmentPlan } from '../../api/treatmentPlans';
 
 function formatDateTime(value: string) {
@@ -62,11 +62,11 @@ export function TreatmentPlanDetailModal({ plan, onClose }: { plan: TreatmentPla
                     {!item.completed && <span className="ml-1.5 text-xs text-amber-600 dark:text-amber-400">(pendiente)</span>}
                   </td>
                   <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{item.toothNumber ?? '—'}</td>
-                  <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">{formatCLP(item.listPrice)}</td>
+                  <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">{formatMoney(item.listPrice)}</td>
                   <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">
                     {item.convenioDiscountPercent > 0 ? `-${item.convenioDiscountPercent}%` : '—'}
                   </td>
-                  <td className="px-3 py-2 text-right font-semibold text-slate-800 dark:text-slate-100">{formatCLP(item.cost)}</td>
+                  <td className="px-3 py-2 text-right font-semibold text-slate-800 dark:text-slate-100">{formatMoney(item.cost)}</td>
                   <td className="px-3 py-2 text-slate-500 dark:text-slate-400">
                     {item.treatedBy ? (
                       <>
@@ -87,7 +87,7 @@ export function TreatmentPlanDetailModal({ plan, onClose }: { plan: TreatmentPla
                 <td colSpan={4} className="px-3 py-2 text-right text-sm font-semibold text-slate-600 dark:text-slate-300">
                   Total presupuesto
                 </td>
-                <td className="px-3 py-2 text-right text-sm font-bold text-brand-600 dark:text-brand-400">{formatCLP(plan.amount)}</td>
+                <td className="px-3 py-2 text-right text-sm font-bold text-brand-600 dark:text-brand-400">{formatMoney(plan.amount)}</td>
                 <td />
               </tr>
             </tfoot>

@@ -26,7 +26,7 @@ import type { Patient } from '../../api/patients';
 import { ALLERGY_LABEL, type AllergyKey } from '../../data/allergies';
 import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoney } from '../../utils/paises';
 import { AlertTriangleIcon, CameraIcon, CheckIcon, EditIcon, SearchIcon, TrashIcon } from '../../components/icons';
 import { Odontogram, type OdontogramMark, type OdontogramMode, type ToothSelection, type ToothSurface } from './Odontogram';
 import {
@@ -1132,7 +1132,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                         className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-brand-50 dark:hover:bg-slate-800"
                       >
                         <span className="text-slate-700 dark:text-slate-200">{p.name}</span>
-                        <span className="text-slate-500 dark:text-slate-400">{p.zonePrices ? 'Precio según zona' : formatCLP(p.basePrice)}</span>
+                        <span className="text-slate-500 dark:text-slate-400">{p.zonePrices ? 'Precio según zona' : formatMoney(p.basePrice)}</span>
                       </button>
                     ))}
                   </div>
@@ -1249,7 +1249,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                           <option value="">Sin producto (usar precio de catálogo)</option>
                           {productosMarca.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.nombreGenerico} — {p.marca} ({formatCLP(p.precioVenta)}/{p.unidad})
+                              {p.nombreGenerico} — {p.marca} ({formatMoney(p.precioVenta)}/{p.unidad})
                             </option>
                           ))}
                         </select>
@@ -1266,7 +1266,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                       {draftProductoMarcaId && (
                         <p className="mt-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
                           Precio calculado:{' '}
-                          {formatCLP(
+                          {formatMoney(
                             (productosMarca.find((p) => p.id === draftProductoMarcaId)?.precioVenta ?? 0) *
                               Math.max(1, Number(draftProductUnitQuantity) || 1)
                           )}
@@ -1440,7 +1440,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                 {items.length > 0 && (
                   <div className="flex items-center justify-between gap-2 bg-slate-50 px-3 py-2 dark:bg-slate-800">
                     <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Total</span>
-                    <span className="text-sm font-bold text-brand-600 dark:text-brand-400">{formatCLP(total)}</span>
+                    <span className="text-sm font-bold text-brand-600 dark:text-brand-400">{formatMoney(total)}</span>
                   </div>
                 )}
               </div>
@@ -1469,11 +1469,11 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                         {areaLabelFor(isEstetica, item.odontogramMode)}
                         <div className="text-xs text-slate-400 dark:text-slate-500">{detailLabel(item, isEstetica)}</div>
                       </td>
-                      <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">{formatCLP(item.listPrice)}</td>
+                      <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">{formatMoney(item.listPrice)}</td>
                       <td className="px-3 py-2 text-right text-slate-500 dark:text-slate-400">
                         {item.convenioDiscountPercent > 0 ? `-${item.convenioDiscountPercent}%` : '—'}
                       </td>
-                      <td className="px-3 py-2 text-right font-semibold text-slate-800 dark:text-slate-100">{formatCLP(item.cost)}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-slate-800 dark:text-slate-100">{formatMoney(item.cost)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1482,7 +1482,7 @@ export function TreatmentPlanFormModal({ patient, onClose, onSaved, editingPlan 
                     <td colSpan={4} className="px-3 py-2 text-right text-sm font-semibold text-slate-600 dark:text-slate-300">
                       Total presupuesto
                     </td>
-                    <td className="px-3 py-2 text-right text-sm font-bold text-brand-600 dark:text-brand-400">{formatCLP(total)}</td>
+                    <td className="px-3 py-2 text-right text-sm font-bold text-brand-600 dark:text-brand-400">{formatMoney(total)}</td>
                   </tr>
                 </tfoot>
               </table>

@@ -7,6 +7,8 @@ import { getErrorMessage } from '../../api/client';
 import { createPatient, updatePatient, uploadPatientPhoto, type Patient } from '../../api/patients';
 import { findConsultationPaymentByRut } from '../../api/consultationPayments';
 import { DocumentoInput } from '../../components/DocumentoInput';
+import { paisConfig } from '../../utils/paises';
+import { useAuth } from '../../context/AuthContext';
 import {
   PERSON_DOCUMENT_TYPES,
   formatDocument,
@@ -33,13 +35,13 @@ function parsePhone(phone: string | null | undefined) {
 }
 
 export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModalProps) {
+  const { user } = useAuth();
   const isEditing = Boolean(patient);
   const initialPhone = parsePhone(patient?.phone);
-  // Al editar se respeta el tipo guardado; al crear parte en RUT. Cuando el
-  // país de la clínica llegue al frontend (tarea 6), el default debería salir de
-  // ahí: en España el paciente no tiene RUT y hoy hay que cambiarlo a mano.
+  // Al editar se respeta el tipo guardado; al crear, el que corresponde al país
+  // de la clínica: en España arranca en DNI, no en RUT.
   const [documentType, setDocumentType] = useState<DocumentType>(
-    (patient?.documentType as DocumentType) ?? 'RUT'
+    (patient?.documentType as DocumentType) ?? paisConfig(user?.clinicaPais).defaultPersonDocument
   );
   const [rut, setRut] = useState(
     patient ? formatDocument((patient.documentType as DocumentType) ?? 'RUT', patient.rut) : ''

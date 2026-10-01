@@ -1,3 +1,4 @@
+import { VALID_PAISES } from '../../utils/paises';
 import type { ClinicaModuleKey } from '../../api/clinicas';
 import {
   ActivityIcon,
@@ -16,21 +17,9 @@ export const TIPO_LABELS: Record<string, string> = {
   ambas: 'Dental y estética',
 };
 
-export const PAIS_OPTIONS = [
-  'Chile',
-  'Argentina',
-  'Perú',
-  'Colombia',
-  'México',
-  'Bolivia',
-  'Ecuador',
-  'Uruguay',
-  'Paraguay',
-  'Venezuela',
-  'España',
-  'Estados Unidos',
-  'Otro',
-];
+// La lista sale del módulo de países, que además define moneda y tipo de
+// documento de cada uno — tenerla duplicada acá era pedir que se separaran.
+export const PAIS_OPTIONS = VALID_PAISES;
 
 export const MODULE_LABELS: Record<ClinicaModuleKey, string> = {
   pacientes: 'Pacientes',

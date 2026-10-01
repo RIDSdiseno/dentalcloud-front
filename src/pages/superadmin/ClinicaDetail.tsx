@@ -20,7 +20,7 @@ const FEDERATION_SYNC_ITEMS: { key: FederationSyncKey; label: string; descriptio
   { key: 'catalog', label: 'Catálogo', description: 'Convenios, prestaciones y previsiones.' },
 ];
 import { getErrorMessage } from '../../api/client';
-import { formatCLP } from '../../utils/treatmentStatus';
+import { formatMoneyIn, paisConfig } from '../../utils/paises';
 import { DocumentoInput } from '../../components/DocumentoInput';
 import { COMPANY_DOCUMENT_TYPES, formatDocument, isValidDocument, normalizeDocument, type DocumentType } from '../../utils/documento';
 import { MODULE_ICONS, MODULE_LABELS, MODULE_ORDER, PAIS_OPTIONS, StatTile, TIPO_LABELS, Toggle } from './clinicaShared';
@@ -395,7 +395,19 @@ export default function ClinicaDetail() {
           <select
             id="detail-pais"
             value={clinica.pais}
-            onChange={(e) => applyUpdate({ pais: e.target.value }, 'pais')}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (
+                !window.confirm(
+                  `¿Cambiar el país a ${next}?
+
+La moneda pasará a ${paisConfig(next).currency} y cambiarán los tipos de documento. ` +
+                    'Los montos ya cargados NO se convierten: los mismos números se mostrarán en la moneda nueva.'
+                )
+              )
+                return;
+              applyUpdate({ pais: next }, 'pais');
+            }}
             disabled={busyField === 'pais'}
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
           >
@@ -405,6 +417,10 @@ export default function ClinicaDetail() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Define la moneda ({paisConfig(clinica.pais).currency}) y los documentos. La clínica no puede cambiarlo
+            desde su Configuración: solo tú, desde acá.
+          </p>
         </div>
 
         <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
@@ -448,8 +464,8 @@ export default function ClinicaDetail() {
           <StatTile icon={UsersIcon} label="Usuarios" value={String(clinica.usersCount)} />
           <StatTile icon={CalendarIcon} label="Citas" value={String(clinica.appointmentsCount)} />
           <StatTile icon={ClipboardIcon} label="Presupuestos" value={String(clinica.treatmentPlansCount)} />
-          <StatTile icon={ReceiptIcon} label="Monto total" value={formatCLP(clinica.treatmentPlansAmount)} />
-          <StatTile icon={ReceiptIcon} label="Neto cartola" value={formatCLP(clinica.ledgerNetAmount)} />
+          <StatTile icon={ReceiptIcon} label="Monto total" value={formatMoneyIn(clinica.treatmentPlansAmount, clinica.pais)} />
+          <StatTile icon={ReceiptIcon} label="Neto cartola" value={formatMoneyIn(clinica.ledgerNetAmount, clinica.pais)} />
           <StatTile icon={ReceiptIcon} label="Mov. cartola" value={String(clinica.ledgerMovementsCount)} />
           <StatTile icon={FolderIcon} label="Documentos" value={String(clinica.documentsCount)} />
           <StatTile icon={ActivityIcon} label="Evoluciones" value={String(clinica.evolutionsCount)} />
