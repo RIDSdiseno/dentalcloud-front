@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
-import { createAppointment, type Appointment } from '../../api/appointments';
+import { createAppointment, type Appointment, type ConsultaTipo } from '../../api/appointments';
+import { ConsultaTipoField } from './ConsultaTipoField';
 import type { Patient } from '../../api/patients';
 import type { Chair } from '../../api/chairs';
 import { useAuth } from '../../context/AuthContext';
@@ -25,6 +26,8 @@ export function AppointmentFormModal({ chair, startAt, onClose, onCreated }: App
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [duration, setDuration] = useState(stepMinutes);
   const [notes, setNotes] = useState('');
+  const [consultaTipo, setConsultaTipo] = useState<ConsultaTipo | null>(null);
+  const [motivoConsulta, setMotivoConsulta] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,6 +49,8 @@ export function AppointmentFormModal({ chair, startAt, onClose, onCreated }: App
         startAt: startAt.toISOString(),
         endAt: endAt.toISOString(),
         notes: notes || undefined,
+        consultaTipo: consultaTipo ?? undefined,
+        motivoConsulta: motivoConsulta || undefined,
       });
       onCreated(appointment);
     } catch (err) {
@@ -83,8 +88,16 @@ export function AppointmentFormModal({ chair, startAt, onClose, onCreated }: App
         </div>
 
         <div>
+          <ConsultaTipoField
+            idPrefix="appt-form"
+            consultaTipo={consultaTipo}
+            motivoConsulta={motivoConsulta}
+            onConsultaTipoChange={setConsultaTipo}
+            onMotivoConsultaChange={setMotivoConsulta}
+          />
+
           <label htmlFor="notes" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            Motivo / notas
+            Notas
           </label>
           <textarea
             id="notes"

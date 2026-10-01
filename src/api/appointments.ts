@@ -3,6 +3,15 @@ import type { Patient } from './patients';
 
 export type AppointmentStatus = 'agendada' | 'llego' | 'en_atencion' | 'finalizada' | 'cancelada';
 
+// "Motivo de consulta" al agendar (reunión 30/09, tarea 21). Antes todo se
+// escribía mezclado en el campo libre "Motivo / notas".
+export type ConsultaTipo = 'primera_vez' | 'tratamiento';
+
+export const CONSULTA_TIPO_LABELS: Record<ConsultaTipo, string> = {
+  primera_vez: 'Primera vez',
+  tratamiento: 'Tratamiento',
+};
+
 export type Appointment = {
   id: string;
   chairId: string;
@@ -11,6 +20,14 @@ export type Appointment = {
   startAt: string;
   endAt: string;
   notes: string | null;
+  // Cancelación: motivo obligatorio, con quién la canceló y cuándo. Null en
+  // las citas vigentes y en las que se cancelaron antes de este cambio.
+  cancelacionMotivo: string | null;
+  canceladaAt: string | null;
+  canceladaPor: { id: string; name: string } | null;
+  // "Primera vez / Tratamiento" y el motivo cuando es tratamiento.
+  consultaTipo: ConsultaTipo | null;
+  motivoConsulta: string | null;
   status: string;
   type: string;
   arrivedAt: string | null;
@@ -37,6 +54,8 @@ export type AppointmentInput =
       endAt: string;
       notes?: string;
       type?: string;
+      consultaTipo?: ConsultaTipo;
+      motivoConsulta?: string;
       openSlotId?: undefined;
     }
   | {
@@ -47,6 +66,8 @@ export type AppointmentInput =
       patientId: string;
       notes?: string;
       type?: string;
+      consultaTipo?: ConsultaTipo;
+      motivoConsulta?: string;
     };
 
 export type TriageLevel = 'leve' | 'moderada' | 'grave';
@@ -90,8 +111,11 @@ export async function createUrgencyAppointment(input: UrgencyAppointmentInput) {
   return data.appointment;
 }
 
-export async function deleteAppointment(id: string) {
-  await api.delete(`/appointments/${id}`);
+/** Cancela la cita (no la borra): exige un motivo y devuelve la cita ya
+ *  cancelada, que sigue en el historial del paciente. */
+export async function cancelAppointment(id: string, reason: string) {
+  const { data } = await api.delete<{ appointment: Appointment }>(`/appointments/${id}`, { data: { reason } });
+  return data.appointment;
 }
 
 export async function markAppointmentArrival(id: string) {

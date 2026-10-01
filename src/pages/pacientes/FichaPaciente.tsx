@@ -24,7 +24,14 @@ import {
   type YesNoDetail,
 } from './anamnesisData';
 import { Modal } from '../../components/Modal';
-import { fetchPatientAppointments, deleteAppointment, type Appointment } from '../../api/appointments';
+import {
+  fetchPatientAppointments,
+  cancelAppointment,
+  CONSULTA_TIPO_LABELS,
+  type Appointment,
+} from '../../api/appointments';
+import { ReasonModal } from '../../components/ReasonModal';
+import { MOTIVOS_CANCELACION } from '../agenda/motivosCancelacion';
 import { fetchPatientBalance } from '../../api/ledger';
 import { fetchConsentTypes, fetchPatientConsents } from '../../api/dataConsents';
 import { getErrorMessage } from '../../api/client';
@@ -1021,6 +1028,7 @@ export default function FichaPaciente() {
   const cartolaEnabled = user?.clinicaModules?.cartola !== false && user?.permissions?.cartola !== false;
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [cancellingAppointment, setCancellingAppointment] = useState<Appointment | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -1081,17 +1089,14 @@ export default function FichaPaciente() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, cartolaEnabled]);
 
-  async function handleCancelAppointment(appointment: Appointment) {
-    const confirmed = window.confirm(
-      `¿Cancelar la cita del ${formatLongDate(new Date(appointment.startAt))}?`
-    );
-    if (!confirmed) return;
-
+  // Cancelar pide el motivo (reunión 30/09) y la cita se queda en la lista,
+  // marcada como cancelada y con el motivo a la vista.
+  async function handleCancelAppointment(reason: string) {
+    if (!cancellingAppointment) return;
     try {
-      await deleteAppointment(appointment.id);
-      setAppointments((prev) =>
-        prev.map((a) => (a.id === appointment.id ? { ...a, status: 'cancelada' } : a))
-      );
+      const cancelled = await cancelAppointment(cancellingAppointment.id, reason);
+      setAppointments((prev) => prev.map((a) => (a.id === cancelled.id ? cancelled : a)));
+      setCancellingAppointment(null);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo cancelar la cita'));
     }
@@ -1508,6 +1513,18 @@ export default function FichaPaciente() {
                           {chairLabel(appointment)}
                         </span>
                       </div>
+                      {appointment.consultaTipo && (
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          {CONSULTA_TIPO_LABELS[appointment.consultaTipo]}
+                          {appointment.motivoConsulta && <> &middot; {appointment.motivoConsulta}</>}
+                        </p>
+                      )}
+                      {isCancelled && appointment.cancelacionMotivo && (
+                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                          Motivo: {appointment.cancelacionMotivo}
+                          {appointment.canceladaPor && <> &middot; {appointment.canceladaPor.name}</>}
+                        </p>
+                      )}
                     </div>
                     {isCancelled ? (
                       <span className="shrink-0 rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
@@ -1517,7 +1534,7 @@ export default function FichaPaciente() {
                       !isPast && (
                         <button
                           type="button"
-                          onClick={() => handleCancelAppointment(appointment)}
+                          onClick={() => setCancellingAppointment(appointment)}
                           className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                         >
                           Cancelar
@@ -1585,6 +1602,18 @@ export default function FichaPaciente() {
             );
             setShowNewAppointment(false);
           }}
+        />
+      )}
+
+      {cancellingAppointment && (
+        <ReasonModal
+          title="Cancelar cita"
+          description="La cita no se borra: queda registrada como cancelada, con el motivo que indiques."
+          placeholder="Ej: el paciente no contestó."
+          acceptLabel="Cancelar cita"
+          suggestions={MOTIVOS_CANCELACION}
+          onClose={() => setCancellingAppointment(null)}
+          onAccept={handleCancelAppointment}
         />
       )}
 

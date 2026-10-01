@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../components/Modal';
 import { getErrorMessage } from '../../api/client';
-import { createAppointment, type Appointment } from '../../api/appointments';
+import { createAppointment, type Appointment, type ConsultaTipo } from '../../api/appointments';
+import { ConsultaTipoField } from './ConsultaTipoField';
 import { fetchOpenSlots, type OpenSlot } from '../../api/openSlots';
 import { fetchChairs, type Chair } from '../../api/chairs';
 import { fetchUsers, type StaffUser } from '../../api/users';
@@ -45,6 +46,10 @@ export function NewAppointmentModal({
   const [duration, setDuration] = useState(stepMinutes);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(initialPatient ?? null);
   const [notes, setNotes] = useState('');
+  // "Primera vez / Tratamiento" (reunión 30/09, tarea 21). Solo aplica a una
+  // cita: un control es por definición un seguimiento.
+  const [consultaTipo, setConsultaTipo] = useState<ConsultaTipo | null>(null);
+  const [motivoConsulta, setMotivoConsulta] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -108,6 +113,8 @@ export function NewAppointmentModal({
             patientId: selectedPatient.id,
             notes: notes || undefined,
             type: appointmentType,
+            consultaTipo: consultaTipo ?? undefined,
+            motivoConsulta: motivoConsulta || undefined,
           })
         : await createAppointment({
             chairId,
@@ -117,6 +124,8 @@ export function NewAppointmentModal({
             endAt: new Date(new Date(`${date}T${time}:00`).getTime() + duration * 60_000).toISOString(),
             notes: notes || undefined,
             type: appointmentType,
+            consultaTipo: consultaTipo ?? undefined,
+            motivoConsulta: motivoConsulta || undefined,
           });
       onCreated(appointment);
     } catch (err) {
@@ -290,8 +299,18 @@ export function NewAppointmentModal({
         )}
 
         <div>
+          {appointmentType !== 'control' && (
+            <ConsultaTipoField
+              idPrefix="new-appt"
+              consultaTipo={consultaTipo}
+              motivoConsulta={motivoConsulta}
+              onConsultaTipoChange={setConsultaTipo}
+              onMotivoConsultaChange={setMotivoConsulta}
+            />
+          )}
+
           <label htmlFor="new-appt-notes" className="text-sm font-medium text-slate-700 dark:text-slate-200">
-            Motivo / notas
+            Notas
           </label>
           <textarea
             id="new-appt-notes"

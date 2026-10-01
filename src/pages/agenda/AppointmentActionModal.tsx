@@ -6,9 +6,12 @@ import {
   markAppointmentArrival,
   startAppointmentAttention,
   finishAppointmentAttention,
-  deleteAppointment,
+  cancelAppointment,
+  CONSULTA_TIPO_LABELS,
   type Appointment,
 } from '../../api/appointments';
+import { ReasonModal } from '../../components/ReasonModal';
+import { MOTIVOS_CANCELACION } from './motivosCancelacion';
 import { AlertTriangleIcon, ChairIcon, CheckIcon, ClockIcon, UsersIcon } from '../../components/icons';
 import { formatTime } from './dateUtils';
 import { STATUS_LABEL, STATUS_BADGE_CLASS } from './appointmentStatusStyles';
@@ -29,6 +32,7 @@ export function AppointmentActionModal({
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const status = appointment.status;
   const statusLabel = STATUS_LABEL[status] ?? status;
@@ -77,21 +81,34 @@ export function AppointmentActionModal({
     }
   }
 
-  async function handleCancel() {
-    const confirmed = window.confirm(
-      `¿Cancelar la cita de ${appointment.patient.firstName} ${appointment.patient.lastName}?`
-    );
-    if (!confirmed) return;
-
+  // Cancelar ya no es un confirm: pide el motivo, que queda guardado con la
+  // cita (reunión 30/09). La cita no desaparece, se marca como cancelada.
+  async function handleCancel(reason: string) {
     setError(null);
     setIsSubmitting(true);
     try {
-      await deleteAppointment(appointment.id);
-      onCancelled(appointment);
+      const cancelled = await cancelAppointment(appointment.id, reason);
+      onCancelled(cancelled);
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo cancelar la cita'));
       setIsSubmitting(false);
     }
+  }
+
+  // Pedir el motivo reemplaza a este modal en vez de apilarse encima: dos
+  // modales superpuestos en un iPad dejan sin salida visible al de atrás.
+  if (isCancelling) {
+    return (
+      <ReasonModal
+        title="Cancelar cita"
+        description={`¿Cancelar la cita de ${appointment.patient.firstName} ${appointment.patient.lastName}? La cita no se borra: queda registrada como cancelada con el motivo que indiques.`}
+        placeholder="Ej: el paciente no contestó."
+        acceptLabel="Cancelar cita"
+        suggestions={MOTIVOS_CANCELACION}
+        onClose={() => setIsCancelling(false)}
+        onAccept={handleCancel}
+      />
+    );
   }
 
   return (
@@ -127,6 +144,24 @@ export function AppointmentActionModal({
               ? `El paciente confirmó su asistencia (${new Date(appointment.patientConfirmedAt).toLocaleDateString('es-CL')})`
               : 'El paciente aún no confirmó su asistencia por correo'}
           </p>
+
+          {appointment.consultaTipo && (
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-600 dark:text-slate-300">
+                {CONSULTA_TIPO_LABELS[appointment.consultaTipo]}
+              </span>
+              {appointment.motivoConsulta && <> &middot; {appointment.motivoConsulta}</>}
+            </p>
+          )}
+
+          {status === 'cancelada' && appointment.cancelacionMotivo && (
+            <p className="mt-2 rounded-lg bg-slate-100 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              Cancelada
+              {appointment.canceladaPor && <> por {appointment.canceladaPor.name}</>}
+              {appointment.canceladaAt && <> el {new Date(appointment.canceladaAt).toLocaleDateString('es-CL')}</>}
+              {' '}&middot; Motivo: {appointment.cancelacionMotivo}
+            </p>
+          )}
 
           {appointment.type === 'urgencia' && (
             <div className="mt-2 flex flex-col gap-1 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-400">
@@ -188,7 +223,7 @@ export function AppointmentActionModal({
           {status !== 'cancelada' && status !== 'finalizada' && (
             <button
               type="button"
-              onClick={handleCancel}
+              onClick={() => setIsCancelling(true)}
               disabled={isSubmitting}
               className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:text-slate-400 dark:hover:border-red-500/30 dark:hover:bg-red-500/10 dark:hover:text-red-400"
             >

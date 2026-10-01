@@ -10,6 +10,7 @@ export function ReasonModal({
   description,
   placeholder,
   acceptLabel = 'Aceptar',
+  suggestions,
   onClose,
   onAccept,
 }: {
@@ -17,6 +18,10 @@ export function ReasonModal({
   description: string;
   placeholder?: string;
   acceptLabel?: string;
+  /** Motivos frecuentes, para no tener que escribirlos a mano cada vez (ej.
+   *  cancelar citas en recepción). Rellenan el texto, que sigue siendo
+   *  editable. */
+  suggestions?: string[];
   onClose: () => void;
   onAccept: (reason: string) => Promise<void>;
 }) {
@@ -37,6 +42,20 @@ export function ReasonModal({
     <Modal title={title} onClose={onClose} maxWidth="max-w-md">
       <div className="flex flex-col gap-3">
         <p className="text-sm text-slate-600 dark:text-slate-300">{description}</p>
+        {suggestions && suggestions.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {suggestions.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setReason(s)}
+                className="rounded-full border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-brand-500/40 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
