@@ -8,6 +8,14 @@ type ModalProps = {
   maxWidth?: string;
 };
 
+// El clic en el fondo ya NO cierra el modal: descartaba sin aviso todo lo
+// escrito, y al cliente le pasó tres veces seguidas llenando una ficha de
+// paciente larga, bajando a guardar y perdiéndolo todo. El riesgo es mayor en
+// tablet, donde es fácil tocar fuera del recuadro sin querer. Como lo usan
+// todas las pantallas con formulario, el arreglo va acá y no modal por modal.
+//
+// Escape sí se conserva: es un gesto deliberado, no un toque accidental, y en
+// tablet —que es el caso que falla— no existe.
 export function Modal({ title, onClose, children, maxWidth = 'max-w-lg' }: ModalProps) {
   useEffect(() => {
     function handleEscape(e: KeyboardEvent) {
@@ -19,7 +27,7 @@ export function Modal({ title, onClose, children, maxWidth = 'max-w-lg' }: Modal
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/50" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-slate-900/50" aria-hidden="true" />
       <div className={`relative w-full ${maxWidth} rounded-2xl bg-white shadow-2xl dark:bg-slate-900`}>
         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{title}</h2>
