@@ -15,7 +15,7 @@ import { roleLabel } from '../../utils/roles';
 // en realidad solo controlan pestañas de la ficha (cartola, evoluciones, etc.),
 // lo que hacía difícil saber qué apagaba cada interruptor: se movieron a la
 // sección "Ficha del paciente" con las MISMAS llaves — no son duplicados.
-const PERMISSION_ORDER: PermissionKey[] = ['pacientes', 'agenda', 'crearPresupuestos'];
+const PERMISSION_ORDER: PermissionKey[] = ['pacientes', 'agenda', 'crearPresupuestos', 'eliminarEvoluciones'];
 
 // Las 10 pestañas de la ficha, en el orden en que se ven en pantalla. Las tres
 // primeras son llaves nuevas; las otras siete ya existían como módulos.
@@ -42,6 +42,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   agenda: 'Agenda y citas',
   tratamientos: 'Planes de tratamiento',
   crearPresupuestos: 'Crear presupuestos',
+  eliminarEvoluciones: 'Eliminar evoluciones',
   documentosClinicos: 'Documentos clínicos',
   cartola: 'Cartola',
   evoluciones: 'Evoluciones',

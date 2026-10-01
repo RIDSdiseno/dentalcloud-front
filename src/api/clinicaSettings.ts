@@ -25,6 +25,7 @@ export type PermissionKey =
   | ClinicaModuleKey
   | 'rx'
   | 'crearPresupuestos'
+  | 'eliminarEvoluciones'
   | GeneralPatientPermissionKey
   | PatientTabPermissionKey;
 

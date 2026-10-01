@@ -30,7 +30,7 @@ const MODULE_LABELS: Record<ClinicaModuleKey, string> = {
 
 // Pantallas reales del menú lateral. Las pestañas de la ficha se agruparon
 // aparte, con las mismas llaves — mismo criterio que PermisosPerfilPanel.
-const PERMISSION_ORDER: PermissionKey[] = ['pacientes', 'agenda'];
+const PERMISSION_ORDER: PermissionKey[] = ['pacientes', 'agenda', 'crearPresupuestos', 'eliminarEvoluciones'];
 
 // Las 10 pestañas de la ficha, en el orden en que se ven en pantalla.
 const PATIENT_TAB_ORDER: PermissionKey[] = [

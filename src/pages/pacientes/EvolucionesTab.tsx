@@ -42,11 +42,14 @@ function EvolutionCard({
   onToggle,
   onDeletePhoto,
   onRequestDelete,
+  canDelete,
 }: {
   evolution: Evolution;
   onToggle: (evolution: Evolution) => void;
   onDeletePhoto: (photoId: string, label: string | null) => void;
   onRequestDelete: (evolution: Evolution) => void;
+  /** Las evoluciones son registro clínico: el permiso viene apagado de fábrica. */
+  canDelete: boolean;
 }) {
   return (
     <div className={`rounded-xl border p-4 ${evolution.enabled ? 'border-slate-200 dark:border-slate-700' : 'border-slate-100 bg-slate-50 opacity-70 dark:border-slate-800 dark:bg-slate-800'}`}>
@@ -74,13 +77,15 @@ function EvolutionCard({
               </>
             )}
           </button>
-          <button
-            type="button"
-            onClick={() => onRequestDelete(evolution)}
-            className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-          >
-            <TrashIcon className="h-3.5 w-3.5" /> Eliminar
-          </button>
+          {canDelete && (
+            <button
+              type="button"
+              onClick={() => onRequestDelete(evolution)}
+              className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+            >
+              <TrashIcon className="h-3.5 w-3.5" /> Eliminar
+            </button>
+          )}
         </div>
       </div>
       {evolution.treatmentItem && (
@@ -669,6 +674,7 @@ export function EvolucionesTab({
               onToggle={handleToggle}
               onDeletePhoto={handleDeletePhoto}
               onRequestDelete={setDeletingEvolution}
+              canDelete={user?.permissions?.eliminarEvoluciones !== false}
             />
           ))}
         </div>
