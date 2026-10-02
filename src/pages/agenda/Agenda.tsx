@@ -11,7 +11,6 @@ import { SlotDurationControl } from './SlotDurationControl';
 import { formatLongDate, isSameDay, toDateParam } from './dateUtils';
 import { fetchChairs, deleteChair, type Chair } from '../../api/chairs';
 import { fetchAppointments, fetchCancelledAppointments, type Appointment } from '../../api/appointments';
-import { CanceladasDelDia } from './CanceladasDelDia';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { AlertTriangleIcon, PlusIcon } from '../../components/icons';
@@ -149,13 +148,12 @@ export default function Agenda() {
         <DayTabs selectedDate={selectedDate} onSelect={setSelectedDate} />
       </div>
 
-      <CanceladasDelDia appointments={cancelled} />
-
       <div id="agenda-grid" className="min-h-0 flex-1">
         <ChairAgendaGrid
           date={selectedDate}
           chairs={chairs}
           appointments={appointments}
+          cancelledAppointments={cancelled}
           stepMinutes={stepMinutes}
           onSlotClick={(chair, startAt) => setPendingSlot({ chair, startAt })}
           onAppointmentClick={setSelectedAppointment}

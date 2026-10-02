@@ -21,6 +21,10 @@ type ChairAgendaGridProps = {
   date: Date;
   chairs: Chair[];
   appointments: Appointment[];
+  /** Las canceladas del día. Se pintan en su hora original, en plomo y
+   *  translúcidas, con el motivo pegado abajo — pedido del cliente (2/10).
+   *  No ocupan el sillón: esa hora sigue siendo agendable. */
+  cancelledAppointments: Appointment[];
   stepMinutes: number;
   onSlotClick: (chair: Chair, startAt: Date) => void;
   onAppointmentClick: (appointment: Appointment) => void;
@@ -31,6 +35,7 @@ export function ChairAgendaGrid({
   date,
   chairs,
   appointments,
+  cancelledAppointments,
   stepMinutes,
   onSlotClick,
   onAppointmentClick,
@@ -105,8 +110,17 @@ export function ChairAgendaGrid({
             .filter((appt) => appt.chairId === chair.id)
             .map((appt) => ({ appt, start: new Date(appt.startAt), end: new Date(appt.endAt) }));
 
+          const chairCancelled = cancelledAppointments
+            .filter((appt) => appt.chairId === chair.id)
+            .map((appt) => ({ appt, start: new Date(appt.startAt), end: new Date(appt.endAt) }));
+
           const cells = [];
           let skipUntil = -1;
+
+          const ghostAt = (index: number) => {
+            const slotStart = withTime(date, slots[index]);
+            return chairCancelled.find(({ start, end }) => start <= slotStart && slotStart < end);
+          };
 
           for (let rowIndex = 0; rowIndex < slots.length; rowIndex++) {
             if (rowIndex < skipUntil) continue;
@@ -148,6 +162,42 @@ export function ChairAgendaGrid({
                   </span>
                   <span className="truncate text-[11px] text-brand-700 dark:text-brand-400">
                     {formatTime(covering.start)}–{formatTime(covering.end)}
+                  </span>
+                </button>
+              );
+            } else if (ghostAt(rowIndex)) {
+              const ghost = ghostAt(rowIndex)!;
+              // Se corta la altura del fantasma si una cita real ya tomó esa
+              // franja: la cita de verdad siempre manda sobre el recuerdo.
+              let spanRows = 1;
+              while (rowIndex + spanRows < slots.length) {
+                const nextStart = withTime(date, slots[rowIndex + spanRows]);
+                if (nextStart >= ghost.end) break;
+                const taken = chairAppointments.some(({ start, end }) => start <= nextStart && nextStart < end);
+                if (taken) break;
+                spanRows += 1;
+              }
+              skipUntil = rowIndex + spanRows;
+              cells.push(
+                <button
+                  type="button"
+                  key={`${chair.id}-${slots[rowIndex]}`}
+                  // La hora está libre: al pincharla se agenda, igual que un
+                  // hueco vacío. El detalle de la cancelación ya se lee acá.
+                  onClick={() => onSlotClick(chair, ghost.start)}
+                  title={
+                    ghost.appt.canceladaPor
+                      ? `Canceló ${ghost.appt.canceladaPor.name}. Esta hora está libre.`
+                      : 'Esta hora está libre.'
+                  }
+                  className="m-0.5 flex flex-col justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-100/60 px-2.5 py-1.5 text-left transition-colors hover:border-emerald-300 hover:bg-emerald-50/60 dark:border-slate-700 dark:bg-slate-800/40 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/5"
+                  style={{ gridColumn: column, gridRow: `${row} / span ${spanRows}` }}
+                >
+                  <span className="truncate text-xs font-semibold text-slate-400 line-through dark:text-slate-500">
+                    {ghost.appt.patient.firstName} {ghost.appt.patient.lastName}
+                  </span>
+                  <span className="truncate text-[11px] text-slate-400 dark:text-slate-500">
+                    {ghost.appt.cancelacionMotivo || 'Cancelada'}
                   </span>
                 </button>
               );
