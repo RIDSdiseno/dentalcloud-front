@@ -313,6 +313,19 @@ function ConsentTypeCard({
             ))}
           </select>
 
+          {(() => {
+            // No bloquea firmar: avisa. Lo que pesa legalmente es que quede
+            // registrado quién es el doctor, y eso se guarda igual.
+            const elegido = professionals.find((p) => p.id === professionalId);
+            if (!elegido || elegido.signatureUrl) return null;
+            return (
+              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+                {elegido.name} no tiene su firma guardada, así que el documento saldrá sin ella. Puede guardarla en su
+                perfil, en Profesionales.
+              </p>
+            );
+          })()}
+
           {firmados.length > 0 && (
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Ya firmado con: {firmados.map((c) => c.professional!.name).join(', ')}.
