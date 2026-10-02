@@ -1,6 +1,13 @@
 import { paisConfig } from '../../utils/paises';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { fetchCompanyInfo, updateCompanyInfo, uploadCompanyLogo, type CompanyInfo } from '../../api/clinicaSettings';
+import {
+  fetchCompanyInfo,
+  updateCompanyInfo,
+  uploadCompanyLogo,
+  uploadCompanyTimbre,
+  removeCompanyTimbre,
+  type CompanyInfo,
+} from '../../api/clinicaSettings';
 import { getErrorMessage } from '../../api/client';
 
 const inputClass =
@@ -34,6 +41,8 @@ export function CompaniaPanel() {
   const [notice, setNotice] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [isUploadingTimbre, setIsUploadingTimbre] = useState(false);
+  const timbreInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [name, setName] = useState('');
@@ -129,6 +138,31 @@ export function CompaniaPanel() {
     }
   }
 
+  async function handleTimbreChange(file: File | null) {
+    if (!file) return;
+    setError(null);
+    setIsUploadingTimbre(true);
+    try {
+      applyCompany(await uploadCompanyTimbre(file));
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo subir el timbre'));
+    } finally {
+      setIsUploadingTimbre(false);
+    }
+  }
+
+  async function handleTimbreRemove() {
+    setError(null);
+    setIsUploadingTimbre(true);
+    try {
+      applyCompany(await removeCompanyTimbre());
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo quitar el timbre'));
+    } finally {
+      setIsUploadingTimbre(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
@@ -165,9 +199,49 @@ export function CompaniaPanel() {
               e.target.value = '';
             }}
           />
+          {/* El timbre es de cada clínica y no sustituye al logo: el logo
+              encabeza el documento, el timbre lo sella de fondo. */}
+          <button
+            type="button"
+            onClick={() => timbreInputRef.current?.click()}
+            disabled={isUploadingTimbre}
+            className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-xs text-slate-400 hover:bg-slate-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-slate-700"
+          >
+            {isUploadingTimbre ? (
+              'Subiendo...'
+            ) : company?.timbreUrl ? (
+              <img src={company.timbreUrl} alt="Timbre" className="h-full w-full object-contain" />
+            ) : (
+              'TIMBRE'
+            )}
+          </button>
+          <input
+            ref={timbreInputRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              handleTimbreChange(e.target.files?.[0] ?? null);
+              e.target.value = '';
+            }}
+          />
+
           <div>
             <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Información Compañía</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Se usa en el encabezado de los documentos que genera el sistema.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              El logo encabeza los documentos que genera el sistema. El timbre sale como marca de agua detrás del
+              contenido de la cartola, la receta y el consentimiento.
+            </p>
+            {company?.timbreUrl && (
+              <button
+                type="button"
+                onClick={handleTimbreRemove}
+                disabled={isUploadingTimbre}
+                className="mt-1 text-xs font-semibold text-red-500 hover:underline disabled:opacity-60 dark:text-red-400"
+              >
+                Quitar timbre
+              </button>
+            )}
           </div>
         </div>
 

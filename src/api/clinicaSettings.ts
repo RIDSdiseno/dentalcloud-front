@@ -61,6 +61,8 @@ export type CompanyInfo = {
   rut: string | null;
   pais: string;
   logoUrl: string | null;
+  /** Timbre de la clínica: sale como marca de agua en los PDF. */
+  timbreUrl: string | null;
   address: string | null;
   email: string | null;
   phone: string | null;
@@ -83,6 +85,22 @@ export async function fetchCompanyInfo() {
 
 export async function updateCompanyInfo(patch: Partial<Omit<CompanyInfo, 'logoUrl'>>) {
   const { data } = await api.patch<{ company: CompanyInfo }>('/clinica/company', patch);
+  return data.company;
+}
+
+// El timbre es por clínica: cada una sube el suyo y sus documentos salen con
+// ese sello de fondo (reunión 30/09, tarea 15).
+export async function uploadCompanyTimbre(file: File) {
+  const formData = new FormData();
+  formData.append('timbre', file);
+  const { data } = await api.patch<{ company: CompanyInfo }>('/clinica/company/timbre', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.company;
+}
+
+export async function removeCompanyTimbre() {
+  const { data } = await api.delete<{ company: CompanyInfo }>('/clinica/company/timbre');
   return data.company;
 }
 
