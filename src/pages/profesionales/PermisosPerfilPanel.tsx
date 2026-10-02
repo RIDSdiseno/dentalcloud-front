@@ -26,6 +26,7 @@ const PATIENT_TAB_ORDER: PermissionKey[] = [
   'tratamientos',
   'evoluciones',
   'cartola',
+  'cartolaGeneral',
   'observaciones',
   'documentosClinicos',
   'rx',
@@ -43,6 +44,7 @@ export const PERMISSION_LABELS: Record<PermissionKey, string> = {
   tratamientos: 'Planes de tratamiento',
   crearPresupuestos: 'Crear presupuestos',
   eliminarEvoluciones: 'Anular evoluciones',
+  cartolaGeneral: 'Ver la cartola completa',
   documentosClinicos: 'Documentos clínicos',
   cartola: 'Cartola',
   evoluciones: 'Evoluciones',
@@ -146,7 +148,8 @@ export function PermisosPerfilPanel() {
         <h2 className="mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Ficha del paciente</h2>
         <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
           Qué pestañas de la ficha ve cada perfil. La pestaña que quede en "No" simplemente no aparece, y sus datos
-          tampoco se entregan.
+          tampoco se entregan. "Ver la cartola completa" es la excepción: en "No" la pestaña sigue apareciendo, pero
+          el profesional sólo ve sus propios presupuestos y abonos, nunca el total del paciente.
         </p>
 
         {renderTable(PATIENT_TAB_ORDER, 'Pestaña')}

@@ -124,7 +124,17 @@ export function CartolaTab({ patientId }: { patientId: string }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-end gap-2">
+      {summary.soloPropia && (
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
+          Estás viendo sólo <span className="font-semibold">tus</span> presupuestos y los abonos que cuelgan de ellos.
+          Los totales de abajo son los tuyos, no los del paciente.
+        </p>
+      )}
+
+      {/* El PDF y el correo llevan el total del paciente, así que no se
+          ofrecen a quien sólo puede ver lo suyo (el backend también los
+          rechaza). */}
+      <div className={`flex items-center justify-end gap-2 ${summary.soloPropia ? 'hidden' : ''}`}>
         <button
           type="button"
           onClick={handleSendEmail}

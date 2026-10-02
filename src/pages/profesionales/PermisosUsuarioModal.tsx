@@ -40,6 +40,7 @@ const PATIENT_TAB_ORDER: PermissionKey[] = [
   'tratamientos',
   'evoluciones',
   'cartola',
+  'cartolaGeneral',
   'observaciones',
   'documentosClinicos',
   'rx',
@@ -175,7 +176,8 @@ export function PermisosUsuarioModal({ user, onClose }: { user: StaffUser; onClo
               <div>
                 <h3 className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Ficha del paciente</h3>
                 <p className="mb-2 text-xs text-slate-500 dark:text-slate-400">
-                  Pestañas de la ficha. La que quede en "No" no aparece, y sus datos tampoco se entregan.
+                  Pestañas de la ficha. La que quede en "No" no aparece, y sus datos tampoco se entregan. "Ver la
+                  cartola completa" es la excepción: en "No" la pestaña sigue, pero sólo con lo suyo.
                 </p>
                 <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
                   {PATIENT_TAB_ORDER.map((key) => (

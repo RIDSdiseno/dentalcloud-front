@@ -26,6 +26,7 @@ export type PermissionKey =
   | 'rx'
   | 'crearPresupuestos'
   | 'eliminarEvoluciones'
+  | 'cartolaGeneral'
   | GeneralPatientPermissionKey
   | PatientTabPermissionKey;
 

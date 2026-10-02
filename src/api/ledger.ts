@@ -71,6 +71,10 @@ export type LedgerSummary = {
   ledger: LedgerRow[];
   abonosLibresTotal: number;
   saldoTotal: number;
+  /** true = el permiso "Ver la cartola completa" está apagado y esto trae
+   *  sólo los presupuestos propios. Los totales son de lo propio, no del
+   *  paciente. */
+  soloPropia: boolean;
 };
 
 export type LedgerMovementInput = {
