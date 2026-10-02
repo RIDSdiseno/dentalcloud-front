@@ -162,8 +162,15 @@ function ConsentTypeCard({
   // sistema si es profesional; si no, en el primero que ya tenga uno.
   const [professionalId, setProfessionalId] = useState<string>(() => {
     if (!consentType.porProfesional) return '';
+    // Si ya hay uno firmado, se muestra ESE: arrancar en "yo" cuando otro
+    // doctor ya lo firmó dejaba la tarjeta diciendo "No enviado" justo debajo
+    // de "Ya firmado con: ...", que es desconcertante.
+    const firmado = consents.find((c) => c.status === 'firmado' && c.professionalId);
+    if (firmado?.professionalId) return firmado.professionalId;
+    const cualquiera = consents.find((c) => c.professionalId);
+    if (cualquiera?.professionalId) return cualquiera.professionalId;
     if (user && professionals.some((p) => p.id === user.id)) return user.id;
-    return consents.find((c) => c.professionalId)?.professionalId ?? professionals[0]?.id ?? '';
+    return professionals[0]?.id ?? '';
   });
 
   const consent = consentType.porProfesional
