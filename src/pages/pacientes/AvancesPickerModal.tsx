@@ -10,6 +10,7 @@ import {
   type ExamRoundSource,
 } from '../../api/patients';
 import { CheckIcon } from '../../components/icons';
+import { latestBySlot } from './examRounds';
 
 // Elegir qué avances del Examen Estético muestra una evolución (reunión
 // 30/09, tarea 18). Dos pasos, como pidió el cliente: primero de qué registro
@@ -31,8 +32,11 @@ type Round = {
   moment: 'antes' | 'avance';
   round: number;
   label: string;
-  /** Miniaturas (vacío en video, que no las tiene). */
+  /** Miniaturas, una por ángulo (vacío en video, que no las tiene). */
   thumbs: string[];
+  /** Ángulos distintos y capturas totales: no coinciden cuando se retomó
+   *  alguna toma, porque el registro guarda la nueva sin borrar la vieja. */
+  angulos: number;
   count: number;
   createdAt: string | null;
 };
@@ -49,38 +53,48 @@ function groupRounds(
   photos: ExamPhoto[],
   videos: ExamVideo[]
 ): Round[] {
-  const map = new Map<string, Round>();
+  const porRonda = new Map<string, { moment: 'antes' | 'avance'; round: number; fotos: ExamPhoto[]; fechas: string[] }>();
 
-  const push = (moment: 'antes' | 'avance', round: number, url: string | null, createdAt: string) => {
+  const bucket = (moment: 'antes' | 'avance', round: number) => {
     const key = `${moment}|${round}`;
-    let entry = map.get(key);
+    let entry = porRonda.get(key);
     if (!entry) {
-      entry = {
+      entry = { moment, round, fotos: [], fechas: [] };
+      porRonda.set(key, entry);
+    }
+    return entry;
+  };
+
+  if (source === 'video') {
+    for (const v of videos) bucket(v.moment, v.round).fechas.push(v.createdAt);
+  } else {
+    for (const p of photos.filter((x) => x.area === source)) {
+      const entry = bucket(p.moment, p.round);
+      entry.fotos.push(p);
+      entry.fechas.push(p.createdAt);
+    }
+  }
+
+  return [...porRonda.values()]
+    .map(({ moment, round, fotos, fechas }) => {
+      // Una miniatura por ángulo: si se retomó la frontal nueve veces, la
+      // ronda no debe verse como nueve fotos iguales.
+      const ultimas = latestBySlot(fotos);
+      return {
         source,
         moment,
         round,
         label: moment === 'antes' ? 'Antes' : `Avance ${round}`,
-        thumbs: [],
-        count: 0,
-        createdAt,
+        thumbs: ultimas.slice(0, 4).map((f) => f.url),
+        angulos: ultimas.length,
+        count: fechas.length,
+        createdAt: fechas.length ? fechas.slice().sort()[0] : null,
       };
-      map.set(key, entry);
-    }
-    entry.count += 1;
-    if (url && entry.thumbs.length < 4) entry.thumbs.push(url);
-    if (createdAt < (entry.createdAt ?? createdAt)) entry.createdAt = createdAt;
-  };
-
-  if (source === 'video') {
-    for (const v of videos) push(v.moment, v.round, null, v.createdAt);
-  } else {
-    for (const p of photos.filter((x) => x.area === source)) push(p.moment, p.round, p.url, p.createdAt);
-  }
-
-  return [...map.values()].sort((a, b) => {
-    if (a.moment !== b.moment) return a.moment === 'antes' ? -1 : 1;
-    return a.round - b.round;
-  });
+    })
+    .sort((a, b) => {
+      if (a.moment !== b.moment) return a.moment === 'antes' ? -1 : 1;
+      return a.round - b.round;
+    });
 }
 
 export function AvancesPickerModal({
@@ -226,6 +240,7 @@ export function AvancesPickerModal({
                       {round.label}
                     </span>
                     <span className="block text-xs text-slate-500 dark:text-slate-400">
+                      {round.angulos > 0 && `${round.angulos} ${round.angulos === 1 ? 'ángulo' : 'ángulos'} · `}
                       {round.count} {round.count === 1 ? 'captura' : 'capturas'}
                       {round.createdAt && ` · ${new Date(round.createdAt).toLocaleDateString('es-CL')}`}
                     </span>

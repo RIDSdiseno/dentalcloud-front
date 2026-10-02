@@ -23,6 +23,7 @@ import {
   type ExamRoundSource,
 } from '../../api/patients';
 import { AvancesPickerModal } from './AvancesPickerModal';
+import { SLOT_LABEL, latestBySlot, sortedBySlot } from './examRounds';
 import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatLongDate, formatTime } from '../agenda/dateUtils';
@@ -52,17 +53,6 @@ function roundLabel(ref: EvolutionExamRoundRef) {
   return `${ROUND_SOURCE_LABEL[ref.source]} · ${momento}`;
 }
 
-// Mismos nombres de ángulo que usa el Examen Estético, para que la foto se
-// llame igual en los dos lados.
-const SLOT_LABEL: Record<string, string> = {
-  frontal: 'Frontal',
-  perfilDerecho: 'Perfil derecho',
-  perfilIzquierdo: 'Perfil izquierdo',
-  '45derecha': '45° derecha',
-  '45izquierda': '45° izquierda',
-  espalda: 'Espalda',
-};
-
 // Las fotos del avance se buscan en el Examen Estético, que es donde viven —
 // la evolución sólo guarda a cuál apunta.
 function photosFor(ref: EvolutionExamRoundRef, photos: ExamPhoto[]): ExamPhoto[] {
@@ -82,9 +72,35 @@ function AvanceViewerModal({
   photos: ExamPhoto[];
   onClose: () => void;
 }) {
-  const fotos = photosFor(avance, photos);
+  // Por defecto sólo la última foto de cada ángulo: al retomar, el registro
+  // guarda la nueva sin borrar la vieja, y mostrarlas todas llena la ficha de
+  // descartes (hay rondas con 9 frontales de una misma sesión de pruebas).
+  const [verTodas, setVerTodas] = useState(false);
+  const todas = photosFor(avance, photos);
+  const fotos = verTodas ? sortedBySlot(todas) : latestBySlot(todas);
+  const repetidas = todas.length - latestBySlot(todas).length;
+
   return (
     <Modal title={roundLabel(avance)} onClose={onClose} maxWidth="max-w-5xl">
+      {repetidas > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span>
+            {verTodas
+              ? `Mostrando las ${todas.length} capturas, incluidas las que se retomaron.`
+              : `Mostrando la última foto de cada ángulo. Hay ${repetidas} ${
+                  repetidas === 1 ? 'captura anterior guardada' : 'capturas anteriores guardadas'
+                }.`}
+          </span>
+          <button
+            type="button"
+            onClick={() => setVerTodas((prev) => !prev)}
+            className="font-semibold text-brand-700 hover:underline dark:text-brand-400"
+          >
+            {verTodas ? 'Ver sólo las últimas' : `Ver las ${todas.length} capturas`}
+          </button>
+        </div>
+      )}
+
       {fotos.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
           Este avance no tiene fotos para mostrar.
@@ -104,6 +120,7 @@ function AvanceViewerModal({
               </a>
               <figcaption className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 {SLOT_LABEL[foto.slot] ?? foto.slot}
+                {verTodas && ` · ${new Date(foto.createdAt).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}`}
               </figcaption>
             </figure>
           ))}
@@ -131,7 +148,9 @@ function AvancesStrip({
     <div className="flex flex-wrap gap-2">
       {rounds.map((ref) => {
         const fotos = photosFor(ref, photos);
-        const thumbs = fotos.slice(0, 4);
+        // Una miniatura por ángulo: con `slice` crudo, un avance con 9
+        // frontales mostraba cuatro veces la misma foto.
+        const thumbs = latestBySlot(fotos).slice(0, 4);
         return (
           <div
             key={`${ref.source}|${ref.moment}|${ref.round}`}
