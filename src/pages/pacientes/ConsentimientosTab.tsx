@@ -14,6 +14,7 @@ import {
 } from '../../api/dataConsents';
 import { getErrorMessage } from '../../api/client';
 import type { Patient } from '../../api/patients';
+import { fetchUsers, type StaffUser } from '../../api/users';
 import { useAuth } from '../../context/AuthContext';
 import { EditIcon, PlusIcon, ShieldIcon } from '../../components/icons';
 import { formatRut } from '../../utils/rut';
@@ -136,14 +137,17 @@ function formatDateTime(value: string | null) {
 function ConsentTypeCard({
   patient,
   consentType,
-  consent,
+  consents,
+  professionals,
   onUpdated,
   onTypeUpdated,
   onEdit,
 }: {
   patient: Patient;
   consentType: ConsentType;
-  consent: PatientConsent | null;
+  /** Todos los de este tipo: desde la tarea 16 puede haber uno por doctor. */
+  consents: PatientConsent[];
+  professionals: StaffUser[];
   onUpdated: (consent: PatientConsent) => void;
   onTypeUpdated: (consentType: ConsentType) => void;
   onEdit: () => void;
@@ -151,6 +155,23 @@ function ConsentTypeCard({
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // En un consentimiento clínico la tarjeta trabaja sobre UN doctor a la vez:
+  // el paciente consiente que se lo haga ESE profesional, y si lo atiende otro
+  // hay que firmar uno nuevo (reunión 30/09). Arranca en quien está usando el
+  // sistema si es profesional; si no, en el primero que ya tenga uno.
+  const [professionalId, setProfessionalId] = useState<string>(() => {
+    if (!consentType.porProfesional) return '';
+    if (user && professionals.some((p) => p.id === user.id)) return user.id;
+    return consents.find((c) => c.professionalId)?.professionalId ?? professionals[0]?.id ?? '';
+  });
+
+  const consent = consentType.porProfesional
+    ? (consents.find((c) => c.professionalId === professionalId) ?? null)
+    : (consents[0] ?? null);
+
+  // Quiénes ya lo firmaron, para no tener que ir doctor por doctor buscando.
+  const firmados = consents.filter((c) => c.status === 'firmado' && c.professional);
 
   const [isSending, setIsSending] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -203,7 +224,7 @@ function ConsentTypeCard({
     setError(null);
     setIsSending(true);
     try {
-      const result = await sendDataConsent(patient.id, consentType.id);
+      const result = await sendDataConsent(patient.id, consentType.id, professionalId || undefined);
       onUpdated({
         id: consent?.id ?? '',
         consentTypeId: consentType.id,
@@ -214,6 +235,11 @@ function ConsentTypeCard({
         respondedAt: null,
         signerName: null,
         signerRut: null,
+        professionalId: consentType.porProfesional ? professionalId : null,
+        professional: (() => {
+          const elegido = professionals.find((p) => p.id === professionalId);
+          return consentType.porProfesional && elegido ? { id: elegido.id, name: elegido.name } : null;
+        })(),
       });
     } catch (err) {
       setError(getErrorMessage(err, 'No se pudo enviar el consentimiento'));
@@ -264,6 +290,36 @@ function ConsentTypeCard({
           {status.label}
         </span>
       </div>
+
+      {consentType.porProfesional && (
+        <div className="mb-4 rounded-lg bg-slate-50 px-3 py-3 ring-1 ring-slate-200 dark:bg-slate-800/60 dark:ring-slate-800">
+          <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+            Profesional tratante
+          </label>
+          <p className="mt-0.5 mb-2 text-xs text-slate-500 dark:text-slate-400">
+            Este consentimiento es por doctor: si al paciente lo atiende otro, hay que firmar uno nuevo.
+          </p>
+          <select
+            value={professionalId}
+            onChange={(e) => setProfessionalId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 sm:w-auto"
+          >
+            {professionals.length === 0 && <option value="">No hay profesionales creados</option>}
+            {professionals.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+                {p.id === user?.id ? ' (yo)' : ''}
+              </option>
+            ))}
+          </select>
+
+          {firmados.length > 0 && (
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Ya firmado con: {firmados.map((c) => c.professional!.name).join(', ')}.
+            </p>
+          )}
+        </div>
+      )}
 
       {!patient.email && (
         <p className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-500/10 dark:text-amber-400">
@@ -364,9 +420,11 @@ function ConsentTypeCard({
         <ConsentimientoPreviewModal
           patient={patient}
           consentType={consentType}
+          professionalId={consentType.porProfesional ? professionalId : undefined}
           consent={consent}
           onClose={() => setShowPreview(false)}
           onSigned={(result) => {
+            const elegido = professionals.find((p) => p.id === professionalId) ?? null;
             onUpdated({
               id: consent?.id ?? '',
               consentTypeId: consentType.id,
@@ -377,6 +435,9 @@ function ConsentTypeCard({
               respondedAt: result.respondedAt,
               signerName: result.signerName,
               signerRut: result.signerRut,
+              professionalId: consentType.porProfesional ? professionalId : null,
+              professional:
+                consentType.porProfesional && elegido ? { id: elegido.id, name: elegido.name } : null,
             });
             setShowPreview(false);
           }}
@@ -391,16 +452,20 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
   const isAdmin = user?.role === 'admin';
   const [consentTypes, setConsentTypes] = useState<ConsentType[]>([]);
   const [consents, setConsents] = useState<PatientConsent[]>([]);
+  // Los doctores de la clínica, para el selector de los consentimientos por
+  // profesional. Sólo quienes pueden atender: recepción no firma tratamientos.
+  const [professionals, setProfessionals] = useState<StaffUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formModal, setFormModal] = useState<{ mode: 'create' } | { mode: 'edit'; type: ConsentType } | null>(null);
 
   useEffect(() => {
     setIsLoading(true);
-    Promise.all([fetchConsentTypes(), fetchPatientConsents(patient.id)])
-      .then(([types, patientConsents]) => {
+    Promise.all([fetchConsentTypes(), fetchPatientConsents(patient.id), fetchUsers().catch(() => [])])
+      .then(([types, patientConsents, staff]) => {
         setConsentTypes(types);
         setConsents(patientConsents);
+        setProfessionals(staff.filter((u) => u.role !== 'operador' && u.active !== false));
         setError(null);
       })
       .catch((err) => setError(getErrorMessage(err, 'No se pudieron cargar los consentimientos')))
@@ -432,12 +497,13 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
     };
   }, [patient.id]);
 
+  // Un tipo puede tener varios consentimientos (uno por doctor), así que la
+  // identidad es tipo + doctor, no sólo el tipo.
   function handleUpdated(consentTypeId: string, updated: PatientConsent) {
     setConsents((prev) => {
-      const exists = prev.some((c) => c.consentTypeId === consentTypeId);
-      return exists
-        ? prev.map((c) => (c.consentTypeId === consentTypeId ? updated : c))
-        : [...prev, updated];
+      const mismo = (c: PatientConsent) =>
+        c.consentTypeId === consentTypeId && (c.professionalId ?? null) === (updated.professionalId ?? null);
+      return prev.some(mismo) ? prev.map((c) => (mismo(c) ? updated : c)) : [...prev, updated];
     });
   }
 
@@ -469,7 +535,8 @@ export function ConsentimientosTab({ patient }: { patient: Patient }) {
           key={consentType.id}
           patient={patient}
           consentType={consentType}
-          consent={consents.find((c) => c.consentTypeId === consentType.id) ?? null}
+          consents={consents.filter((c) => c.consentTypeId === consentType.id)}
+          professionals={professionals}
           onUpdated={(updated) => handleUpdated(consentType.id, updated)}
           onTypeUpdated={handleTypeUpdated}
           onEdit={() => setFormModal({ mode: 'edit', type: consentType })}

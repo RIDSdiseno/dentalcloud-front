@@ -16,12 +16,15 @@ import { SignaturePad } from '../../components/SignaturePad';
 export function ConsentimientoPreviewModal({
   patient,
   consentType,
+  professionalId,
   consent,
   onClose,
   onSigned,
 }: {
   patient: Patient;
   consentType: ConsentType;
+  /** Doctor al que se firma, en los consentimientos por profesional. */
+  professionalId?: string;
   consent: PatientConsent | null;
   onClose: () => void;
   onSigned: (result: { status: ConsentStatus; respondedAt: string; signerName: string; signerRut: string }) => void;
@@ -67,6 +70,7 @@ export function ConsentimientoPreviewModal({
     setIsSubmitting(true);
     try {
       const result = await respondDataConsentInPerson(patient.id, consentType.id, {
+        professionalId,
         decision,
         signerName: signerName.trim(),
         signerRut: normalizeDocument(signerDocumentType, signerRut),

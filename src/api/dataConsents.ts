@@ -10,6 +10,10 @@ export type ConsentType = {
   active: boolean;
   pdfUrl: string | null;
   pdfPublicId: string | null;
+  /** Los consentimientos clínicos son por doctor: si atiende otro, se firma
+   *  uno nuevo. Los de la clínica (protección de datos, imágenes, grabación)
+   *  van en false y se firman una sola vez. */
+  porProfesional: boolean;
 };
 
 export type PatientConsent = {
@@ -22,6 +26,10 @@ export type PatientConsent = {
   respondedAt: string | null;
   signerName: string | null;
   signerRut: string | null;
+  /** Doctor de este consentimiento. Null en los de la clínica y en los
+   *  firmados antes de que existiera el campo. */
+  professionalId: string | null;
+  professional: { id: string; name: string } | null;
 };
 
 export async function fetchConsentTypes() {
@@ -34,10 +42,11 @@ export async function fetchPatientConsents(patientId: string) {
   return data.consents;
 }
 
-export async function sendDataConsent(patientId: string, consentTypeId: string) {
+export async function sendDataConsent(patientId: string, consentTypeId: string, professionalId?: string) {
   const { data } = await api.post<{ status: ConsentStatus; sentAt: string; expiresAt: string }>('/data-consents', {
     patientId,
     consentTypeId,
+    professionalId,
   });
   return data;
 }
@@ -91,6 +100,7 @@ export async function respondDataConsentInPerson(
     signerDocumentType?: string;
     readConfirmed: boolean;
     signatureDataUrl?: string | null;
+    professionalId?: string;
   }
 ) {
   const { data } = await api.post<{ status: ConsentStatus; respondedAt: string }>(
