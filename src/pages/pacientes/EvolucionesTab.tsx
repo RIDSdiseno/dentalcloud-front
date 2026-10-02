@@ -52,15 +52,65 @@ function roundLabel(ref: EvolutionExamRoundRef) {
   return `${ROUND_SOURCE_LABEL[ref.source]} · ${momento}`;
 }
 
+// Mismos nombres de ángulo que usa el Examen Estético, para que la foto se
+// llame igual en los dos lados.
+const SLOT_LABEL: Record<string, string> = {
+  frontal: 'Frontal',
+  perfilDerecho: 'Perfil derecho',
+  perfilIzquierdo: 'Perfil izquierdo',
+  '45derecha': '45° derecha',
+  '45izquierda': '45° izquierda',
+  espalda: 'Espalda',
+};
+
 // Las fotos del avance se buscan en el Examen Estético, que es donde viven —
 // la evolución sólo guarda a cuál apunta.
-function thumbsFor(ref: EvolutionExamRoundRef, photos: ExamPhoto[]): string[] {
-  // El registro de video no tiene miniaturas: se rotula y ya.
+function photosFor(ref: EvolutionExamRoundRef, photos: ExamPhoto[]): ExamPhoto[] {
+  // El registro de video no tiene fotos: se rotula y ya.
   if (ref.source === 'video') return [];
-  return photos
-    .filter((p) => p.area === ref.source && p.moment === ref.moment && p.round === ref.round)
-    .slice(0, 4)
-    .map((p) => p.url);
+  return photos.filter((p) => p.area === ref.source && p.moment === ref.moment && p.round === ref.round);
+}
+
+// Ver las fotos de un avance en grande, sin salir de la evolución. Antes las
+// miniaturas eran decorativas y no había forma de acercarse.
+function AvanceViewerModal({
+  avance,
+  photos,
+  onClose,
+}: {
+  avance: EvolutionExamRoundRef;
+  photos: ExamPhoto[];
+  onClose: () => void;
+}) {
+  const fotos = photosFor(avance, photos);
+  return (
+    <Modal title={roundLabel(avance)} onClose={onClose} maxWidth="max-w-5xl">
+      {fotos.length === 0 ? (
+        <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+          Este avance no tiene fotos para mostrar.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {fotos.map((foto) => (
+            <figure key={foto.id} className="flex flex-col gap-1">
+              {/* El enlace lleva a la imagen original, por si necesitan verla
+                  al 100% o guardarla. */}
+              <a href={foto.url} target="_blank" rel="noreferrer">
+                <img
+                  src={foto.url}
+                  alt={SLOT_LABEL[foto.slot] ?? foto.slot}
+                  className="w-full rounded-xl object-contain ring-1 ring-slate-200 dark:ring-slate-700"
+                />
+              </a>
+              <figcaption className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                {SLOT_LABEL[foto.slot] ?? foto.slot}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
 }
 
 // Tira de avances enlazados: se usa igual en el formulario (antes de grabar)
@@ -74,27 +124,45 @@ function AvancesStrip({
   photos: ExamPhoto[];
   onRemove?: (ref: EvolutionExamRoundRef) => void;
 }) {
+  const [viewing, setViewing] = useState<EvolutionExamRoundRef | null>(null);
+
   if (rounds.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-2">
       {rounds.map((ref) => {
-        const thumbs = thumbsFor(ref, photos);
+        const fotos = photosFor(ref, photos);
+        const thumbs = fotos.slice(0, 4);
         return (
           <div
             key={`${ref.source}|${ref.moment}|${ref.round}`}
             className="flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1.5 dark:border-slate-700"
           >
-            <span className="flex -space-x-2">
-              {thumbs.map((url) => (
-                <img key={url} src={url} alt="" className="h-8 w-8 rounded object-cover ring-2 ring-white dark:ring-slate-900" />
-              ))}
-              {thumbs.length === 0 && (
-                <span className="flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-[9px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-                  {ref.source === 'video' ? 'Video' : '—'}
-                </span>
-              )}
-            </span>
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{roundLabel(ref)}</span>
+            {/* Pinchar el avance lo abre en grande. Antes las miniaturas no
+                llevaban a ninguna parte. */}
+            <button
+              type="button"
+              onClick={() => setViewing(ref)}
+              disabled={fotos.length === 0}
+              title={fotos.length === 0 ? undefined : `Ver ${roundLabel(ref)} en grande`}
+              className="flex items-center gap-2 rounded-md transition-opacity disabled:cursor-default hover:enabled:opacity-80"
+            >
+              <span className="flex -space-x-2">
+                {thumbs.map((foto) => (
+                  <img
+                    key={foto.id}
+                    src={foto.url}
+                    alt=""
+                    className="h-8 w-8 rounded object-cover ring-2 ring-white dark:ring-slate-900"
+                  />
+                ))}
+                {thumbs.length === 0 && (
+                  <span className="flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-[9px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                    {ref.source === 'video' ? 'Video' : '—'}
+                  </span>
+                )}
+              </span>
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{roundLabel(ref)}</span>
+            </button>
             {onRemove && (
               <button
                 type="button"
@@ -108,6 +176,8 @@ function AvancesStrip({
           </div>
         );
       })}
+
+      {viewing && <AvanceViewerModal avance={viewing} photos={photos} onClose={() => setViewing(null)} />}
     </div>
   );
 }
