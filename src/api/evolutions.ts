@@ -1,4 +1,5 @@
 import { api } from './client';
+import type { EvolutionExamRoundRef } from './patients';
 
 export type EvolutionPhoto = {
   id: string;
@@ -33,6 +34,8 @@ export type Evolution = {
   productExpiresAt: string | null;
   productQuantity: string | null;
   photos: EvolutionPhoto[];
+  // Avances del Examen Estético que esta evolución muestra (tarea 18).
+  examRounds: (EvolutionExamRoundRef & { id: string })[];
 };
 
 export type EnabledFilter = 'true' | 'false' | 'all';
@@ -60,12 +63,16 @@ export async function createEvolution(input: {
   productLot?: string;
   productExpiresAt?: string;
   productQuantity?: string;
+  examRounds?: EvolutionExamRoundRef[];
 }) {
   const { data } = await api.post<{ evolution: Evolution }>('/evolutions', input);
   return data.evolution;
 }
 
-export async function updateEvolution(id: string, patch: { content?: string; enabled?: boolean }) {
+export async function updateEvolution(
+  id: string,
+  patch: { content?: string; enabled?: boolean; examRounds?: EvolutionExamRoundRef[] }
+) {
   const { data } = await api.patch<{ evolution: Evolution }>(`/evolutions/${id}`, patch);
   return data.evolution;
 }

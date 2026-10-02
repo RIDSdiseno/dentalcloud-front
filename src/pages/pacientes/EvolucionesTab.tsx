@@ -15,7 +15,14 @@ import type { EvolutionTemplate } from '../../api/catalogs';
 import { fetchUsers, type StaffUser } from '../../api/users';
 import { fetchPatientAppointments, type Appointment } from '../../api/appointments';
 import { fetchTreatmentPlans } from '../../api/treatmentPlans';
-import type { Patient } from '../../api/patients';
+import {
+  fetchExamPhotos,
+  type Patient,
+  type ExamPhoto,
+  type EvolutionExamRoundRef,
+  type ExamRoundSource,
+} from '../../api/patients';
+import { AvancesPickerModal } from './AvancesPickerModal';
 import { useAuth } from '../../context/AuthContext';
 import { roleLabel } from '../../utils/roles';
 import { formatLongDate, formatTime } from '../agenda/dateUtils';
@@ -23,7 +30,7 @@ import { NewAppointmentModal } from '../agenda/NewAppointmentModal';
 import { Modal } from '../../components/Modal';
 import { ReasonModal } from '../../components/ReasonModal';
 import { RichTextEditor } from '../../components/RichTextEditor';
-import { ActivityIcon, BanIcon, CalendarIcon, EyeIcon, EyeOffIcon, PrinterIcon, TrashIcon, UploadIcon } from '../../components/icons';
+import { ActivityIcon, BanIcon, CalendarIcon, CameraIcon, EyeIcon, EyeOffIcon, PrinterIcon, TrashIcon, UploadIcon } from '../../components/icons';
 import { PHOTO_LABELS, missingRequiredProductFields, type PhotoLabel } from './photoLabels';
 import { sanitizeHtml } from '../../utils/sanitizeHtml';
 
@@ -32,6 +39,78 @@ const STATUS_TABS: { key: EnabledFilter; label: string }[] = [
   { key: 'false', label: 'Deshabilitadas' },
   { key: 'all', label: 'Todas' },
 ];
+
+const ROUND_SOURCE_LABEL: Record<ExamRoundSource, string> = {
+  facial: 'Registro fotográfico',
+  corporal: 'Avances corporal',
+  facialAvanzado: 'Fotográfico avanzado',
+  video: 'Video',
+};
+
+function roundLabel(ref: EvolutionExamRoundRef) {
+  const momento = ref.moment === 'antes' ? 'Antes' : `Avance ${ref.round}`;
+  return `${ROUND_SOURCE_LABEL[ref.source]} · ${momento}`;
+}
+
+// Las fotos del avance se buscan en el Examen Estético, que es donde viven —
+// la evolución sólo guarda a cuál apunta.
+function thumbsFor(ref: EvolutionExamRoundRef, photos: ExamPhoto[]): string[] {
+  // El registro de video no tiene miniaturas: se rotula y ya.
+  if (ref.source === 'video') return [];
+  return photos
+    .filter((p) => p.area === ref.source && p.moment === ref.moment && p.round === ref.round)
+    .slice(0, 4)
+    .map((p) => p.url);
+}
+
+// Tira de avances enlazados: se usa igual en el formulario (antes de grabar)
+// y en la evolución ya grabada.
+function AvancesStrip({
+  rounds,
+  photos,
+  onRemove,
+}: {
+  rounds: EvolutionExamRoundRef[];
+  photos: ExamPhoto[];
+  onRemove?: (ref: EvolutionExamRoundRef) => void;
+}) {
+  if (rounds.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {rounds.map((ref) => {
+        const thumbs = thumbsFor(ref, photos);
+        return (
+          <div
+            key={`${ref.source}|${ref.moment}|${ref.round}`}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 px-2 py-1.5 dark:border-slate-700"
+          >
+            <span className="flex -space-x-2">
+              {thumbs.map((url) => (
+                <img key={url} src={url} alt="" className="h-8 w-8 rounded object-cover ring-2 ring-white dark:ring-slate-900" />
+              ))}
+              {thumbs.length === 0 && (
+                <span className="flex h-8 w-8 items-center justify-center rounded bg-slate-100 text-[9px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                  {ref.source === 'video' ? 'Video' : '—'}
+                </span>
+              )}
+            </span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{roundLabel(ref)}</span>
+            {onRemove && (
+              <button
+                type="button"
+                onClick={() => onRemove(ref)}
+                aria-label={`Quitar ${roundLabel(ref)}`}
+                className="text-slate-400 hover:text-red-500 dark:hover:text-red-400"
+              >
+                <TrashIcon className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function isContentEmpty(html: string) {
   return !html || html.replace(/<[^>]*>/g, '').trim() === '';
@@ -43,8 +122,10 @@ function EvolutionCard({
   onDeletePhoto,
   onRequestAnnul,
   canAnnul,
+  examPhotos,
 }: {
   evolution: Evolution;
+  examPhotos: ExamPhoto[];
   onToggle: (evolution: Evolution) => void;
   onDeletePhoto: (photoId: string, label: string | null) => void;
   onRequestAnnul: (evolution: Evolution) => void;
@@ -127,6 +208,11 @@ function EvolutionCard({
           {evolution.productExpiresAt && ` · Vence: ${new Date(evolution.productExpiresAt).toLocaleDateString('es-CL')}`}
         </p>
       )}
+      {evolution.examRounds.length > 0 && (
+        <div className="mb-2">
+          <AvancesStrip rounds={evolution.examRounds} photos={examPhotos} />
+        </div>
+      )}
       <div
         className={`prose-sm text-sm ${
           anulada ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'
@@ -195,6 +281,15 @@ export function EvolucionesTab({
 
   const [evolutions, setEvolutions] = useState<Evolution[]>([]);
   const [annullingEvolution, setAnnullingEvolution] = useState<Evolution | null>(null);
+  // Avances del Examen Estético enlazados a la evolución que se está
+  // escribiendo, y el catálogo de fotos/videos para dibujar sus miniaturas.
+  const [pendingRounds, setPendingRounds] = useState<EvolutionExamRoundRef[]>([]);
+  const [showAvancesPicker, setShowAvancesPicker] = useState(false);
+  const [examPhotos, setExamPhotos] = useState<ExamPhoto[]>([]);
+
+  useEffect(() => {
+    fetchExamPhotos(patient.id).then(setExamPhotos).catch(() => setExamPhotos([]));
+  }, [patient.id]);
   const [filterProfessionalId, setFilterProfessionalId] = useState('');
   const [statusFilter, setStatusFilter] = useState<EnabledFilter>('true');
   const [isLoading, setIsLoading] = useState(true);
@@ -316,6 +411,7 @@ export function EvolucionesTab({
         productLot: productLot.trim() || undefined,
         productExpiresAt: productExpiresAt || undefined,
         productQuantity: productQuantity.trim() || undefined,
+        examRounds: pendingRounds.length > 0 ? pendingRounds : undefined,
       });
 
       // Las fotos se suben recién ahora que la evolución ya existe (una por
@@ -325,6 +421,7 @@ export function EvolucionesTab({
         URL.revokeObjectURL(photo.previewUrl);
       }
       setPendingPhotos([]);
+      setPendingRounds([]);
 
       setContent('');
       setShowPreview(false);
@@ -559,6 +656,33 @@ export function EvolucionesTab({
           </div>
         )}
 
+        {/* Avances del Examen Estético (tarea 18): acá no se sacan fotos, se
+            eligen avances que el profesional ya registró. Va aparte del
+            bloque del presupuesto a propósito — rassul pidió no atar las
+            fotos al presupuesto ("fuiste por botox y terminé haciendo rino,
+            labio y mentón"). */}
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAvancesPicker(true)}
+            className="flex w-fit items-center gap-1.5 rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50 dark:border-brand-500/30 dark:bg-slate-900 dark:text-brand-400 dark:hover:bg-brand-500/10"
+          >
+            <CameraIcon className="h-4 w-4" />
+            Agregar fotos de avance
+          </button>
+          <AvancesStrip
+            rounds={pendingRounds}
+            photos={examPhotos}
+            onRemove={(ref) =>
+              setPendingRounds((prev) =>
+                prev.filter(
+                  (r) => !(r.source === ref.source && r.moment === ref.moment && r.round === ref.round)
+                )
+              )
+            }
+          />
+        </div>
+
         {isAdmin && (
           <div>
             <label className="text-sm font-medium text-slate-700 dark:text-slate-200">Profesional</label>
@@ -706,6 +830,7 @@ export function EvolucionesTab({
               evolution={evolution}
               onToggle={handleToggle}
               onDeletePhoto={handleDeletePhoto}
+              examPhotos={examPhotos}
               onRequestAnnul={setAnnullingEvolution}
               canAnnul={user?.permissions?.eliminarEvoluciones !== false}
             />
@@ -743,6 +868,18 @@ export function EvolucionesTab({
             </div>
           )}
         </Modal>
+      )}
+
+      {showAvancesPicker && (
+        <AvancesPickerModal
+          patientId={patient.id}
+          selected={pendingRounds}
+          onClose={() => setShowAvancesPicker(false)}
+          onConfirm={(rounds) => {
+            setPendingRounds(rounds);
+            setShowAvancesPicker(false);
+          }}
+        />
       )}
 
       {annullingEvolution && (

@@ -126,6 +126,19 @@ export type ExamPhotoSlot = 'frontal' | 'perfilDerecho' | '45derecha' | '45izqui
 // propia, separada del registro facial normal).
 export type ExamPhotoArea = 'facial' | 'corporal' | 'facialAvanzado';
 
+// Los cuatro registros entre los que elige el profesional al enlazar avances
+// a una evolución (tarea 18). Los tres primeros son áreas de ExamPhoto; el
+// cuarto apunta a ExamVideo, que no tiene área propia.
+export type ExamRoundSource = ExamPhotoArea | 'video';
+
+// Referencia a un avance del Examen Estético. No es una copia de las fotos:
+// identifica el conjunto (registro + antes/avance + número).
+export type EvolutionExamRoundRef = {
+  source: ExamRoundSource;
+  moment: 'antes' | 'avance';
+  round: number;
+};
+
 export async function fetchPatients(search?: string) {
   const { data } = await api.get<{ patients: Patient[] }>('/patients', {
     params: search ? { search } : undefined,
