@@ -9,8 +9,9 @@ import {
   type EvolutionExamRoundRef,
   type ExamRoundSource,
 } from '../../api/patients';
-import { CheckIcon } from '../../components/icons';
+import { CheckIcon, EyeIcon } from '../../components/icons';
 import { latestBySlot } from './examRounds';
+import { AvanceViewerModal } from './AvanceViewerModal';
 
 // Elegir qué avances del Examen Estético muestra una evolución (reunión
 // 30/09, tarea 18). Dos pasos, como pidió el cliente: primero de qué registro
@@ -114,6 +115,9 @@ export function AvancesPickerModal({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [picked, setPicked] = useState<Set<string>>(() => new Set(selected.map(roundKey)));
+  // Ver un avance en grande antes de marcarlo: con miniaturas de 40px no se
+  // alcanza a distinguir una toma de otra.
+  const [viewing, setViewing] = useState<EvolutionExamRoundRef | null>(null);
 
   useEffect(() => {
     Promise.all([fetchExamPhotos(patientId), fetchExamVideos(patientId).catch(() => [])])
@@ -162,7 +166,7 @@ export function AvancesPickerModal({
     : '¿Qué avances quieres ver?';
 
   return (
-    <Modal title={title} onClose={onClose} maxWidth="max-w-3xl">
+    <Modal title={title} onClose={onClose} maxWidth="max-w-4xl">
       {isLoading && <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Cargando avances...</p>}
       {error && (
         <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600 dark:bg-red-500/10 dark:text-red-400">
@@ -199,53 +203,72 @@ export function AvancesPickerModal({
             {rounds.map((round) => {
               const isPicked = picked.has(roundKey(round));
               return (
-                <button
+                <div
                   key={roundKey(round)}
-                  type="button"
-                  onClick={() => toggle(round)}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 transition-colors ${
                     isPicked
                       ? 'border-brand-400 bg-brand-50 dark:border-brand-500/50 dark:bg-brand-500/10'
                       : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-                      isPicked
-                        ? 'border-brand-500 bg-brand-500 text-white'
-                        : 'border-slate-300 dark:border-slate-600'
-                    }`}
+                  <button
+                    type="button"
+                    onClick={() => toggle(round)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
                   >
-                    {isPicked && <CheckIcon className="h-3.5 w-3.5" />}
-                  </span>
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                        isPicked
+                          ? 'border-brand-500 bg-brand-500 text-white'
+                          : 'border-slate-300 dark:border-slate-600'
+                      }`}
+                    >
+                      {isPicked && <CheckIcon className="h-3.5 w-3.5" />}
+                    </span>
 
-                  <span className="flex -space-x-2">
-                    {round.thumbs.map((url) => (
-                      <img
-                        key={url}
-                        src={url}
-                        alt=""
-                        className="h-10 w-10 rounded-lg object-cover ring-2 ring-white dark:ring-slate-900"
-                      />
-                    ))}
-                    {round.thumbs.length === 0 && (
-                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-                        Video
+                    {/* `shrink-0`: sin esto las miniaturas se desbordaban por
+                        encima del nombre del avance cuando la fila quedaba
+                        angosta. */}
+                    <span className="flex shrink-0 -space-x-2">
+                      {round.thumbs.map((url) => (
+                        <img
+                          key={url}
+                          src={url}
+                          alt=""
+                          className="h-10 w-10 rounded-lg object-cover ring-2 ring-white dark:ring-slate-900"
+                        />
+                      ))}
+                      {round.thumbs.length === 0 && (
+                        <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                          Video
+                        </span>
+                      )}
+                    </span>
+
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        {round.label}
                       </span>
-                    )}
-                  </span>
+                      <span className="block text-xs text-slate-500 dark:text-slate-400">
+                        {round.angulos > 0 && `${round.angulos} ${round.angulos === 1 ? 'ángulo' : 'ángulos'} · `}
+                        {round.count} {round.count === 1 ? 'captura' : 'capturas'}
+                        {round.createdAt && ` · ${new Date(round.createdAt).toLocaleDateString('es-CL')}`}
+                      </span>
+                    </span>
+                  </button>
 
-                  <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      {round.label}
-                    </span>
-                    <span className="block text-xs text-slate-500 dark:text-slate-400">
-                      {round.angulos > 0 && `${round.angulos} ${round.angulos === 1 ? 'ángulo' : 'ángulos'} · `}
-                      {round.count} {round.count === 1 ? 'captura' : 'capturas'}
-                      {round.createdAt && ` · ${new Date(round.createdAt).toLocaleDateString('es-CL')}`}
-                    </span>
-                  </span>
-                </button>
+                  {round.thumbs.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setViewing(round)}
+                      title={`Ver ${round.label} en grande`}
+                      aria-label={`Ver ${round.label} en grande`}
+                      className="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-slate-900 dark:hover:text-brand-400"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -258,6 +281,10 @@ export function AvancesPickerModal({
             ← Ver otro registro
           </button>
         </div>
+      )}
+
+      {viewing && (
+        <AvanceViewerModal avance={viewing} photos={photos} onClose={() => setViewing(null)} />
       )}
 
       {!isLoading && (
