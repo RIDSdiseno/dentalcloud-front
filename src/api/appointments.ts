@@ -87,6 +87,14 @@ export async function fetchAppointments(date: string, options?: { mine?: boolean
   return data.appointments;
 }
 
+/** Las canceladas del día, que la agenda lista aparte de la parrilla. */
+export async function fetchCancelledAppointments(date: string, options?: { mine?: boolean }) {
+  const { data } = await api.get<{ appointments: Appointment[] }>('/appointments', {
+    params: { date, status: 'cancelada', mine: options?.mine ? 'true' : undefined },
+  });
+  return data.appointments;
+}
+
 export async function fetchAppointmentsRange(from: string, to: string, chairId?: string) {
   const { data } = await api.get<{ appointments: Appointment[] }>('/appointments', {
     params: { from, to, chairId },

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { fetchAppointments, type Appointment } from '../../api/appointments';
+import { fetchAppointments, fetchCancelledAppointments, type Appointment } from '../../api/appointments';
+import { CanceladasDelDia } from './CanceladasDelDia';
 import { fetchOpenSlots, deleteOpenSlot, type OpenSlot } from '../../api/openSlots';
 import { fetchChairs, type Chair } from '../../api/chairs';
 import { getErrorMessage } from '../../api/client';
@@ -17,6 +18,7 @@ export default function AgendaDiaria() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [openSlots, setOpenSlots] = useState<OpenSlot[]>([]);
+  const [cancelled, setCancelled] = useState<Appointment[]>([]);
   const [chairs, setChairs] = useState<Chair[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,6 +36,10 @@ export default function AgendaDiaria() {
   useEffect(() => {
     const controller = new AbortController();
     setIsLoading(true);
+    fetchCancelledAppointments(toDateParam(selectedDate), { mine: true })
+      .then(setCancelled)
+      .catch(() => setCancelled([]));
+
     Promise.all([fetchAppointments(toDateParam(selectedDate), { mine: true }), fetchOpenSlots(toDateParam(selectedDate))])
       .then(([appointmentsData, openSlotsData]) => {
         if (!controller.signal.aborted) {
@@ -153,6 +159,8 @@ export default function AgendaDiaria() {
         </p>
       )}
 
+      <CanceladasDelDia appointments={cancelled} />
+
       <div id="diaria-timeline" className="min-h-0 flex-1 space-y-3 overflow-y-auto pb-4">
         {!isLoading && timeline.length === 0 && (
           <div className="flex flex-col items-center gap-2 rounded-2xl bg-white py-16 text-center shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
@@ -249,8 +257,9 @@ export default function AgendaDiaria() {
             setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
             setSelectedAppointment(updated);
           }}
-          onCancelled={(cancelled) => {
-            setAppointments((prev) => prev.filter((a) => a.id !== cancelled.id));
+          onCancelled={(justCancelled) => {
+            setAppointments((prev) => prev.filter((a) => a.id !== justCancelled.id));
+            setCancelled((prev) => [...prev, justCancelled]);
             setSelectedAppointment(null);
             // La cancelación puede haber reabierto una hora publicada — se
             // vuelve a pedir la lista para reflejarlo sin recargar la página.

@@ -10,7 +10,8 @@ import { UrgencyAppointmentModal } from './UrgencyAppointmentModal';
 import { SlotDurationControl } from './SlotDurationControl';
 import { formatLongDate, isSameDay, toDateParam } from './dateUtils';
 import { fetchChairs, deleteChair, type Chair } from '../../api/chairs';
-import { fetchAppointments, type Appointment } from '../../api/appointments';
+import { fetchAppointments, fetchCancelledAppointments, type Appointment } from '../../api/appointments';
+import { CanceladasDelDia } from './CanceladasDelDia';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { AlertTriangleIcon, PlusIcon } from '../../components/icons';
@@ -21,6 +22,7 @@ export default function Agenda() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [chairs, setChairs] = useState<Chair[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [cancelled, setCancelled] = useState<Appointment[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pendingSlot, setPendingSlot] = useState<{ chair: Chair; startAt: Date } | null>(null);
   const [showChairForm, setShowChairForm] = useState(false);
@@ -52,6 +54,10 @@ export default function Agenda() {
 
   useEffect(() => {
     const controller = new AbortController();
+    fetchCancelledAppointments(toDateParam(selectedDate))
+      .then(setCancelled)
+      .catch(() => setCancelled([]));
+
     fetchAppointments(toDateParam(selectedDate))
       .then((data) => {
         if (!controller.signal.aborted) setAppointments(data);
@@ -143,6 +149,8 @@ export default function Agenda() {
         <DayTabs selectedDate={selectedDate} onSelect={setSelectedDate} />
       </div>
 
+      <CanceladasDelDia appointments={cancelled} />
+
       <div id="agenda-grid" className="min-h-0 flex-1">
         <ChairAgendaGrid
           date={selectedDate}
@@ -163,8 +171,9 @@ export default function Agenda() {
             setAppointments((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
             setSelectedAppointment(updated);
           }}
-          onCancelled={(cancelled) => {
-            setAppointments((prev) => prev.filter((a) => a.id !== cancelled.id));
+          onCancelled={(justCancelled) => {
+            setAppointments((prev) => prev.filter((a) => a.id !== justCancelled.id));
+            setCancelled((prev) => [...prev, justCancelled]);
             setSelectedAppointment(null);
           }}
         />
