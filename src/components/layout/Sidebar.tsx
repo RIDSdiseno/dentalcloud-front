@@ -27,6 +27,10 @@ type NavItem = {
   to?: string;
   adminOnly?: boolean;
   basePath?: string;
+  /** Identificador estable del <li> en el menú. Lo usa el recorrido de
+   *  "Primeros pasos" para señalar cada sección en el orden en que hay que
+   *  configurarla (reunión 30/09, tarea 29). */
+  navId?: string;
   children?: { to: string; label: string }[];
 };
 
@@ -37,6 +41,7 @@ const NAV_ITEMS: (NavItem & { moduleKey?: NavModuleKey })[] = [
     label: 'Agenda',
     icon: CalendarIcon,
     basePath: '/agenda',
+    navId: 'nav-agenda',
     moduleKey: 'agenda',
     children: [
       { to: '/agenda', label: 'General' },
@@ -44,12 +49,12 @@ const NAV_ITEMS: (NavItem & { moduleKey?: NavModuleKey })[] = [
       { to: '/agenda/diaria', label: 'Agenda diaria' },
     ],
   },
-  { to: '/pacientes', label: 'Pacientes', icon: UsersIcon, moduleKey: 'pacientes' },
+  { to: '/pacientes', label: 'Pacientes', icon: UsersIcon, navId: 'nav-pacientes', moduleKey: 'pacientes' },
   { to: '/presupuestos', label: 'Presupuesto', icon: ReceiptIcon },
   { to: '/pagos-consulta', label: 'Pagos de Consulta', icon: CashIcon },
-  { to: '/profesionales', label: 'Profesionales', icon: IdBadgeIcon, adminOnly: true },
-  { to: '/catalogo', label: 'Catálogo', icon: ClipboardIcon, adminOnly: true },
-  { to: '/configuracion', label: 'Configuración', icon: GearIcon, adminOnly: true },
+  { to: '/profesionales', label: 'Profesionales', icon: IdBadgeIcon, navId: 'nav-profesionales', adminOnly: true },
+  { to: '/catalogo', label: 'Catálogo', icon: ClipboardIcon, navId: 'nav-catalogo', adminOnly: true },
+  { to: '/configuracion', label: 'Configuración', icon: GearIcon, navId: 'nav-configuracion', adminOnly: true },
   { to: '/terminos', label: 'Términos y políticas', icon: ShieldIcon },
 ];
 
@@ -151,6 +156,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
               return (
                 <NavLink
                   key={item.to}
+                  id={item.navId}
                   to={item.to!}
                   onClick={onCloseMobile}
                   title={collapsed ? item.label : undefined}
@@ -172,7 +178,7 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }: Side
             const isGroupActive = location.pathname.startsWith(item.basePath!);
 
             return (
-              <div key={item.label}>
+              <div key={item.label} id={item.navId}>
                 <button
                   type="button"
                   onClick={() => setOpenGroup(isOpen ? null : item.label)}

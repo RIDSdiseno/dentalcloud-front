@@ -30,6 +30,60 @@ const DASHBOARD_TOUR: DriveStep[] = [
   step('#dashboard-novedades', 'Últimas novedades', 'Acá vas a ver avisos y novedades de la clínica o de la plataforma.'),
 ];
 
+// "Primeros pasos" (reunión 30/09, tarea 29). El cliente pidió dejar por
+// escrito el ORDEN en que se configura una clínica nueva, porque quien entra
+// por primera vez no sabe por dónde empezar. El informe daba dos lugares
+// posibles: una pantalla propia o las instrucciones — se eligió lo segundo,
+// que reusa el botón que ya existe.
+//
+// Señala las secciones del menú lateral, que están presentes en toda
+// pantalla, en el orden en que hay que llenarlas. Va sólo para administradores
+// porque las tres primeras secciones son `adminOnly`: a un odontólogo ni
+// siquiera le aparecen en el menú, y driver.js no puede señalar lo que no
+// está en pantalla.
+const PRIMEROS_PASOS: DriveStep[] = [
+  {
+    popover: {
+      title: 'Primeros pasos',
+      description:
+        '¿Clínica recién creada? Este es el orden recomendado para dejarla lista. ' +
+        'Si ya la tienes configurada, puedes cerrar esta ayuda.',
+    },
+  },
+  step(
+    '#nav-configuracion',
+    '1. Configuración',
+    'Parte por acá: los datos de la compañía (nombre, documento, dirección, logo y timbre), ' +
+      'la información legal, los datos de contacto y las notificaciones por correo. ' +
+      'Todo esto sale impreso en las recetas, cartolas y consentimientos.'
+  ),
+  step(
+    '#nav-catalogo',
+    '2. Catálogo',
+    'Carga lo que la clínica ofrece y usa: prestaciones, convenios, previsiones, ' +
+      'inventario y productos. Crea al menos una sucursal, aunque la clínica sea única — ' +
+      'sin ella no se pueden cargar insumos.'
+  ),
+  step(
+    '#nav-agenda',
+    '3. Sillones o boxes',
+    'En Agenda > General se crean los sillones. Cada sillón es una columna de la parrilla: ' +
+      'sin al menos uno no se puede agendar ninguna hora.'
+  ),
+  step(
+    '#nav-profesionales',
+    '4. Profesionales y permisos',
+    'Crea las cuentas del equipo y define qué ve cada perfil. Cada profesional debe guardar ' +
+      'su firma desde su propio perfil: sin ella no puede emitir recetas.'
+  ),
+  step(
+    '#nav-pacientes',
+    '5. Pacientes y agenda',
+    'Con todo lo anterior listo, ya puedes cargar pacientes y empezar a agendar. ' +
+      'Desde la ficha del paciente se llega a presupuestos, evoluciones, cartola y consentimientos.'
+  ),
+];
+
 const AGENDA_TOUR: DriveStep[] = [
   step('#agenda-header', 'Agenda general', 'Muestra todos los sillones y las citas del día seleccionado, para toda la clínica.'),
   step('#agenda-nueva-cita-btn', 'Nueva cita', 'Agenda una cita eligiendo paciente, profesional, sillón y horario.'),
@@ -108,8 +162,19 @@ function isEsteticaOrAmbas(clinicaTipo: string | null | undefined) {
 // (ej. la Ficha Paciente de clínicas estéticas/ambas, que ya trae el suyo
 // dentro de EstheticWorkflowStepper — mostrar dos burbujas flotantes
 // pisadas una sobre otra sería peor que no mostrar ninguna).
-function resolveModuleTour(pathname: string, clinicaTipo: string | null | undefined): ModuleTourEntry | null {
-  if (pathname === '/') return { steps: DASHBOARD_TOUR, storageKey: 'modulo-tour:dashboard' };
+function resolveModuleTour(
+  pathname: string,
+  clinicaTipo: string | null | undefined,
+  esAdmin: boolean
+): ModuleTourEntry | null {
+  if (pathname === '/') {
+    // Al administrador se le explica la pantalla y, a continuación, el orden
+    // para configurar la clínica. `storageKey` distinto para que quien ya hizo
+    // el recorrido corto no quede a medias cuando le toque el largo.
+    return esAdmin
+      ? { steps: [...DASHBOARD_TOUR, ...PRIMEROS_PASOS], storageKey: 'modulo-tour:dashboard-admin' }
+      : { steps: DASHBOARD_TOUR, storageKey: 'modulo-tour:dashboard' };
+  }
   if (pathname === '/agenda') return { steps: AGENDA_TOUR, storageKey: 'modulo-tour:agenda' };
   if (pathname === '/agenda/sillones-libres') return { steps: SILLONES_LIBRES_TOUR, storageKey: 'modulo-tour:sillones-libres' };
   if (pathname === '/agenda/diaria') return { steps: AGENDA_DIARIA_TOUR, storageKey: 'modulo-tour:agenda-diaria' };
@@ -129,5 +194,6 @@ function resolveModuleTour(pathname: string, clinicaTipo: string | null | undefi
 export function useModuleTour(): ModuleTourEntry | null {
   const { pathname } = useLocation();
   const { user } = useAuth();
-  return resolveModuleTour(pathname, user?.clinicaTipo);
+  const esAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  return resolveModuleTour(pathname, user?.clinicaTipo, esAdmin);
 }
