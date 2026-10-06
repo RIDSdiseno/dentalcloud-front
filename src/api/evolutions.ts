@@ -63,6 +63,10 @@ export async function createEvolution(input: {
   productLot?: string;
   productExpiresAt?: string;
   productQuantity?: string;
+  /** Lote real del inventario: si van los tres, el backend descuenta el stock. */
+  productLotId?: string;
+  productSupplyId?: string;
+  productQuantityUsed?: number;
   examRounds?: EvolutionExamRoundRef[];
 }) {
   const { data } = await api.post<{ evolution: Evolution }>('/evolutions', input);

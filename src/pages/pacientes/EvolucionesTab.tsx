@@ -436,6 +436,11 @@ export function EvolucionesTab({
         productLot: productLot.trim() || undefined,
         productExpiresAt: productExpiresAt || undefined,
         productQuantity: productQuantity.trim() || undefined,
+        // Sólo con un lote real elegido del buscador el backend puede
+        // descontar: si se escribió a mano no sabemos de qué lote restar.
+        productLotId: selectedLot?.id,
+        productSupplyId: selectedLot?.supplyId,
+        productQuantityUsed: selectedLot ? Number(productQuantity) || undefined : undefined,
         examRounds: pendingRounds.length > 0 ? pendingRounds : undefined,
       });
 
@@ -629,11 +634,34 @@ export function EvolucionesTab({
                     <ProductLotField selectedLot={selectedLot} onPick={pickLot} onClear={clearLot} />
                   )}
 
+                  {selectedLot && Number(productQuantity) > 0 && (
+                    <p
+                      className={`mt-1.5 text-[11px] font-medium ${
+                        Number(productQuantity) > selectedLot.stock
+                          ? 'text-red-600 dark:text-red-400'
+                          : 'text-emerald-700 dark:text-emerald-400'
+                      }`}
+                    >
+                      {Number(productQuantity) > selectedLot.stock
+                        ? `El lote sólo tiene ${selectedLot.stock}. Revisa la cantidad antes de grabar.`
+                        : `Al grabar se descontarán ${Number(productQuantity)} del inventario (quedarán ${
+                            selectedLot.stock - Number(productQuantity)
+                          }).`}
+                    </p>
+                  )}
+
                   <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     <input
                       value={productQuantity}
+                      type={selectedLot ? 'number' : 'text'}
+                      min={selectedLot ? 0 : undefined}
+                      step={selectedLot ? 'any' : undefined}
                       onChange={(e) => setProductQuantity(e.target.value)}
-                      placeholder="Cantidad aplicada (ej. 1 jeringa 1ml)"
+                      placeholder={
+                        selectedLot
+                          ? `Cantidad usada (quedan ${selectedLot.stock})`
+                          : 'Cantidad aplicada (ej. 1 jeringa 1ml)'
+                      }
                       className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
                         requiresProduct && !productQuantity.trim() ? 'border-red-300' : 'border-amber-200'
                       }`}
