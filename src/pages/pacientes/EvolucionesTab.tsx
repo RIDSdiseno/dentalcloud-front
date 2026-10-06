@@ -11,7 +11,8 @@ import {
   type EnabledFilter,
 } from '../../api/evolutions';
 import { fetchEvolutionTemplates } from '../../api/catalogs';
-import type { EvolutionTemplate } from '../../api/catalogs';
+import type { EvolutionTemplate, ProductLot } from '../../api/catalogs';
+import { ProductLotField } from '../../components/ProductLotField';
 import { fetchUsers, type StaffUser } from '../../api/users';
 import { fetchPatientAppointments, type Appointment } from '../../api/appointments';
 import { fetchTreatmentPlans } from '../../api/treatmentPlans';
@@ -318,6 +319,30 @@ export function EvolucionesTab({
   const [productExpiresAt, setProductExpiresAt] = useState('');
   const [productQuantity, setProductQuantity] = useState('');
 
+  // El lote se elige del inventario real (antes esto se hacía al presupuestar;
+  // el cliente pidió moverlo acá — tarea 11). Al elegirlo rellena producto,
+  // lote y vencimiento, que pasan a ser de sólo lectura para que lo registrado
+  // coincida con lo que hay en bodega.
+  const [selectedLot, setSelectedLot] = useState<ProductLot | null>(null);
+  // Salida de emergencia: si el inventario no responde, el profesional igual
+  // tiene que poder dejar la evolución escrita. No se bloquea el registro
+  // clínico por una caída de otro sistema.
+  const [manualProduct, setManualProduct] = useState(false);
+
+  function pickLot(lot: ProductLot) {
+    setSelectedLot(lot);
+    setProductName(lot.productName ?? '');
+    setProductLot(lot.lotNumber);
+    setProductExpiresAt(lot.expiresAt ? lot.expiresAt.slice(0, 10) : '');
+  }
+
+  function clearLot() {
+    setSelectedLot(null);
+    setProductName('');
+    setProductLot('');
+    setProductExpiresAt('');
+  }
+
   // Fotos elegidas antes de grabar — se suben recién después de crear la
   // evolución (necesitan su id). Mismas etiquetas que en el presupuesto.
   const [pendingPhotos, setPendingPhotos] = useState<{ key: string; file: File; previewUrl: string; label: PhotoLabel }[]>(
@@ -429,6 +454,8 @@ export function EvolucionesTab({
       setProductLot('');
       setProductExpiresAt('');
       setProductQuantity('');
+      setSelectedLot(null);
+      setManualProduct(false);
       if (statusFilter !== 'false') {
         setEvolutions((prev) => [evolution, ...prev]);
       }
@@ -569,40 +596,59 @@ export function EvolucionesTab({
                 </p>
                 {isEstetica && (
                 <>
-                <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                  <input
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    placeholder="Producto (ej. Ácido Hialurónico)"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
-                      requiresProduct && !productName.trim() ? 'border-red-300' : 'border-amber-200'
-                    }`}
-                  />
-                  <input
-                    value={productLot}
-                    onChange={(e) => setProductLot(e.target.value)}
-                    placeholder="N° de lote"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
-                      requiresProduct && !productLot.trim() ? 'border-red-300' : 'border-amber-200'
-                    }`}
-                  />
-                  <input
-                    type="date"
-                    value={productExpiresAt}
-                    onChange={(e) => setProductExpiresAt(e.target.value)}
-                    title="Fecha de vencimiento"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
-                      requiresProduct && !productExpiresAt ? 'border-red-300' : 'border-amber-200'
-                    }`}
-                  />
-                  <input
-                    value={productQuantity}
-                    onChange={(e) => setProductQuantity(e.target.value)}
-                    placeholder="Cantidad (ej. 1 jeringa 1ml)"
-                    className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
-                      requiresProduct && !productQuantity.trim() ? 'border-red-300' : 'border-amber-200'
-                    }`}
-                  />
+                <div className="mt-2">
+                  {manualProduct ? (
+                    <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                      <input
+                        value={productName}
+                        onChange={(e) => setProductName(e.target.value)}
+                        placeholder="Producto (ej. Ácido Hialurónico)"
+                        className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
+                          requiresProduct && !productName.trim() ? 'border-red-300' : 'border-amber-200'
+                        }`}
+                      />
+                      <input
+                        value={productLot}
+                        onChange={(e) => setProductLot(e.target.value)}
+                        placeholder="N° de lote"
+                        className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
+                          requiresProduct && !productLot.trim() ? 'border-red-300' : 'border-amber-200'
+                        }`}
+                      />
+                      <input
+                        type="date"
+                        value={productExpiresAt}
+                        onChange={(e) => setProductExpiresAt(e.target.value)}
+                        title="Fecha de vencimiento"
+                        className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
+                          requiresProduct && !productExpiresAt ? 'border-red-300' : 'border-amber-200'
+                        }`}
+                      />
+                    </div>
+                  ) : (
+                    <ProductLotField selectedLot={selectedLot} onPick={pickLot} onClear={clearLot} />
+                  )}
+
+                  <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                    <input
+                      value={productQuantity}
+                      onChange={(e) => setProductQuantity(e.target.value)}
+                      placeholder="Cantidad aplicada (ej. 1 jeringa 1ml)"
+                      className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500 ${
+                        requiresProduct && !productQuantity.trim() ? 'border-red-300' : 'border-amber-200'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        clearLot();
+                        setManualProduct((prev) => !prev);
+                      }}
+                      className="justify-self-start text-[11px] font-medium text-amber-700 underline hover:text-amber-800 sm:justify-self-end dark:text-amber-400 dark:hover:text-amber-300"
+                    >
+                      {manualProduct ? 'Buscar el lote en el inventario' : '¿El inventario no responde? Escribir a mano'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
