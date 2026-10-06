@@ -77,6 +77,8 @@ export type ProductLot = {
   lotNumber: string;
   expiresAt: string | null;
   stock: number;
+  /** Lo que vale cada unidad de este lote, para valorizar el consumo. */
+  unitCost: number | null;
 };
 
 export type EvolutionTemplate = {

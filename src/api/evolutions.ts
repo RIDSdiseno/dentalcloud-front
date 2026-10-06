@@ -33,6 +33,8 @@ export type Evolution = {
   productLot: string | null;
   productExpiresAt: string | null;
   productQuantity: string | null;
+  /** Lo que costó el insumo aplicado. Foto del precio al momento de atender. */
+  productTotalCost: number | null;
   photos: EvolutionPhoto[];
   // Avances del Examen Estético que esta evolución muestra (tarea 18).
   examRounds: (EvolutionExamRoundRef & { id: string })[];
@@ -67,6 +69,7 @@ export async function createEvolution(input: {
   productLotId?: string;
   productSupplyId?: string;
   productQuantityUsed?: number;
+  productUnitCost?: number;
   examRounds?: EvolutionExamRoundRef[];
 }) {
   const { data } = await api.post<{ evolution: Evolution }>('/evolutions', input);

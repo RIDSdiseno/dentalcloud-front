@@ -35,6 +35,7 @@ import { RichTextEditor } from '../../components/RichTextEditor';
 import { ActivityIcon, BanIcon, CalendarIcon, CameraIcon, EyeIcon, EyeOffIcon, PrinterIcon, TrashIcon, UploadIcon } from '../../components/icons';
 import { PHOTO_LABELS, missingRequiredProductFields, type PhotoLabel } from './photoLabels';
 import { sanitizeHtml } from '../../utils/sanitizeHtml';
+import { formatMoney } from '../../utils/paises';
 
 const STATUS_TABS: { key: EnabledFilter; label: string }[] = [
   { key: 'true', label: 'Habilitadas' },
@@ -207,6 +208,10 @@ function EvolutionCard({
           {evolution.productLot && ` · Lote: ${evolution.productLot}`}
           {evolution.productQuantity && ` · ${evolution.productQuantity}`}
           {evolution.productExpiresAt && ` · Vence: ${new Date(evolution.productExpiresAt).toLocaleDateString('es-CL')}`}
+          {/* Lo que costó el insumo en esta atención. No es un cobro al paciente
+              ni un gasto nuevo: esa plata ya se contó al comprar el insumo.
+              Sirve para saber cuánto costó atenderlo. */}
+          {evolution.productTotalCost ? ` · Costo del insumo: ${formatMoney(evolution.productTotalCost)}` : ''}
         </p>
       )}
       {evolution.examRounds.length > 0 && (
@@ -415,6 +420,13 @@ export function EvolucionesTab({
 
   const requiresProduct = pendingItems.find((i) => i.id === treatmentItemId)?.requiresProductTracking ?? false;
 
+  // Lo que llevan costando los insumos aplicados a este paciente. Las evoluciones
+  // anuladas no suman: ese consumo se devolvió al inventario.
+  const costoInsumos = useMemo(
+    () => evolutions.reduce((total, e) => (e.anuladaAt ? total : total + (e.productTotalCost ?? 0)), 0),
+    [evolutions]
+  );
+
   async function handleSave() {
     if (isContentEmpty(content)) {
       setFormError('Escribe el contenido de la evolución');
@@ -441,6 +453,7 @@ export function EvolucionesTab({
         productLotId: selectedLot?.id,
         productSupplyId: selectedLot?.supplyId,
         productQuantityUsed: selectedLot ? Number(productQuantity) || undefined : undefined,
+        productUnitCost: selectedLot?.unitCost ?? undefined,
         examRounds: pendingRounds.length > 0 ? pendingRounds : undefined,
       });
 
@@ -891,6 +904,14 @@ export function EvolucionesTab({
             </button>
           ))}
         </div>
+
+        {costoInsumos > 0 && (
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            Insumos aplicados a este paciente:{' '}
+            <span className="font-semibold text-slate-800 dark:text-slate-100">{formatMoney(costoInsumos)}</span>
+            <span className="text-slate-400 dark:text-slate-500"> · es el costo de lo consumido, no un cobro</span>
+          </p>
+        )}
 
         {listError && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-500/10 dark:text-red-400">{listError}</p>}
 
