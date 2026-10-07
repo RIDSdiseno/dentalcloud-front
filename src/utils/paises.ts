@@ -71,3 +71,12 @@ export function setCurrentPais(pais: string | null): void {
 export function formatMoney(amount: number): string {
   return formatMoneyIn(amount, currentPais);
 }
+
+/**
+ * Formato de fecha y hora de la clínica de la sesión. Mismo criterio que
+ * `formatMoney`: una clínica española no debería ver las fechas al estilo
+ * chileno sólo porque el código se escribió acá.
+ */
+export function currentLocale(): string {
+  return paisConfig(currentPais).locale;
+}

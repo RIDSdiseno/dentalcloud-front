@@ -2,15 +2,15 @@ import { useEffect, useState } from 'react';
 import { createConsultationPayment, fetchConsultationPayments, type ConsultationPayment } from '../../api/consultationPayments';
 import { getErrorMessage } from '../../api/client';
 import { formatRut } from '../../utils/rut';
+// Los montos y las fechas van en la moneda y el formato del país de la clínica.
+// Antes esta pantalla tenía "es-CL" y "CLP" fijos en el código, así que una
+// clínica española veía pesos chilenos en sus pagos de consulta.
+import { formatMoney, currentLocale } from '../../utils/paises';
 
 const PAYMENT_METHODS = ['Efectivo', 'Tarjeta débito', 'Tarjeta crédito', 'Transferencia'];
 
 function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
-}
-
-function formatMoney(amount: number) {
-  return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(amount);
+  return new Date(iso).toLocaleString(currentLocale(), { dateStyle: 'short', timeStyle: 'short' });
 }
 
 export default function PagosConsulta() {
