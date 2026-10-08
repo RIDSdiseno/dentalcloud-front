@@ -70,10 +70,16 @@ export async function createEvolution(input: {
   productSupplyId?: string;
   productQuantityUsed?: number;
   productUnitCost?: number;
+  /** Pago del paciente a la clínica, registrado junto con la evolución. */
+  payment?: { amount: number; paymentMethod?: string; documentNumber?: string };
   examRounds?: EvolutionExamRoundRef[];
 }) {
-  const { data } = await api.post<{ evolution: Evolution }>('/evolutions', input);
-  return data.evolution;
+  const { data } = await api.post<{
+    evolution: Evolution;
+    payment: { id: string; haber: number } | null;
+    paymentError: string | null;
+  }>('/evolutions', input);
+  return data;
 }
 
 export async function updateEvolution(

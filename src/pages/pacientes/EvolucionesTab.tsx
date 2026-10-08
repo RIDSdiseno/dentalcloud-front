@@ -309,7 +309,9 @@ export function EvolucionesTab({
   // Procedimientos de presupuesto aún no marcados como realizados — al elegir
   // uno y grabar, la evolución queda enlazada y el procedimiento se marca
   // solo (ver createEvolution/evolutionsController.ts).
-  const [pendingItems, setPendingItems] = useState<{ id: string; label: string; requiresProductTracking: boolean }[]>([]);
+  const [pendingItems, setPendingItems] = useState<
+    { id: string; label: string; requiresProductTracking: boolean; cost: number }[]
+  >([]);
   const [treatmentItemId, setTreatmentItemId] = useState(preselectTreatmentItemId ?? '');
 
   useEffect(() => {
@@ -374,6 +376,7 @@ export function EvolucionesTab({
               id: item.id,
               label: `N° ${plan.number}${plan.name ? ` · ${plan.name}` : ''} — ${item.description}`,
               requiresProductTracking: item.prestacion?.requiresProductTracking ?? false,
+              cost: item.cost ?? 0,
             }))
         );
         setPendingItems(items);
@@ -420,6 +423,15 @@ export function EvolucionesTab({
 
   const requiresProduct = pendingItems.find((i) => i.id === treatmentItemId)?.requiresProductTracking ?? false;
 
+  // "Guardar y pagar": el pago que el paciente le hace a LA CLÍNICA en el mismo
+  // acto de evolucionar. El profesional no cobra del paciente — cobra después
+  // su porcentaje de lo que entró, en la liquidación.
+  const [cobrar, setCobrar] = useState(false);
+  const [montoPago, setMontoPago] = useState('');
+  const [metodoPago, setMetodoPago] = useState('Efectivo');
+  const procedimiento = pendingItems.find((i) => i.id === treatmentItemId);
+  const montoValido = !cobrar || Number(montoPago) > 0;
+
   // Lo que llevan costando los insumos aplicados a este paciente. Las evoluciones
   // anuladas no suman: ese consumo se devolvió al inventario.
   const costoInsumos = useMemo(
@@ -439,7 +451,7 @@ export function EvolucionesTab({
     setFormError(null);
     setIsSaving(true);
     try {
-      let evolution = await createEvolution({
+      const respuesta = await createEvolution({
         patientId: patient.id,
         professionalId: isAdmin && professionalId ? professionalId : undefined,
         content,
@@ -455,7 +467,14 @@ export function EvolucionesTab({
         productQuantityUsed: selectedLot ? Number(productQuantity) || undefined : undefined,
         productUnitCost: selectedLot?.unitCost ?? undefined,
         examRounds: pendingRounds.length > 0 ? pendingRounds : undefined,
+        payment: cobrar && Number(montoPago) > 0
+          ? { amount: Number(montoPago), paymentMethod: metodoPago }
+          : undefined,
       });
+      let evolution = respuesta.evolution;
+      // El pago puede fallar sin que falle la evolución: el registro clínico
+      // se guarda igual y acá se avisa para que lo cobren desde la cartola.
+      if (respuesta.paymentError) setFormError(respuesta.paymentError);
 
       // Las fotos se suben recién ahora que la evolución ya existe (una por
       // una, para que cada una quede asociada a la anterior ya subida).
@@ -465,6 +484,8 @@ export function EvolucionesTab({
       }
       setPendingPhotos([]);
       setPendingRounds([]);
+      setCobrar(false);
+      setMontoPago('');
 
       setContent('');
       setShowPreview(false);
@@ -612,6 +633,45 @@ export function EvolucionesTab({
                   presupuesto.
                   {requiresProduct && ' Este procedimiento requiere registrar producto, lote, vencimiento y cantidad para poder grabar.'}
                 </p>
+                {/* El pago del paciente a la clínica, en el mismo acto. Sólo
+                    aparece con un procedimiento del presupuesto elegido: sin
+                    presupuesto no hay a qué imputar la plata. */}
+                <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50/60 p-2.5 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                  <label className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                    <input type="checkbox" checked={cobrar} onChange={(e) => {
+                      setCobrar(e.target.checked);
+                      if (e.target.checked && !montoPago && procedimiento?.cost) setMontoPago(String(procedimiento.cost));
+                    }} />
+                    Registrar el pago del paciente ahora
+                  </label>
+                  {cobrar && (
+                    <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                      <input
+                        type="number"
+                        min={0}
+                        value={montoPago}
+                        onChange={(e) => setMontoPago(e.target.value)}
+                        placeholder={procedimiento?.cost ? `Monto (el procedimiento vale ${formatMoney(procedimiento.cost)})` : 'Monto que paga el paciente'}
+                        className={`rounded-md border bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:bg-slate-800 dark:text-slate-200 ${
+                          montoValido ? 'border-emerald-200 dark:border-emerald-500/30' : 'border-red-300'
+                        }`}
+                      />
+                      <select
+                        value={metodoPago}
+                        onChange={(e) => setMetodoPago(e.target.value)}
+                        className="rounded-md border border-emerald-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-emerald-500/30 dark:bg-slate-800 dark:text-slate-200"
+                      >
+                        {['Efectivo', 'Tarjeta débito', 'Tarjeta crédito', 'Transferencia', 'Cheque'].map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </select>
+                      <p className="col-span-full text-[11px] text-emerald-700 dark:text-emerald-400">
+                        El paciente le paga a la clínica. Lo que te corresponde a ti sale después en tu liquidación, según tu porcentaje.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 {isEstetica && (
                 <>
                 <div className="mt-2">
@@ -856,11 +916,12 @@ export function EvolucionesTab({
             onClick={handleSave}
             disabled={
               isSaving ||
+              !montoValido ||
               (requiresProduct && missingRequiredProductFields({ productName, productLot, productExpiresAt, productQuantity }))
             }
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSaving ? 'Guardando...' : 'Grabar'}
+            {isSaving ? 'Guardando...' : cobrar ? 'Grabar y pagar' : 'Grabar'}
           </button>
         </div>
       </div>
