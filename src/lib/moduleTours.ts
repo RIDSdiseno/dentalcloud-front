@@ -119,11 +119,12 @@ const FICHA_PACIENTE_DENTAL_TOUR: DriveStep[] = [
   step('#ficha-nueva-cita-btn', 'Nueva cita', 'Agenda una cita para este paciente en particular.'),
   step('#ficha-editar-btn', 'Editar', 'Modifica los datos personales y de contacto del paciente.'),
   step('#ficha-tabs-dental', 'Pestañas de la ficha', 'Cada pestaña es una parte distinta de la atención: datos, horas, tratamientos, evoluciones, cartola, observaciones, documentos clínicos, Rx y consentimientos.'),
+  step('#ficha-tabs-dental', 'Novedad en Evoluciones', 'Al evolucionar un procedimiento del presupuesto ahora buscas el insumo que usaste (se descuenta solo del inventario) y puedes registrar el pago del paciente en el mismo acto con el botón "Grabar y pagar". Ese pago entra a la clínica y después aparece en la liquidación del profesional según su porcentaje.'),
 ];
 
 const PRESUPUESTOS_TOUR: DriveStep[] = [
   step('#presupuestos-header', 'Presupuesto', 'Todos los planes de tratamiento (presupuestos) creados en la clínica, de cualquier paciente y profesional.'),
-  step('#presupuestos-nuevo-btn', 'Nuevo presupuesto', 'Elige un paciente para armarle un presupuesto nuevo con las prestaciones del catálogo.'),
+  step('#presupuestos-nuevo-btn', 'Nuevo presupuesto', 'Elige un paciente para armarle un presupuesto nuevo con las prestaciones del catálogo. El presupuesto ya no pide el lote ni la cantidad del insumo: eso se registra al evolucionar, que es cuando de verdad se sabe lo que se usó.'),
   step('#presupuestos-tabla', 'Lista de presupuestos', 'Toca el nombre del paciente para ir directo a su ficha y ver el detalle del presupuesto.'),
 ];
 
