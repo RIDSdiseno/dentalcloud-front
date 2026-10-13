@@ -109,7 +109,7 @@ const AGENDA_DIARIA_TOUR: DriveStep[] = [
 const PACIENTES_LISTA_TOUR: DriveStep[] = [
   step('#pacientes-header', 'Pacientes', 'Listado de todos los pacientes de la clínica.'),
   step('#pacientes-nuevo-btn', 'Nuevo paciente', 'Crea una ficha nueva con los datos básicos del paciente.'),
-  step('#pacientes-search', 'Buscar', 'Busca por nombre, apellido o RUT.'),
+  step('#pacientes-search', 'Buscar', 'Busca por nombre, apellido o documento (RUT, DNI, NIE o pasaporte, según el país de la clínica).'),
   step('#pacientes-filtros', 'Filtros de consentimiento', 'Filtra la lista según el estado del consentimiento de protección de datos de cada paciente.'),
   step('#pacientes-tabla', 'Lista de pacientes', 'Toca cualquier fila para abrir la ficha completa de ese paciente.'),
 ];
@@ -138,7 +138,7 @@ const PROFESIONALES_TOUR: DriveStep[] = [
   step('#profesionales-header', 'Profesionales', 'Usuarios del sistema: administradores, odontólogos, esteticistas, operadores, etc.'),
   step('#profesionales-importar-btn', 'Importar desde RIDS RX', 'Trae profesionales ya existentes en RIDS RX para no tener que cargarlos a mano.'),
   step('#profesionales-nuevo-btn', 'Agregar profesional', 'Crea un nuevo usuario y define su rol dentro de la clínica.'),
-  step('#profesionales-tabla', 'Lista de profesionales', 'Desde acá editas el RUT, das permisos específicos y defines el horario de cada uno.'),
+  step('#profesionales-tabla', 'Lista de profesionales', 'Desde acá editas el documento, das permisos específicos y defines el horario de cada uno.'),
   step('#profesionales-permisos-perfil', 'Permisos por perfil', 'Configura qué puede hacer cada ROL (no cada persona) — por ejemplo, si todos los operadores pueden editar el motivo de consulta.'),
 ];
 
