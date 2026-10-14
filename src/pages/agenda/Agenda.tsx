@@ -91,7 +91,7 @@ export default function Agenda() {
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 capitalize">{formatLongDate(selectedDate)}</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <span className="rounded-xl bg-brand-50 px-4 py-2 text-sm font-semibold text-brand-700 dark:bg-brand-500/10 dark:text-brand-400">
             {appointments.length} cita{appointments.length === 1 ? '' : 's'} agendada
             {appointments.length === 1 ? '' : 's'}

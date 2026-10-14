@@ -421,10 +421,10 @@ export function EstheticWorkflowStepper({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-brand-200 dark:bg-slate-900">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-brand-200 dark:bg-slate-900">
         <div
           id="etapa-stepper"
-          className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto"
+          className="flex w-full min-w-0 items-center gap-1 overflow-x-auto sm:w-auto sm:flex-1"
         >
         {tabs.map((tab, index) => {
           const Icon = tab.icon;
