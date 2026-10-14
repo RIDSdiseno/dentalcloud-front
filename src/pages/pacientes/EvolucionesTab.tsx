@@ -472,9 +472,11 @@ export function EvolucionesTab({
           : undefined,
       });
       let evolution = respuesta.evolution;
-      // El pago puede fallar sin que falle la evolución: el registro clínico
-      // se guarda igual y acá se avisa para que lo cobren desde la cartola.
-      if (respuesta.paymentError) setFormError(respuesta.paymentError);
+      // El pago o el descuento de inventario pueden fallar sin que falle la
+      // evolución: el registro clínico se guarda igual y acá se avisa para que
+      // lo resuelvan (cobrar desde la cartola, revisar el stock del lote).
+      const avisos = [respuesta.paymentError, respuesta.inventoryError].filter(Boolean);
+      if (avisos.length) setFormError(avisos.join(' '));
 
       // Las fotos se suben recién ahora que la evolución ya existe (una por
       // una, para que cada una quede asociada a la anterior ya subida).
@@ -917,6 +919,9 @@ export function EvolucionesTab({
             disabled={
               isSaving ||
               !montoValido ||
+              // No dejar grabar más insumo del que hay en el lote: el aviso en
+              // rojo ya explica el porqué, y así el stock nunca queda mal.
+              (!!selectedLot && Number(productQuantity) > selectedLot.stock) ||
               (requiresProduct && missingRequiredProductFields({ productName, productLot, productExpiresAt, productQuantity }))
             }
             className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-70"

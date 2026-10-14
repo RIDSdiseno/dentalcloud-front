@@ -78,6 +78,7 @@ export async function createEvolution(input: {
     evolution: Evolution;
     payment: { id: string; haber: number } | null;
     paymentError: string | null;
+    inventoryError: string | null;
   }>('/evolutions', input);
   return data;
 }
