@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchUsers, updateUserRut, setUserActive, importProfessionalsFromDimage, type StaffUser } from '../../api/users';
+import { fetchUsers, updateUserRut, updateUserColegiado, setUserActive, importProfessionalsFromDimage, type StaffUser } from '../../api/users';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { CheckIcon, ClockIcon, DownloadIcon, LockIcon, PlusIcon, ShieldIcon, UsersIcon } from '../../components/icons';
@@ -77,6 +77,45 @@ function RutCell({
         className="w-32 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-slate-600 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15 dark:text-slate-300 dark:hover:border-slate-700 dark:focus:bg-slate-800 dark:focus:text-slate-100"
         />
       </div>
+      {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+    </div>
+  );
+}
+
+// Nº de colegiado (editable inline). Dato administrativo del profesional, como
+// el RUT: se guarda en su cuenta y se imprime en la receta (obligatorio en
+// España). Opcional — vacío en clínicas chilenas.
+function ColegiadoCell({ user, onUpdated }: { user: StaffUser; onUpdated: (user: StaffUser) => void }) {
+  const [value, setValue] = useState(user.colegiado ?? '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleBlur() {
+    const trimmed = value.trim();
+    if (trimmed === (user.colegiado ?? '')) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const updated = await updateUserColegiado(user.id, trimmed || null);
+      onUpdated(updated);
+      setValue(updated.colegiado ?? '');
+    } catch (err) {
+      setError(getErrorMessage(err, 'No se pudo guardar'));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div>
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleBlur}
+        placeholder="—"
+        disabled={isSaving}
+        className="w-28 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-slate-600 outline-none hover:border-slate-200 focus:border-brand-500 focus:bg-white focus:ring-3 focus:ring-brand-500/15 dark:text-slate-300 dark:hover:border-slate-700 dark:focus:bg-slate-800 dark:focus:text-slate-100"
+      />
       {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
     </div>
   );
@@ -193,6 +232,7 @@ export default function Profesionales() {
                 <th className="px-4 py-3">Nombre</th>
                 <th className="px-4 py-3">Correo</th>
                 <th className="px-4 py-3">RUT</th>
+                <th className="px-4 py-3">Nº colegiado</th>
                 <th className="px-4 py-3">Rol</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -204,6 +244,9 @@ export default function Profesionales() {
                   <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{user.email}</td>
                   <td className="px-4 py-3">
                     <RutCell user={user} onUpdated={handleProfessionalSynced} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <ColegiadoCell user={user} onUpdated={handleProfessionalSynced} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">

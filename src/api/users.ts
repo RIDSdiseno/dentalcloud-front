@@ -9,6 +9,9 @@ export type StaffUser = {
   name: string;
   role: string;
   rut: string | null;
+  // Nº de colegiado del Colegio de Dentistas. Obligatorio en las recetas de
+  // España; opcional (en Chile no aplica).
+  colegiado?: string | null;
   createdAt: string;
   signatureUrl: string | null;
   active: boolean;
@@ -21,6 +24,7 @@ export type CreateUserInput = {
   password: string;
   role: 'admin' | 'odontologo' | 'radiologo' | 'operador';
   rut?: string;
+  colegiado?: string;
   // Firma dibujada por el profesional al crear su cuenta (canvas → PNG data
   // URL) — opcional, se puede agregar después desde su perfil.
   signatureDataUrl?: string | null;
@@ -70,6 +74,11 @@ export async function createUser(input: CreateUserInput) {
 export async function updateUserRut(id: string, rut: string | null, documentType?: string) {
   const { data } = await api.patch<{ user: StaffUser } & DimageSyncResult>(`/users/${id}`, { rut, documentType });
   return data;
+}
+
+export async function updateUserColegiado(id: string, colegiado: string | null) {
+  const { data } = await api.patch<{ user: StaffUser }>(`/users/${id}`, { colegiado });
+  return data.user;
 }
 
 export async function importProfessionalsFromDimage() {

@@ -20,6 +20,7 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'odontologo' | 'admin' | 'radiologo' | 'operador'>('odontologo');
   const [rut, setRut] = useState('');
+  const [colegiado, setColegiado] = useState('');
   const [documentType, setDocumentType] = useState<DocumentType>(
     paisConfig(user?.clinicaPais).defaultPersonDocument
   );
@@ -43,6 +44,7 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
         role,
         rut: rut.trim() ? normalizeDocument(documentType, rut) : undefined,
         documentType,
+        colegiado: colegiado.trim() || undefined,
         signatureDataUrl,
       });
       onCreated(user, dimageGeneratedPassword);
@@ -132,6 +134,22 @@ export function ProfessionalFormModal({ onClose, onCreated }: ProfessionalFormMo
               sincronizado con RIDS RX de inmediato.
             </p>
           )}
+        </div>
+
+        <div>
+          <label htmlFor="prof-colegiado" className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            Nº de colegiado
+          </label>
+          <input
+            id="prof-colegiado"
+            value={colegiado}
+            onChange={(e) => setColegiado(e.target.value)}
+            placeholder="Ej. 28001234"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-3 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+          />
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            Opcional. Obligatorio en las recetas de España; se imprime en la receta cuando está cargado.
+          </p>
         </div>
 
         <div>
