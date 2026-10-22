@@ -5,6 +5,7 @@ import { Topbar } from './Topbar';
 import { useModuleTour } from '../../lib/moduleTours';
 import { useAuth } from '../../context/AuthContext';
 import { applyTenantTheme, resetTenantTheme } from '../../theme';
+import { AssistantBubble } from '../AssistantBubble';
 
 export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false);
@@ -38,6 +39,7 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <AssistantBubble />
     </div>
   );
 }
