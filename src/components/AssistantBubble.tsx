@@ -24,6 +24,10 @@ type Saldo = { cobrado: number; pagado: number; pendiente: number };
 type Prestacion = { nombre: string; codigo: string | null; precio: number; categoria: string };
 type AgendaItem = { hora: string; estado: string; paciente: string };
 type Consentimiento = { nombre: string; estado: string; fecha: string | null };
+type SegCita = { pacienteId: string; paciente: string; fecha: string; dias: number };
+type SegPago = { pacienteId: string; paciente: string; pendiente: number };
+type SegPlan = { pacienteId: string; paciente: string; numero: number; nombre: string | null; monto: number; dias: number };
+type Seguimiento = { citas?: SegCita[] | null; pagos?: SegPago[] | null; planes?: SegPlan[] | null };
 type Msg = {
   role: 'bot' | 'me';
   text?: string;
@@ -38,6 +42,7 @@ type Msg = {
   prestaciones?: Prestacion[];
   agenda?: AgendaItem[];
   consentimientos?: Consentimiento[];
+  seguimiento?: Seguimiento;
   paciente?: string | null;
   resolved?: boolean;
 };
@@ -92,6 +97,7 @@ export function AssistantBubble() {
         if (!text && m.profesionales) text = '(Le mostré los profesionales encontrados.)';
         if (!text && m.citas) text = `(Le mostré las citas de ${m.paciente ?? 'el paciente'}.)`;
         if (!text && m.presupuestos) text = `(Le mostré los presupuestos de ${m.paciente ?? 'el paciente'}.)`;
+        if (!text && m.seguimiento) text = '(Le mostré el seguimiento de pendientes de la clínica: citas vencidas, pagos pendientes y planes sin avanzar.)';
         if (!text && m.proposal) text = '(Le propuse una acción al usuario para que la confirme.)';
         return { role: m.role === 'me' ? 'user' : 'assistant', text };
       })
@@ -127,6 +133,8 @@ export function AssistantBubble() {
         setMessages((m) => [...m, { role: 'bot', agenda: data.agenda as AgendaItem[] }]);
       } else if (data.consentimientos) {
         setMessages((m) => [...m, { role: 'bot', consentimientos: data.consentimientos as Consentimiento[], paciente: data.paciente ?? null }]);
+      } else if (data.seguimiento) {
+        setMessages((m) => [...m, { role: 'bot', seguimiento: data.seguimiento as Seguimiento }]);
       } else if (data.proposal) {
         setMessages((m) => [...m, { role: 'bot', proposal: data.proposal as Proposal }]);
       } else {
@@ -215,7 +223,89 @@ export function AssistantBubble() {
 
           <div ref={bodyRef} className="flex-1 space-y-2 overflow-y-auto bg-slate-50 p-3 dark:bg-slate-950/40">
             {messages.map((m, i) =>
-              m.profesionales ? (
+              m.seguimiento ? (
+                <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Seguimiento · pendientes</div>
+
+                  {m.seguimiento.citas !== undefined && (
+                    <div className="mt-2">
+                      <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Citas vencidas sin reagendar</div>
+                      {m.seguimiento.citas === null ? (
+                        <div className="mt-0.5 text-xs text-slate-400">Sin permiso para ver la agenda.</div>
+                      ) : m.seguimiento.citas.length === 0 ? (
+                        <div className="mt-0.5 text-xs text-slate-400">Nada pendiente 👍</div>
+                      ) : (
+                        <ul className="mt-1 space-y-1">
+                          {m.seguimiento.citas.map((c, j) => (
+                            <li key={j}>
+                              <button
+                                type="button"
+                                onClick={() => { setOpen(false); navigate(`/pacientes/${c.pacienteId}`); }}
+                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900/40 dark:hover:bg-slate-700"
+                              >
+                                <span className="font-medium text-slate-800 dark:text-slate-100">{c.paciente}</span>
+                                <span className="text-slate-500 dark:text-slate-400"> · faltó hace {c.dias} {c.dias === 1 ? 'día' : 'días'}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {m.seguimiento.pagos !== undefined && (
+                    <div className="mt-2">
+                      <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Pagos pendientes</div>
+                      {m.seguimiento.pagos === null ? (
+                        <div className="mt-0.5 text-xs text-slate-400">Sin permiso para ver la cartola.</div>
+                      ) : m.seguimiento.pagos.length === 0 ? (
+                        <div className="mt-0.5 text-xs text-slate-400">Nada pendiente 👍</div>
+                      ) : (
+                        <ul className="mt-1 space-y-1">
+                          {m.seguimiento.pagos.map((p, j) => (
+                            <li key={j}>
+                              <button
+                                type="button"
+                                onClick={() => { setOpen(false); navigate(`/pacientes/${p.pacienteId}`); }}
+                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900/40 dark:hover:bg-slate-700"
+                              >
+                                <span className="font-medium text-slate-800 dark:text-slate-100">{p.paciente}</span>
+                                <span className="text-slate-500 dark:text-slate-400"> · debe ${p.pendiente.toLocaleString('es-CL')}</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {m.seguimiento.planes !== undefined && (
+                    <div className="mt-2">
+                      <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Presupuestos sin avanzar</div>
+                      {m.seguimiento.planes === null ? (
+                        <div className="mt-0.5 text-xs text-slate-400">Sin permiso para ver los presupuestos.</div>
+                      ) : m.seguimiento.planes.length === 0 ? (
+                        <div className="mt-0.5 text-xs text-slate-400">Nada pendiente 👍</div>
+                      ) : (
+                        <ul className="mt-1 space-y-1">
+                          {m.seguimiento.planes.map((pl, j) => (
+                            <li key={j}>
+                              <button
+                                type="button"
+                                onClick={() => { setOpen(false); navigate(`/pacientes/${pl.pacienteId}`); }}
+                                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-left text-xs transition-colors hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-900/40 dark:hover:bg-slate-700"
+                              >
+                                <span className="font-medium text-slate-800 dark:text-slate-100">{pl.paciente}</span>
+                                <span className="text-slate-500 dark:text-slate-400"> · #{pl.numero}{pl.nombre ? ` ${pl.nombre}` : ''} · ${pl.monto.toLocaleString('es-CL')} · hace {pl.dias} días</span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : m.profesionales ? (
                 <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                   {m.profesionales.length === 0 ? (
                     <div className="text-slate-600 dark:text-slate-300">No encontré ese profesional en tu clínica.</div>
