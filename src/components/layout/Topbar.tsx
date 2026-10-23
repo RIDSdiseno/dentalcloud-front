@@ -7,6 +7,7 @@ import { formatRut } from '../../utils/rut';
 import { BellIcon, ChevronDownIcon, IdBadgeIcon, LogoutIcon, MenuIcon, SearchIcon, SunIcon, MoonIcon } from '../icons';
 import { roleLabel } from '../../utils/roles';
 import { TourButton } from '../TourButton';
+import { AiUsagePill } from '../AiUsagePill';
 import type { ModuleTourEntry } from '../../lib/moduleTours';
 
 function initialsOf(name: string) {
@@ -113,6 +114,8 @@ export function Topbar({ onMenuClick, moduleTour }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2">
+        <AiUsagePill />
+
         <button
           type="button"
           onClick={toggleTheme}
