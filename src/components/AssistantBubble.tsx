@@ -14,6 +14,10 @@ type Proposal = {
   rut: string | null;
   telefono: string | null;
   correo: string | null;
+  monto: number | null;
+  metodo: string | null;
+  presupuesto: string | null;
+  estado: string | null;
 };
 type PatientHit = { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; rut: string };
 type Cita = { fecha: string; estado: string; tipo: string };
@@ -172,6 +176,10 @@ export function AssistantBubble() {
         rut: prop.rut,
         telefono: prop.telefono,
         correo: prop.correo,
+        monto: prop.monto,
+        metodo: prop.metodo,
+        presupuesto: prop.presupuesto,
+        estado: prop.estado,
       });
       setMessages((m) => [...m, { role: 'bot', text: String(data.mensaje ?? (data.ejecutado ? 'Hecho.' : 'No se pudo ejecutar.')) }]);
     } catch (err) {
@@ -543,6 +551,15 @@ export function AssistantBubble() {
                       )}
                       {m.proposal.campo && (
                         <div>{m.proposal.campo}: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.valor}</span></div>
+                      )}
+                      {m.proposal.monto != null && (
+                        <div>Monto: <span className="font-medium text-slate-700 dark:text-slate-200">${m.proposal.monto.toLocaleString('es-CL')}{m.proposal.metodo ? ` · ${m.proposal.metodo}` : ''}{m.proposal.presupuesto ? ` · presup. #${m.proposal.presupuesto.replace(/\D/g, '') || m.proposal.presupuesto}` : ''}</span></div>
+                      )}
+                      {m.proposal.estado && (
+                        <div>
+                          Presupuesto{m.proposal.presupuesto ? ` #${m.proposal.presupuesto.replace(/\D/g, '') || m.proposal.presupuesto}` : ''}:{' '}
+                          <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.estado === 'alta' ? 'de alta' : m.proposal.estado.replace(/_/g, ' ')}</span>
+                        </div>
                       )}
                       {m.proposal.fechaActual && (
                         <div>Cita actual: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaActual).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
