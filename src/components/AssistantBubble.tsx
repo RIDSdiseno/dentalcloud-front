@@ -8,6 +8,7 @@ type Proposal = {
   paciente: string | null;
   contenido: string | null;
   fechaHora: string | null;
+  fechaActual: string | null;
   campo: string | null;
   valor: string | null;
   rut: string | null;
@@ -41,6 +42,7 @@ type Msg = {
   saldo?: Saldo | null;
   prestaciones?: Prestacion[];
   agenda?: AgendaItem[];
+  horasLibres?: { fecha: string; slots: string[] };
   consentimientos?: Consentimiento[];
   seguimiento?: Seguimiento;
   paciente?: string | null;
@@ -131,6 +133,8 @@ export function AssistantBubble() {
         setMessages((m) => [...m, { role: 'bot', prestaciones: data.prestaciones as Prestacion[] }]);
       } else if (data.agenda) {
         setMessages((m) => [...m, { role: 'bot', agenda: data.agenda as AgendaItem[] }]);
+      } else if (data.slots) {
+        setMessages((m) => [...m, { role: 'bot', horasLibres: { fecha: data.fecha as string, slots: data.slots as string[] } }]);
       } else if (data.consentimientos) {
         setMessages((m) => [...m, { role: 'bot', consentimientos: data.consentimientos as Consentimiento[], paciente: data.paciente ?? null }]);
       } else if (data.seguimiento) {
@@ -162,6 +166,7 @@ export function AssistantBubble() {
         paciente: prop.paciente,
         contenido: prop.contenido,
         fechaHora: prop.fechaHora,
+        fechaActual: prop.fechaActual,
         campo: prop.campo,
         valor: prop.valor,
         rut: prop.rut,
@@ -403,6 +408,23 @@ export function AssistantBubble() {
                     </>
                   )}
                 </div>
+              ) : m.horasLibres ? (
+                <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">
+                    Horas libres · {new Date(m.horasLibres.fecha + 'T12:00:00').toLocaleDateString('es-CL', { weekday: 'long', day: '2-digit', month: 'short' })}
+                  </div>
+                  {m.horasLibres.slots.length === 0 ? (
+                    <div className="mt-1 text-slate-600 dark:text-slate-300">No hay horas libres ese día.</div>
+                  ) : (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {m.horasLibres.slots.map((h, j) => (
+                        <span key={j} className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-medium text-slate-700 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-200">
+                          {h}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : m.consentimientos ? (
                 <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                   {m.consentimientos.length === 0 ? (
@@ -514,7 +536,7 @@ export function AssistantBubble() {
                 >
                   <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Propuesta · confírmala</div>
                   <div className="mt-1 font-medium text-slate-800 dark:text-slate-100">{m.proposal.resumen}</div>
-                  {(m.proposal.paciente || m.proposal.campo || m.proposal.fechaHora) && (
+                  {(m.proposal.paciente || m.proposal.campo || m.proposal.fechaHora || m.proposal.fechaActual) && (
                     <div className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {m.proposal.paciente && (
                         <div>Paciente: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.paciente}</span></div>
@@ -522,8 +544,11 @@ export function AssistantBubble() {
                       {m.proposal.campo && (
                         <div>{m.proposal.campo}: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.valor}</span></div>
                       )}
+                      {m.proposal.fechaActual && (
+                        <div>Cita actual: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaActual).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+                      )}
                       {m.proposal.fechaHora && (
-                        <div>Fecha: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaHora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+                        <div>{m.proposal.tipo === 'reagendar_cita' ? 'Nueva hora' : m.proposal.tipo === 'cancelar_cita' ? 'Cita' : 'Fecha'}: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaHora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
                       )}
                     </div>
                   )}
