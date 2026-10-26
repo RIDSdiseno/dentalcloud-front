@@ -196,9 +196,7 @@ export function AssistantBubble() {
           className="fixed bottom-24 left-4 z-50 flex h-[28rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
         >
           <div className="flex items-center gap-3 bg-brand-600 px-4 py-3 text-white">
-            <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-white">
-              <img src="/favicon.svg" alt="fordentcloud" className="h-6 w-6" />
-            </span>
+            <img src="/favicon.svg" alt="fordentcloud" className="h-7 w-7 [filter:brightness(0)_invert(1)]" />
             <div className="leading-tight">
               <div className="text-sm font-semibold">Asistente de fordentcloud</div>
               <div className="text-[11px] text-white/85">Gestión clínica</div>
@@ -649,9 +647,7 @@ export function AssistantBubble() {
             <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
           </svg>
         ) : (
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-white">
-            <img src="/favicon.svg" alt="fordentcloud" className="h-6 w-6" />
-          </span>
+          <img src="/favicon.svg" alt="fordentcloud" className="h-7 w-7 [filter:brightness(0)_invert(1)]" />
         )}
       </button>
     </>
