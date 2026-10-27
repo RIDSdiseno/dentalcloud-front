@@ -102,6 +102,11 @@ export function AssistantBubble() {
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([{ role: 'bot', text: GREETING }]);
   const bodyRef = useRef<HTMLDivElement>(null);
+  // Propuestas en curso: evita que un doble click rápido en "Confirmar"
+  // dispare DOS /execute con el mismo payload (doble pago, doble descuento de
+  // stock, doble receta). El guardado de `resolved` en el estado es asíncrono,
+  // así que acá se bloquea de forma SÍNCRONA por índice.
+  const resolvingRef = useRef<Set<number>>(new Set());
   const navigate = useNavigate();
   const [usage, setUsage] = useState<{ limit: number; used: number; remaining: number | null } | null>(null);
 
@@ -172,6 +177,10 @@ export function AssistantBubble() {
   }
 
   async function resolveProposal(index: number, confirmed: boolean) {
+    // Guardia síncrona: si esta propuesta ya se está procesando (doble click),
+    // no la ejecutes de nuevo.
+    if (resolvingRef.current.has(index)) return;
+    resolvingRef.current.add(index);
     const prop = messages[index]?.proposal;
     setMessages((m) => m.map((msg, idx) => (idx === index ? { ...msg, resolved: true } : msg)));
     if (!confirmed) {
