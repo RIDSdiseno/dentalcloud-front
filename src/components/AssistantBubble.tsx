@@ -33,6 +33,9 @@ type SegCita = { pacienteId: string; paciente: string; fecha: string; dias: numb
 type SegPago = { pacienteId: string; paciente: string; pendiente: number };
 type SegPlan = { pacienteId: string; paciente: string; numero: number; nombre: string | null; monto: number; dias: number };
 type Seguimiento = { citas?: SegCita[] | null; pagos?: SegPago[] | null; planes?: SegPlan[] | null };
+type InventarioItem = { nombre: string; stock: number | null; minimo: number | null; unidad: string | null; estado: string; categoria: string | null };
+type AlertaLote = { insumo: string | null; lote: string; cantidad: number; vence: string | null; estado: string; etiqueta: string; dias: number | null };
+type AlertasInventario = { sinStock: number; stockBajo: number; vencidos: number; porVencer: number; items: AlertaLote[] };
 type Msg = {
   role: 'bot' | 'me';
   text?: string;
@@ -49,6 +52,9 @@ type Msg = {
   horasLibres?: { fecha: string; slots: string[] };
   consentimientos?: Consentimiento[];
   seguimiento?: Seguimiento;
+  inventario?: InventarioItem[];
+  alertasInventario?: AlertasInventario | null;
+  query?: string;
   paciente?: string | null;
   resolved?: boolean;
 };
@@ -104,6 +110,8 @@ export function AssistantBubble() {
         if (!text && m.citas) text = `(Le mostré las citas de ${m.paciente ?? 'el paciente'}.)`;
         if (!text && m.presupuestos) text = `(Le mostré los presupuestos de ${m.paciente ?? 'el paciente'}.)`;
         if (!text && m.seguimiento) text = '(Le mostré el seguimiento de pendientes de la clínica: citas vencidas, pagos pendientes y planes sin avanzar.)';
+        if (!text && m.inventario) text = '(Le mostré el inventario de insumos con su stock.)';
+        if (!text && m.alertasInventario) text = '(Le mostré las alertas de inventario: stock bajo y lotes por vencer.)';
         if (!text && m.proposal) text = '(Le propuse una acción al usuario para que la confirme.)';
         return { role: m.role === 'me' ? 'user' : 'assistant', text };
       })
@@ -143,6 +151,10 @@ export function AssistantBubble() {
         setMessages((m) => [...m, { role: 'bot', consentimientos: data.consentimientos as Consentimiento[], paciente: data.paciente ?? null }]);
       } else if (data.seguimiento) {
         setMessages((m) => [...m, { role: 'bot', seguimiento: data.seguimiento as Seguimiento }]);
+      } else if (data.inventario) {
+        setMessages((m) => [...m, { role: 'bot', inventario: data.inventario as InventarioItem[], query: (data.query as string) ?? '' }]);
+      } else if (data.alertasInventario !== undefined) {
+        setMessages((m) => [...m, { role: 'bot', alertasInventario: data.alertasInventario as AlertasInventario | null }]);
       } else if (data.proposal) {
         setMessages((m) => [...m, { role: 'bot', proposal: data.proposal as Proposal }]);
       } else {
@@ -431,6 +443,65 @@ export function AssistantBubble() {
                         </span>
                       ))}
                     </div>
+                  )}
+                </div>
+              ) : m.inventario ? (
+                <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                  {m.inventario.length === 0 ? (
+                    <div className="text-slate-600 dark:text-slate-300">{m.query ? `No encontré insumos para «${m.query}».` : 'No hay insumos en el inventario.'}</div>
+                  ) : (
+                    <>
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Inventario{m.query ? ` · ${m.query}` : ''}</div>
+                      <ul className="mt-1.5 space-y-1.5">
+                        {m.inventario.map((s, j) => {
+                          const out = s.estado === 'OUT_OF_STOCK';
+                          const low = s.estado === 'LOW_STOCK';
+                          const estadoTxt = out ? 'sin stock' : low ? 'stock bajo' : s.estado === 'ARCHIVED' ? 'archivado' : 'ok';
+                          const estadoCls = out
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : low
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-emerald-600 dark:text-emerald-400';
+                          return (
+                            <li key={j} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900/40">
+                              <span className="font-medium text-slate-700 dark:text-slate-200">{s.nombre}</span>
+                              <span className="text-slate-500 dark:text-slate-400"> · {s.stock ?? 0}{s.unidad ? ` ${s.unidad}` : ''}{s.minimo != null ? ` (mín. ${s.minimo})` : ''}</span>
+                              <span className={`font-medium ${estadoCls}`}> · {estadoTxt}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              ) : m.alertasInventario !== undefined ? (
+                <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                  {!m.alertasInventario ? (
+                    <div className="text-slate-600 dark:text-slate-300">No pude leer el inventario.</div>
+                  ) : (
+                    <>
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Alertas de inventario</div>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        <span className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">Sin stock: {m.alertasInventario.sinStock}</span>
+                        <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">Stock bajo: {m.alertasInventario.stockBajo}</span>
+                        <span className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-medium text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">Vencidos: {m.alertasInventario.vencidos}</span>
+                        <span className="rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">Por vencer: {m.alertasInventario.porVencer}</span>
+                      </div>
+                      {m.alertasInventario.items.length > 0 && (
+                        <ul className="mt-2 space-y-1.5">
+                          {m.alertasInventario.items.map((l, j) => (
+                            <li key={j} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900/40">
+                              <span className="font-medium text-slate-700 dark:text-slate-200">{l.insumo ?? 'Insumo'}</span>
+                              <span className="text-slate-500 dark:text-slate-400"> · lote {l.lote} · {l.cantidad} u.</span>
+                              <span className={`font-medium ${l.estado === 'EXPIRED' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400'}`}> · {l.etiqueta}{l.dias != null ? (l.estado === 'EXPIRED' ? ` (hace ${Math.abs(l.dias)} d)` : ` (${l.dias} d)`) : ''}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {m.alertasInventario.sinStock === 0 && m.alertasInventario.stockBajo === 0 && m.alertasInventario.vencidos === 0 && m.alertasInventario.porVencer === 0 && (
+                        <div className="mt-2 text-slate-600 dark:text-slate-300">Todo en orden: sin quiebres de stock ni vencimientos próximos.</div>
+                      )}
+                    </>
                   )}
                 </div>
               ) : m.consentimientos ? (
