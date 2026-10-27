@@ -65,6 +65,31 @@ const GREETING =
   'Buenos días. Soy el Asistente de fordentcloud. Puedo apoyarle en la reactivación de pacientes, ' +
   'el seguimiento de presupuestos, la búsqueda de fichas y los recordatorios de citas. ¿En qué puedo ayudarle?';
 
+// Convierte UN resultado del backend (una tarjeta) en un mensaje del bot. Se usa
+// tanto para una respuesta simple como para cada ítem de una respuesta
+// multi-intención. No cubre "navegar" con redirección: eso solo aplica al caso
+// simple (cambiaría de página), y acá se muestra como texto.
+function msgFromResult(d: any): Msg {
+  if (d.denied) return { role: 'bot', text: `Usted no tiene permiso para ver «${d.permiso ?? 'estos datos'}».` };
+  if (d.navigate) return { role: 'bot', text: `Le llevo a ${d.seccion ?? 'la sección'}.` };
+  if (d.patients) return { role: 'bot', patients: d.patients as PatientHit[] };
+  if (d.profesionales) return { role: 'bot', profesionales: d.profesionales as Prof[] };
+  if (d.citas) return { role: 'bot', citas: d.citas as Cita[], paciente: d.paciente ?? null };
+  if (d.presupuestos) return { role: 'bot', presupuestos: d.presupuestos as Presupuesto[], paciente: d.paciente ?? null };
+  if (d.evoluciones) return { role: 'bot', evoluciones: d.evoluciones as Evolucion[], paciente: d.paciente ?? null };
+  if (d.documentos) return { role: 'bot', documentos: d.documentos as Documento[], paciente: d.paciente ?? null };
+  if (d.saldo !== undefined) return { role: 'bot', saldo: d.saldo as Saldo | null, paciente: d.paciente ?? null };
+  if (d.prestaciones) return { role: 'bot', prestaciones: d.prestaciones as Prestacion[] };
+  if (d.agenda) return { role: 'bot', agenda: d.agenda as AgendaItem[] };
+  if (d.slots) return { role: 'bot', horasLibres: { fecha: d.fecha as string, slots: d.slots as string[] } };
+  if (d.consentimientos) return { role: 'bot', consentimientos: d.consentimientos as Consentimiento[], paciente: d.paciente ?? null };
+  if (d.seguimiento) return { role: 'bot', seguimiento: d.seguimiento as Seguimiento };
+  if (d.inventario) return { role: 'bot', inventario: d.inventario as InventarioItem[], query: (d.query as string) ?? '' };
+  if (d.alertasInventario !== undefined) return { role: 'bot', alertasInventario: d.alertasInventario as AlertasInventario | null };
+  if (d.proposal) return { role: 'bot', proposal: d.proposal as Proposal };
+  return { role: 'bot', text: String(d.reply ?? '') };
+}
+
 /**
  * Asistente flotante — Etapa 1 (solo interfaz, sin IA conectada todavía).
  * Aparece en todas las pantallas autenticadas desde AppLayout.
@@ -123,44 +148,18 @@ export function AssistantBubble() {
     setLoading(true);
     try {
       const { data } = await api.post('/assistant/chat', { message: text, history });
-      if (data.navigate) {
+      // Multi-intención: el backend puede devolver varios resultados (uno por
+      // pedido) en `multi`. Se muestra una tarjeta por cada uno. Un solo
+      // resultado mantiene el comportamiento de siempre (incluida la
+      // redirección de "navegar", que acá no aplica porque cambiaría de página).
+      if (Array.isArray(data.multi)) {
+        setMessages((m) => [...m, ...(data.multi as unknown[]).map((r) => msgFromResult(r))]);
+      } else if (data.navigate) {
         setMessages((m) => [...m, { role: 'bot', text: `Le llevo a ${data.seccion ?? 'la sección'}.` }]);
         setOpen(false);
         navigate(data.navigate as string);
-      } else if (data.denied) {
-        setMessages((m) => [...m, { role: 'bot', text: `Usted no tiene permiso para ver «${data.permiso ?? 'estos datos'}».` }]);
-      } else if (data.patients) {
-        setMessages((m) => [...m, { role: 'bot', patients: data.patients as PatientHit[] }]);
-      } else if (data.profesionales) {
-        setMessages((m) => [...m, { role: 'bot', profesionales: data.profesionales as Prof[] }]);
-      } else if (data.citas) {
-        setMessages((m) => [...m, { role: 'bot', citas: data.citas as Cita[], paciente: data.paciente ?? null }]);
-      } else if (data.presupuestos) {
-        setMessages((m) => [...m, { role: 'bot', presupuestos: data.presupuestos as Presupuesto[], paciente: data.paciente ?? null }]);
-      } else if (data.evoluciones) {
-        setMessages((m) => [...m, { role: 'bot', evoluciones: data.evoluciones as Evolucion[], paciente: data.paciente ?? null }]);
-      } else if (data.documentos) {
-        setMessages((m) => [...m, { role: 'bot', documentos: data.documentos as Documento[], paciente: data.paciente ?? null }]);
-      } else if (data.saldo !== undefined) {
-        setMessages((m) => [...m, { role: 'bot', saldo: data.saldo as Saldo | null, paciente: data.paciente ?? null }]);
-      } else if (data.prestaciones) {
-        setMessages((m) => [...m, { role: 'bot', prestaciones: data.prestaciones as Prestacion[] }]);
-      } else if (data.agenda) {
-        setMessages((m) => [...m, { role: 'bot', agenda: data.agenda as AgendaItem[] }]);
-      } else if (data.slots) {
-        setMessages((m) => [...m, { role: 'bot', horasLibres: { fecha: data.fecha as string, slots: data.slots as string[] } }]);
-      } else if (data.consentimientos) {
-        setMessages((m) => [...m, { role: 'bot', consentimientos: data.consentimientos as Consentimiento[], paciente: data.paciente ?? null }]);
-      } else if (data.seguimiento) {
-        setMessages((m) => [...m, { role: 'bot', seguimiento: data.seguimiento as Seguimiento }]);
-      } else if (data.inventario) {
-        setMessages((m) => [...m, { role: 'bot', inventario: data.inventario as InventarioItem[], query: (data.query as string) ?? '' }]);
-      } else if (data.alertasInventario !== undefined) {
-        setMessages((m) => [...m, { role: 'bot', alertasInventario: data.alertasInventario as AlertasInventario | null }]);
-      } else if (data.proposal) {
-        setMessages((m) => [...m, { role: 'bot', proposal: data.proposal as Proposal }]);
       } else {
-        setMessages((m) => [...m, { role: 'bot', text: String(data.reply ?? '') }]);
+        setMessages((m) => [...m, msgFromResult(data)]);
       }
     } catch (err) {
       setMessages((m) => [...m, { role: 'bot', text: getErrorMessage(err, 'No se pudo contactar al asistente.') }]);
