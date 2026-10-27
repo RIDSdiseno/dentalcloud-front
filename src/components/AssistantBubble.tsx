@@ -18,6 +18,8 @@ type Proposal = {
   metodo: string | null;
   presupuesto: string | null;
   estado: string | null;
+  insumo: string | null;
+  cantidad: number | null;
 };
 type PatientHit = { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; rut: string };
 type Cita = { fecha: string; estado: string; tipo: string };
@@ -192,6 +194,8 @@ export function AssistantBubble() {
         metodo: prop.metodo,
         presupuesto: prop.presupuesto,
         estado: prop.estado,
+        insumo: prop.insumo,
+        cantidad: prop.cantidad,
       });
       setMessages((m) => [...m, { role: 'bot', text: String(data.mensaje ?? (data.ejecutado ? 'Hecho.' : 'No se pudo ejecutar.')) }]);
     } catch (err) {
@@ -615,10 +619,13 @@ export function AssistantBubble() {
                 >
                   <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Propuesta · confírmala</div>
                   <div className="mt-1 font-medium text-slate-800 dark:text-slate-100">{m.proposal.resumen}</div>
-                  {(m.proposal.paciente || m.proposal.campo || m.proposal.fechaHora || m.proposal.fechaActual) && (
+                  {(m.proposal.paciente || m.proposal.campo || m.proposal.fechaHora || m.proposal.fechaActual || m.proposal.insumo) && (
                     <div className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {m.proposal.paciente && (
                         <div>Paciente: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.paciente}</span></div>
+                      )}
+                      {m.proposal.insumo && (
+                        <div>Descontar: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.cantidad ?? ''} de {m.proposal.insumo}</span></div>
                       )}
                       {m.proposal.campo && (
                         <div>{m.proposal.campo}: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.valor}</span></div>
