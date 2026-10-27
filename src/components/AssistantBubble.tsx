@@ -20,6 +20,8 @@ type Proposal = {
   estado: string | null;
   insumo: string | null;
   cantidad: number | null;
+  medicamentos: { medicamento: string; indicaciones: string }[] | null;
+  observaciones: string | null;
 };
 type PatientHit = { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; rut: string };
 type Cita = { fecha: string; estado: string; tipo: string };
@@ -195,6 +197,8 @@ export function AssistantBubble() {
         estado: prop.estado,
         insumo: prop.insumo,
         cantidad: prop.cantidad,
+        medicamentos: prop.medicamentos,
+        observaciones: prop.observaciones,
       });
       setMessages((m) => [...m, { role: 'bot', text: String(data.mensaje ?? (data.ejecutado ? 'Hecho.' : 'No se pudo ejecutar.')) }]);
     } catch (err) {
@@ -643,6 +647,22 @@ export function AssistantBubble() {
                       )}
                       {m.proposal.fechaHora && (
                         <div>{m.proposal.tipo === 'reagendar_cita' ? 'Nueva hora' : m.proposal.tipo === 'cancelar_cita' ? 'Cita' : 'Fecha'}: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaHora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+                      )}
+                    </div>
+                  )}
+                  {m.proposal.medicamentos && m.proposal.medicamentos.length > 0 && (
+                    <div className="mt-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-2.5 py-2 dark:border-slate-600 dark:bg-slate-900/40">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Receta</div>
+                      <ul className="mt-1 space-y-1">
+                        {m.proposal.medicamentos.map((med, k) => (
+                          <li key={k} className="text-xs text-slate-700 dark:text-slate-200">
+                            <span className="font-medium">{med.medicamento}</span>
+                            {med.indicaciones ? <span className="text-slate-500 dark:text-slate-400"> · {med.indicaciones}</span> : null}
+                          </li>
+                        ))}
+                      </ul>
+                      {m.proposal.observaciones && (
+                        <div className="mt-1 text-xs italic text-slate-500 dark:text-slate-400">{m.proposal.observaciones}</div>
                       )}
                     </div>
                   )}
