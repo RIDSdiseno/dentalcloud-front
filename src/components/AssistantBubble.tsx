@@ -44,6 +44,17 @@ type Seguimiento = { citas?: SegCita[] | null; pagos?: SegPago[] | null; planes?
 type InventarioItem = { nombre: string; stock: number | null; minimo: number | null; unidad: string | null; estado: string; categoria: string | null };
 type AlertaLote = { insumo: string | null; lote: string; cantidad: number; vence: string | null; estado: string; etiqueta: string; dias: number | null };
 type AlertasInventario = { sinStock: number; stockBajo: number; vencidos: number; porVencer: number; items: AlertaLote[] };
+type Reporte = {
+  tipo: string;
+  periodoTxt?: string;
+  total?: number;
+  movimientos?: number;
+  count?: number;
+  deudores?: { paciente: string; monto: number }[];
+  sinIniciar?: number;
+  enTratamiento?: number;
+  terminados?: number;
+};
 type Msg = {
   role: 'bot' | 'me';
   text?: string;
@@ -62,6 +73,7 @@ type Msg = {
   seguimiento?: Seguimiento;
   inventario?: InventarioItem[];
   alertasInventario?: AlertasInventario | null;
+  reporte?: Reporte;
   query?: string;
   paciente?: string | null;
   resolved?: boolean;
@@ -92,6 +104,7 @@ function msgFromResult(d: any): Msg {
   if (d.seguimiento) return { role: 'bot', seguimiento: d.seguimiento as Seguimiento };
   if (d.inventario) return { role: 'bot', inventario: d.inventario as InventarioItem[], query: (d.query as string) ?? '' };
   if (d.alertasInventario !== undefined) return { role: 'bot', alertasInventario: d.alertasInventario as AlertasInventario | null };
+  if (d.reporte) return { role: 'bot', reporte: d.reporte as Reporte };
   if (d.proposal) return { role: 'bot', proposal: d.proposal as Proposal };
   return { role: 'bot', text: String(d.reply ?? '') };
 }
@@ -135,6 +148,7 @@ export function AssistantBubble() {
         if (!text && m.seguimiento) text = '(Le mostré el seguimiento de pendientes de la clínica: citas vencidas, pagos pendientes y planes sin avanzar.)';
         if (!text && m.inventario) text = '(Le mostré el inventario de insumos con su stock.)';
         if (!text && m.alertasInventario) text = '(Le mostré las alertas de inventario: stock bajo y lotes por vencer.)';
+        if (!text && m.reporte) text = '(Le mostré un reporte de la clínica.)';
         if (!text && m.proposal) text = '(Le propuse una acción al usuario para que la confirme.)';
         return { role: m.role === 'me' ? 'user' : 'assistant', text };
       })
@@ -483,6 +497,46 @@ export function AssistantBubble() {
                       )}
                     </>
                   )}
+                </div>
+              ) : m.reporte ? (
+                <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Reporte</div>
+                  {m.reporte.tipo === 'facturacion' && (
+                    <div className="mt-1">
+                      <div className="text-slate-600 dark:text-slate-300">Facturación {m.reporte.periodoTxt}</div>
+                      <div className="mt-0.5 text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">${(m.reporte.total ?? 0).toLocaleString('es-CL')}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{m.reporte.movimientos ?? 0} abonos recibidos</div>
+                    </div>
+                  )}
+                  {(m.reporte.tipo === 'pacientes_nuevos' || m.reporte.tipo === 'citas') && (
+                    <div className="mt-1">
+                      <div className="text-slate-600 dark:text-slate-300">{m.reporte.tipo === 'citas' ? 'Citas' : 'Pacientes nuevos'} {m.reporte.periodoTxt}</div>
+                      <div className="mt-0.5 text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">{m.reporte.count ?? 0}</div>
+                    </div>
+                  )}
+                  {m.reporte.tipo === 'presupuestos' && (
+                    <div className="mt-1.5 flex flex-wrap gap-2">
+                      <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900/40">Sin iniciar: <b>{m.reporte.sinIniciar ?? 0}</b></span>
+                      <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900/40">En tratamiento: <b>{m.reporte.enTratamiento ?? 0}</b></span>
+                      <span className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900/40">Terminados: <b>{m.reporte.terminados ?? 0}</b></span>
+                    </div>
+                  )}
+                  {m.reporte.tipo === 'deudores' &&
+                    (m.reporte.deudores && m.reporte.deudores.length > 0 ? (
+                      <>
+                        <div className="mt-1 text-slate-600 dark:text-slate-300">Quién debe más · total ${(m.reporte.total ?? 0).toLocaleString('es-CL')}</div>
+                        <ul className="mt-1.5 space-y-1">
+                          {m.reporte.deudores.map((d, j) => (
+                            <li key={j} className="flex justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900/40">
+                              <span className="text-slate-700 dark:text-slate-200">{d.paciente}</span>
+                              <span className="font-medium tabular-nums text-slate-800 dark:text-slate-100">${d.monto.toLocaleString('es-CL')}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <div className="mt-1 text-slate-600 dark:text-slate-300">Nadie tiene saldo pendiente. 🎉</div>
+                    ))}
                 </div>
               ) : m.consentimientos ? (
                 <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
