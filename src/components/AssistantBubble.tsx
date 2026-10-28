@@ -27,6 +27,7 @@ type Proposal = {
   items: { descripcion: string; precio: number | null; cantidad: number | null }[] | null;
   consentimiento: string | null;
   titulo: string | null;
+  procedimiento: string | null;
 };
 type PatientHit = { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; rut: string };
 type Cita = { fecha: string; estado: string; tipo: string };
@@ -216,6 +217,7 @@ export function AssistantBubble() {
         items: prop.items,
         consentimiento: prop.consentimiento,
         titulo: prop.titulo,
+        procedimiento: prop.procedimiento,
       });
       setMessages((m) => [...m, { role: 'bot', text: String(data.mensaje ?? (data.ejecutado ? 'Hecho.' : 'No se pudo ejecutar.')) }]);
     } catch (err) {
@@ -674,6 +676,9 @@ export function AssistantBubble() {
                       )}
                       {m.proposal.titulo && (
                         <div>Documento: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.titulo}</span></div>
+                      )}
+                      {m.proposal.procedimiento && (
+                        <div>Procedimiento: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.procedimiento}{m.proposal.presupuesto ? ` · presup. #${m.proposal.presupuesto.replace(/\D/g, '') || m.proposal.presupuesto}` : ''}</span></div>
                       )}
                       {m.proposal.monto != null && (
                         <div>Monto: <span className="font-medium text-slate-700 dark:text-slate-200">${m.proposal.monto.toLocaleString('es-CL')}{m.proposal.metodo ? ` · ${m.proposal.metodo}` : ''}{m.proposal.presupuesto ? ` · presup. #${m.proposal.presupuesto.replace(/\D/g, '') || m.proposal.presupuesto}` : ''}</span></div>
