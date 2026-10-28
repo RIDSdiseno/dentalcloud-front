@@ -118,6 +118,13 @@ function msgFromResult(d: any): Msg {
 export function AssistantBubble() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
+  // Voz (Web Speech API del navegador: gratis, sin backend, mejor en Chrome/Edge).
+  const [voiceOn, setVoiceOn] = useState(false); // leer las respuestas en voz alta
+  const [listening, setListening] = useState(false); // micrófono activo
+  const recognitionRef = useRef<any>(null);
+  const spokenRef = useRef(0); // cuántos mensajes ya se leyeron en voz alta
+  const voiceSupported =
+    typeof window !== 'undefined' && Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([{ role: 'bot', text: GREETING }]);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -137,7 +144,11 @@ export function AssistantBubble() {
 
   async function send(e: FormEvent) {
     e.preventDefault();
-    const text = input.trim();
+    await sendText(input);
+  }
+
+  async function sendText(raw: string) {
+    const text = raw.trim();
     if (!text || loading) return;
     const history = messages
       .slice(-10)
@@ -179,6 +190,59 @@ export function AssistantBubble() {
       setLoading(false);
     }
   }
+
+  // ---- Voz: escuchar (hablar→texto) y hablar (texto→voz) ----
+  function getRecognition(): any {
+    if (recognitionRef.current) return recognitionRef.current;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return null;
+    const rec = new SR();
+    rec.lang = 'es-CL';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (ev: any) => {
+      const t = String(ev?.results?.[0]?.[0]?.transcript ?? '').trim();
+      setListening(false);
+      if (t) void sendText(t); // auto-envía lo dictado (efecto "Jarvis")
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = () => setListening(false);
+    recognitionRef.current = rec;
+    return rec;
+  }
+  function toggleMic() {
+    const rec = getRecognition();
+    if (!rec) return;
+    if (listening) {
+      try { rec.stop(); } catch { /* noop */ }
+      setListening(false);
+      return;
+    }
+    try { rec.start(); setListening(true); } catch { /* ya estaba activo */ }
+  }
+
+  // Lee en voz alta las respuestas NUEVAS del bot cuando la voz está activa.
+  useEffect(() => {
+    if (!voiceOn) {
+      spokenRef.current = messages.length;
+      return;
+    }
+    if (messages.length <= spokenRef.current) return;
+    const nuevos = messages.slice(spokenRef.current);
+    spokenRef.current = messages.length;
+    const synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
+    if (!synth) return;
+    for (const m of nuevos) {
+      if (m.role !== 'bot') continue;
+      const txt =
+        m.text ||
+        (m.reporte ? 'Le mostré un reporte de la clínica.' : m.proposal ? `Le propongo: ${m.proposal.resumen}. ¿La confirmo?` : '');
+      if (!txt) continue;
+      const u = new SpeechSynthesisUtterance(txt);
+      u.lang = 'es-CL';
+      synth.speak(u);
+    }
+  }, [messages, voiceOn]);
 
   async function resolveProposal(index: number, confirmed: boolean) {
     // Guardia síncrona: si esta propuesta ya se está procesando (doble click),
@@ -779,6 +843,33 @@ export function AssistantBubble() {
           </div>
 
           <form onSubmit={send} className="flex gap-2 border-t border-slate-200 p-2.5 dark:border-slate-700">
+            <button
+              type="button"
+              onClick={() => { const n = !voiceOn; setVoiceOn(n); if (!n) window.speechSynthesis?.cancel(); }}
+              aria-label={voiceOn ? 'Silenciar respuestas' : 'Leer respuestas en voz alta'}
+              title={voiceOn ? 'Respuestas habladas: activadas' : 'Leer respuestas en voz alta'}
+              className={`grid w-10 shrink-0 place-items-center rounded-xl border transition ${voiceOn ? 'border-brand-300 bg-brand-50 text-brand-600 dark:border-brand-900/50 dark:bg-brand-950/30' : 'border-slate-300 text-slate-500 hover:text-brand-600 dark:border-slate-700 dark:text-slate-400'}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                <path d="M11 5 6 9H2v6h4l5 4V5z" strokeLinecap="round" strokeLinejoin="round" />
+                {voiceOn && <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14" strokeLinecap="round" />}
+              </svg>
+            </button>
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={toggleMic}
+                disabled={loading}
+                aria-label={listening ? 'Detener dictado' : 'Hablar'}
+                title="Hablar"
+                className={`grid w-10 shrink-0 place-items-center rounded-xl border transition disabled:opacity-50 ${listening ? 'animate-pulse border-red-300 bg-red-50 text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400' : 'border-slate-300 text-slate-500 hover:text-brand-600 dark:border-slate-700 dark:text-slate-400'}`}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
