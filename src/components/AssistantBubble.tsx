@@ -19,9 +19,13 @@ type Proposal = {
   presupuesto: string | null;
   estado: string | null;
   insumo: string | null;
+  lote: string | null;
+  vencimiento: string | null;
   cantidad: number | null;
   medicamentos: { medicamento: string; indicaciones: string }[] | null;
   observaciones: string | null;
+  items: { descripcion: string; precio: number | null; cantidad: number | null }[] | null;
+  consentimiento: string | null;
 };
 type PatientHit = { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; rut: string };
 type Cita = { fecha: string; estado: string; tipo: string };
@@ -108,28 +112,13 @@ export function AssistantBubble() {
   // así que acá se bloquea de forma SÍNCRONA por índice.
   const resolvingRef = useRef<Set<number>>(new Set());
   const navigate = useNavigate();
-  const [usage, setUsage] = useState<{ limit: number; used: number; remaining: number | null } | null>(null);
 
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: bodyRef.current.scrollHeight });
   }, [messages, loading, open]);
 
-  async function loadUsage() {
-    try {
-      const { data } = await api.get('/assistant/usage');
-      setUsage({
-        limit: Number(data.limit ?? 0),
-        used: Number(data.used ?? 0),
-        remaining: data.remaining === null || data.remaining === undefined ? null : Number(data.remaining),
-      });
-    } catch {
-      /* silencioso */
-    }
-  }
-
-  useEffect(() => {
-    if (open) loadUsage();
-  }, [open]);
+  // El consumo de tokens ya NO se muestra en la burbuja (lo ve solo el admin
+  // de la clínica, de forma discreta, en AiUsagePill de la Topbar).
 
   async function send(e: FormEvent) {
     e.preventDefault();
@@ -172,7 +161,6 @@ export function AssistantBubble() {
       setMessages((m) => [...m, { role: 'bot', text: getErrorMessage(err, 'No se pudo contactar al asistente.') }]);
     } finally {
       setLoading(false);
-      loadUsage();
     }
   }
 
@@ -205,9 +193,13 @@ export function AssistantBubble() {
         presupuesto: prop.presupuesto,
         estado: prop.estado,
         insumo: prop.insumo,
+        lote: prop.lote,
+        vencimiento: prop.vencimiento,
         cantidad: prop.cantidad,
         medicamentos: prop.medicamentos,
         observaciones: prop.observaciones,
+        items: prop.items,
+        consentimiento: prop.consentimiento,
       });
       setMessages((m) => [...m, { role: 'bot', text: String(data.mensaje ?? (data.ejecutado ? 'Hecho.' : 'No se pudo ejecutar.')) }]);
     } catch (err) {
@@ -233,34 +225,6 @@ export function AssistantBubble() {
               Beta
             </span>
           </div>
-
-          {usage && (
-            <div className="border-b border-slate-200 bg-white px-4 py-1.5 dark:border-slate-700 dark:bg-slate-900">
-              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                <span>Uso de IA este mes</span>
-                <span className="font-medium text-slate-700 dark:text-slate-300">
-                  {usage.limit === 0
-                    ? `${usage.used.toLocaleString('es-CL')} · sin límite`
-                    : `${usage.used.toLocaleString('es-CL')} / ${usage.limit.toLocaleString('es-CL')}`}
-                </span>
-              </div>
-              {usage.limit > 0 && (
-                <>
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                    <div
-                      className={`h-full rounded-full ${usage.used / usage.limit >= 0.9 ? 'bg-red-500' : 'bg-brand-600'}`}
-                      style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }}
-                    />
-                  </div>
-                  {usage.remaining !== null && (
-                    <div className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
-                      Quedan {usage.remaining.toLocaleString('es-CL')} tokens este mes
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )}
 
           <div ref={bodyRef} className="flex-1 space-y-2 overflow-y-auto bg-slate-50 p-3 dark:bg-slate-950/40">
             {messages.map((m, i) =>
@@ -637,10 +601,20 @@ export function AssistantBubble() {
                         <div>Paciente: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.paciente}</span></div>
                       )}
                       {m.proposal.insumo && (
-                        <div>Descontar: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.cantidad ?? ''} de {m.proposal.insumo}</span></div>
+                        <div>
+                          {m.proposal.tipo === 'ingresar_stock' ? 'Ingresar' : 'Descontar'}:{' '}
+                          <span className="font-medium text-slate-700 dark:text-slate-200">
+                            {m.proposal.cantidad ?? ''} de {m.proposal.insumo}
+                            {m.proposal.tipo === 'ingresar_stock' && m.proposal.lote ? ` · lote ${m.proposal.lote}` : ''}
+                            {m.proposal.tipo === 'ingresar_stock' && m.proposal.vencimiento ? ` · vence ${m.proposal.vencimiento}` : ''}
+                          </span>
+                        </div>
                       )}
                       {m.proposal.campo && (
                         <div>{m.proposal.campo}: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.valor}</span></div>
+                      )}
+                      {m.proposal.consentimiento && (
+                        <div>Consentimiento: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.consentimiento}</span></div>
                       )}
                       {m.proposal.monto != null && (
                         <div>Monto: <span className="font-medium text-slate-700 dark:text-slate-200">${m.proposal.monto.toLocaleString('es-CL')}{m.proposal.metodo ? ` · ${m.proposal.metodo}` : ''}{m.proposal.presupuesto ? ` · presup. #${m.proposal.presupuesto.replace(/\D/g, '') || m.proposal.presupuesto}` : ''}</span></div>
@@ -673,6 +647,27 @@ export function AssistantBubble() {
                       {m.proposal.observaciones && (
                         <div className="mt-1 text-xs italic text-slate-500 dark:text-slate-400">{m.proposal.observaciones}</div>
                       )}
+                    </div>
+                  )}
+                  {m.proposal.items && m.proposal.items.length > 0 && (
+                    <div className="mt-2 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-2.5 py-2 dark:border-slate-600 dark:bg-slate-900/40">
+                      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Presupuesto</div>
+                      <ul className="mt-1 space-y-1">
+                        {m.proposal.items.map((it, k) => (
+                          <li key={k} className="flex justify-between gap-2 text-xs text-slate-700 dark:text-slate-200">
+                            <span>
+                              {it.cantidad && it.cantidad > 1 ? `${it.cantidad}× ` : ''}
+                              {it.descripcion}
+                            </span>
+                            {it.precio != null ? (
+                              <span className="font-medium tabular-nums">${(it.precio * (it.cantidad ?? 1)).toLocaleString('es-CL')}</span>
+                            ) : (
+                              <span className="text-slate-400 dark:text-slate-500">precio del catálogo</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">El total y el número los calcula el sistema al crear.</div>
                     </div>
                   )}
                   {m.proposal.contenido && (
