@@ -120,11 +120,29 @@ export function AssistantBubble() {
   const [input, setInput] = useState('');
   // Voz (Web Speech API del navegador: gratis, sin backend, mejor en Chrome/Edge).
   const [voiceOn, setVoiceOn] = useState(false); // leer las respuestas en voz alta
-  const [listening, setListening] = useState(false); // micrófono activo
+  const [listening, setListening] = useState(false); // micrófono activo (Web Speech API)
   const recognitionRef = useRef<any>(null);
   const spokenRef = useRef(0); // cuántos mensajes ya se leyeron en voz alta
+  // Dictado por grabación (iPad/iPhone): esos equipos NO soportan la Web Speech
+  // API, así que se graba el audio y se transcribe en el backend (Whisper).
+  const [recording, setRecording] = useState(false); // grabando audio
+  const [transcribing, setTranscribing] = useState(false); // enviando audio a transcribir
+  const mediaRecorderRef = useRef<any>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
+  // Reconocimiento de voz nativo del navegador (Chrome/Edge/Android): gratis e
+  // instantáneo. Es el camino preferido cuando existe.
   const voiceSupported =
     typeof window !== 'undefined' && Boolean((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  // Grabación de audio: existe en iPad/iPhone (y casi todos). Es el plan B para
+  // dictar cuando no hay reconocimiento nativo.
+  const mediaSupported =
+    typeof window !== 'undefined' &&
+    typeof navigator !== 'undefined' &&
+    Boolean(navigator.mediaDevices?.getUserMedia) &&
+    typeof (window as any).MediaRecorder !== 'undefined';
+  // Se muestra el micrófono si cualquiera de los dos caminos está disponible.
+  const micSupported = voiceSupported || mediaSupported;
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([{ role: 'bot', text: GREETING }]);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -219,6 +237,79 @@ export function AssistantBubble() {
       return;
     }
     try { rec.start(); setListening(true); } catch { /* ya estaba activo */ }
+  }
+
+  // ---- Dictado por grabación (iPad/iPhone y cualquiera sin Web Speech API) ----
+  // Elige el formato de audio que el dispositivo sí sabe grabar. iOS graba en
+  // audio/mp4; Chrome/Android en audio/webm. Whisper acepta ambos.
+  function pickAudioMime(): string {
+    const MR = (window as any).MediaRecorder;
+    const cands = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/ogg'];
+    for (const c of cands) {
+      try { if (MR?.isTypeSupported?.(c)) return c; } catch { /* noop */ }
+    }
+    return '';
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const mime = pickAudioMime();
+      const mr = mime ? new (window as any).MediaRecorder(stream, { mimeType: mime }) : new (window as any).MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mr.ondataavailable = (e: any) => { if (e?.data && e.data.size > 0) audioChunksRef.current.push(e.data); };
+      mr.onstop = () => {
+        // Soltar el micrófono (apaga el indicador del sistema).
+        mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
+        mediaStreamRef.current = null;
+        const type = mr.mimeType || mime || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type });
+        audioChunksRef.current = [];
+        if (blob.size > 0) void transcribeAndSend(blob, type);
+      };
+      mediaRecorderRef.current = mr;
+      mr.start();
+      setRecording(true);
+    } catch {
+      setRecording(false);
+      setMessages((m) => [...m, { role: 'bot', text: 'No pude usar el micrófono. Revisa el permiso del navegador y vuelve a intentar.' }]);
+    }
+  }
+
+  function stopRecording() {
+    const mr = mediaRecorderRef.current;
+    setRecording(false);
+    if (mr && mr.state !== 'inactive') {
+      try { mr.stop(); } catch { /* el onstop igual limpia */ }
+    }
+  }
+
+  async function transcribeAndSend(blob: Blob, type: string) {
+    setTranscribing(true);
+    try {
+      const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
+      const fd = new FormData();
+      fd.append('audio', blob, `dictado.${ext}`);
+      const { data } = await api.post('/assistant/transcribe', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const t = String(data?.text ?? '').trim();
+      if (t) await sendText(t); // mismo flujo que escribir: respeta permisos y pide confirmación
+      else setMessages((m) => [...m, { role: 'bot', text: 'No te entendí bien. ¿Puedes repetirlo más claro?' }]);
+    } catch (err) {
+      setMessages((m) => [...m, { role: 'bot', text: getErrorMessage(err, 'No pude transcribir el audio. Intenta de nuevo o escribe el mensaje.') }]);
+    } finally {
+      setTranscribing(false);
+    }
+  }
+
+  // Un solo botón de micrófono: usa el reconocimiento nativo si existe (gratis,
+  // instantáneo) y si no, cae a grabar + transcribir (iPad/iPhone).
+  function handleMic() {
+    if (voiceSupported) { toggleMic(); return; }
+    if (recording) stopRecording();
+    else void startRecording();
   }
 
   // Lee en voz alta las respuestas NUEVAS del bot cuando la voz está activa.
@@ -855,19 +946,25 @@ export function AssistantBubble() {
                 {voiceOn && <path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14" strokeLinecap="round" />}
               </svg>
             </button>
-            {voiceSupported && (
+            {micSupported && (
               <button
                 type="button"
-                onClick={toggleMic}
-                disabled={loading}
-                aria-label={listening ? 'Detener dictado' : 'Hablar'}
-                title="Hablar"
-                className={`grid w-10 shrink-0 place-items-center rounded-xl border transition disabled:opacity-50 ${listening ? 'animate-pulse border-red-300 bg-red-50 text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400' : 'border-slate-300 text-slate-500 hover:text-brand-600 dark:border-slate-700 dark:text-slate-400'}`}
+                onClick={handleMic}
+                disabled={loading || transcribing}
+                aria-label={listening || recording ? 'Detener dictado' : 'Hablar'}
+                title={transcribing ? 'Transcribiendo…' : recording ? 'Grabando… toca para enviar' : 'Hablar'}
+                className={`grid w-10 shrink-0 place-items-center rounded-xl border transition disabled:opacity-50 ${listening || recording ? 'animate-pulse border-red-300 bg-red-50 text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400' : 'border-slate-300 text-slate-500 hover:text-brand-600 dark:border-slate-700 dark:text-slate-400'}`}
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" strokeLinecap="round" />
-                </svg>
+                {transcribing ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 animate-spin">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" strokeLinecap="round" />
+                  </svg>
+                )}
               </button>
             )}
             <input
