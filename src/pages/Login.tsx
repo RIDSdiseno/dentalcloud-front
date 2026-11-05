@@ -166,6 +166,11 @@ export default function Login() {
             {isSubmitting ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
+        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
+          <a href="/privacidad" target="_blank" rel="noreferrer" className="hover:underline">
+            Política de Privacidad
+          </a>
+        </p>
       </div>
     </div>
   );

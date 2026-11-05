@@ -2,6 +2,31 @@
   command = "npm run build"
   publish = "dist"
 
+# Cabeceras de seguridad (Ley 21.719 / buenas prácticas). Instrucciones que el
+# navegador obedece para proteger a los usuarios. No se agrega una
+# Content-Security-Policy porque DentalCloud carga recursos de muchos orígenes
+# (API en Railway, Cloudinary, visor RIDS RX, etc.) y una CSP mal calibrada
+# rompería pantallas; estas 4 no cambian el funcionamiento:
+# - X-Frame-Options SAMEORIGIN: nadie de afuera puede meter DentalCloud en un
+#   iframe (clickjacking); los iframes propios siguen funcionando.
+# - Permissions-Policy: cámara y micrófono solo para el propio sitio (fotos,
+#   video y voz del asistente); geolocalización desactivada.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=(), browsing-topics=()"
+
+# Política de privacidad estática (pre-renderizada): se sirve como HTML real en
+# /privacidad para que un escáner o buscador SIN JavaScript pueda leerla. Va
+# ANTES del catch-all de abajo. El contenido vive en public/privacidad.html.
+[[redirects]]
+  from = "/privacidad"
+  to = "/privacidad.html"
+  status = 200
+
 # El frontend usa React Router (client-side routing). Sin esta regla, Netlify
 # busca un archivo físico en rutas como /pacientes/:id y devuelve 404 en vez
 # de dejar que la app cargue y resuelva la ruta en el navegador.
