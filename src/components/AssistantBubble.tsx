@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, getErrorMessage } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { AssistantMascot, mascotVariantFrom, type MascotState } from './AssistantMascot';
 
 type Proposal = {
   tipo: string;
@@ -145,6 +147,35 @@ export function AssistantBubble() {
   const micSupported = voiceSupported || mediaSupported;
   const [loading, setLoading] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([{ role: 'bot', text: GREETING }]);
+  // ---- Personaje animado (solo presentación) ----
+  const { user } = useAuth();
+  const mascotVariant = mascotVariantFrom(user?.clinicaTipo);
+  const [speaking, setSpeaking] = useState(false); // leyendo una respuesta en voz alta
+  const [happy, setHappy] = useState(false); // acaba de responder
+  const wasLoadingRef = useRef(false);
+  useEffect(() => {
+    if (wasLoadingRef.current && !loading) {
+      setHappy(true);
+      const t = setTimeout(() => setHappy(false), 1400);
+      wasLoadingRef.current = loading;
+      return () => clearTimeout(t);
+    }
+    wasLoadingRef.current = loading;
+  }, [loading]);
+  const mascotState: MascotState =
+    listening || recording
+      ? 'listening'
+      : loading || transcribing
+        ? 'thinking'
+        : speaking
+          ? 'speaking'
+          : happy
+            ? 'happy'
+            : open && input.trim().length > 0
+              ? 'typing'
+              : open
+                ? 'attentive'
+                : 'idle';
   const bodyRef = useRef<HTMLDivElement>(null);
   // Propuestas en curso: evita que un doble click rápido en "Confirmar"
   // dispare DOS /execute con el mismo payload (doble pago, doble descuento de
@@ -331,6 +362,10 @@ export function AssistantBubble() {
       if (!txt) continue;
       const u = new SpeechSynthesisUtterance(txt);
       u.lang = 'es-CL';
+      // El personaje mueve la boca mientras el navegador lee.
+      u.onstart = () => setSpeaking(true);
+      u.onend = () => setSpeaking(synth.speaking);
+      u.onerror = () => setSpeaking(false);
       synth.speak(u);
     }
   }, [messages, voiceOn]);
@@ -389,7 +424,9 @@ export function AssistantBubble() {
           className="fixed bottom-24 left-4 z-50 flex h-[28rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
         >
           <div className="flex items-center gap-3 bg-brand-600 px-4 py-3 text-white">
-            <img src="/favicon.svg" alt="fordentcloud" className="h-7 w-7 [filter:brightness(0)_invert(1)]" />
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-white/95 shadow-sm">
+              <AssistantMascot variant={mascotVariant} state={mascotState} size={30} ground={false} />
+            </span>
             <div className="leading-tight">
               <div className="text-sm font-semibold">Asistente de fordentcloud</div>
               <div className="text-[11px] text-white/85">Gestión clínica</div>
@@ -993,14 +1030,15 @@ export function AssistantBubble() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Cerrar asistente' : 'Abrir asistente'}
-        className="group fixed bottom-5 left-4 z-50 grid h-14 w-14 place-items-center rounded-full bg-brand-600 text-2xl shadow-lg shadow-brand-500/40 transition-transform hover:scale-105 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+        className="fdcm-hover group fixed bottom-4 left-3 z-50 grid h-16 w-16 place-items-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
       >
-        {open ? (
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.5} className="h-6 w-6">
-            <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
-          </svg>
-        ) : (
-          <img src="/favicon.svg" alt="fordentcloud" className="h-7 w-7 [filter:brightness(0)_invert(1)]" />
+        <AssistantMascot variant={mascotVariant} state={mascotState} size={60} />
+        {open && (
+          <span className="absolute -right-0.5 -top-0.5 grid h-5 w-5 place-items-center rounded-full bg-slate-800 text-white shadow ring-2 ring-white dark:bg-slate-200 dark:text-slate-900 dark:ring-slate-900">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} className="h-3 w-3">
+              <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
+            </svg>
+          </span>
         )}
       </button>
     </>
