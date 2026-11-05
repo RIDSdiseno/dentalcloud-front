@@ -76,6 +76,7 @@ import { ConsentimientosTab } from './ConsentimientosTab';
 import { ExamenEsteticoTab } from './ExamenEsteticoTab';
 import { EstheticWorkflowStepper, type EstheticStepKey } from './EstheticWorkflowStepper';
 import { DebtNotificationModal } from './DebtNotificationModal';
+import { formatDateOnly, ageFromDateOnly } from '../../utils/dateOnly';
 
 const GENDER_LABEL: Record<string, string> = {
   femenino: 'Femenino',
@@ -132,15 +133,8 @@ const TAB_PERMISSION_KEYS: Partial<Record<TabKey, 'fichaDatos' | 'fichaExamenEst
 };
 
 function calculateAge(birthDate: string | null): number | null {
-  if (!birthDate) return null;
-  const birth = new Date(birthDate);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const hasHadBirthdayThisYear =
-    today.getMonth() > birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
-  if (!hasHadBirthdayThisYear) age -= 1;
-  return age;
+  // Sin zona horaria: la fecha se guarda como medianoche UTC.
+  return ageFromDateOnly(birthDate);
 }
 
 function chairLabel(appointment: Appointment) {
@@ -1269,7 +1263,7 @@ export default function FichaPaciente() {
               <InfoRow icon={MailIcon} value={patient.email} />
               <InfoRow
                 icon={CakeIcon}
-                value={patient.birthDate ? new Date(patient.birthDate).toLocaleDateString('es-CL') : null}
+                value={patient.birthDate ? formatDateOnly(patient.birthDate) : null}
               />
               <InfoRow icon={MapPinIcon} value={patient.address} />
             </div>

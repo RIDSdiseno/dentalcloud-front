@@ -5,10 +5,11 @@ import { getErrorMessage } from '../../api/client';
 import { MailIcon, PhoneIcon, PlusIcon, SearchIcon, UsersIcon } from '../../components/icons';
 import { PatientFormModal } from './PatientFormModal';
 import { formatRut } from '../../utils/rut';
+import { formatDateOnly } from '../../utils/dateOnly';
 
 function formatBirthDate(birthDate: string | null) {
-  if (!birthDate) return '—';
-  return new Date(birthDate).toLocaleDateString('es-CL');
+  // Sin zona horaria: si no, en Chile se ve el día anterior.
+  return formatDateOnly(birthDate);
 }
 
 function formatDateTime(value: string | null) {
