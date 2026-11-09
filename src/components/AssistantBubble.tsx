@@ -8,6 +8,8 @@ type Proposal = {
   tipo: string;
   resumen: string;
   paciente: string | null;
+  pacienteId?: string | null;
+  pacienteRut?: string | null;
   contenido: string | null;
   fechaHora: string | null;
   fechaActual: string | null;
@@ -34,6 +36,18 @@ type Proposal = {
   titulo: string | null;
   procedimiento: string | null;
 };
+// Una clave fija por tarjeta (09-11-2026): si la misma tarjeta se confirma dos
+// veces (doble clic, reintento), el servidor ejecuta la acción una sola vez.
+const proposalKeys = new WeakMap<object, string>();
+function idempotencyKeyFor(prop: object) {
+  let key = proposalKeys.get(prop);
+  if (!key) {
+    key = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    proposalKeys.set(prop, key);
+  }
+  return key;
+}
+
 type PatientHit = { id: string; firstName: string; lastName: string; phone: string | null; email: string | null; rut: string };
 type Cita = { fecha: string; estado: string; tipo: string };
 type Presupuesto = { number: number; name: string | null; status: string; amount: number };
@@ -387,8 +401,10 @@ export function AssistantBubble() {
     if (!prop) return;
     try {
       const { data } = await api.post('/assistant/execute', {
+        idempotencyKey: idempotencyKeyFor(prop),
         tipo: prop.tipo,
         paciente: prop.paciente,
+        pacienteId: prop.pacienteId ?? null,
         contenido: prop.contenido,
         fechaHora: prop.fechaHora,
         fechaActual: prop.fechaActual,
@@ -854,7 +870,7 @@ export function AssistantBubble() {
                   {(m.proposal.paciente || m.proposal.campo || m.proposal.fechaHora || m.proposal.fechaActual || m.proposal.insumo) && (
                     <div className="mt-1 space-y-0.5 text-xs text-slate-500 dark:text-slate-400">
                       {m.proposal.paciente && (
-                        <div>Paciente: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.paciente}</span></div>
+                        <div>Paciente: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.paciente}{m.proposal.pacienteRut ? ` · RUT ${m.proposal.pacienteRut}` : ''}</span></div>
                       )}
                       {m.proposal.insumo && (
                         <div>
