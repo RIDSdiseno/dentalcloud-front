@@ -11,6 +11,9 @@ type Proposal = {
   contenido: string | null;
   fechaHora: string | null;
   fechaActual: string | null;
+  sillon?: string | null;
+  duracionMin?: number | null;
+  profesional?: string | null;
   campo: string | null;
   valor: string | null;
   rut: string | null;
@@ -389,6 +392,9 @@ export function AssistantBubble() {
         contenido: prop.contenido,
         fechaHora: prop.fechaHora,
         fechaActual: prop.fechaActual,
+        sillon: prop.sillon ?? null,
+        duracionMin: prop.duracionMin ?? null,
+        profesional: prop.profesional ?? null,
         campo: prop.campo,
         valor: prop.valor,
         rut: prop.rut,
@@ -886,6 +892,15 @@ export function AssistantBubble() {
                       )}
                       {m.proposal.fechaHora && (
                         <div>{m.proposal.tipo === 'reagendar_cita' ? 'Nueva hora' : m.proposal.tipo === 'cancelar_cita' ? 'Cita' : 'Fecha'}: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaHora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+                      )}
+                      {m.proposal.tipo === 'agendar_cita' && (
+                        <>
+                          <div>Duración: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.duracionMin ?? 30} min</span></div>
+                          <div>Sillón: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.sillon || 'el primero libre'}</span></div>
+                          {m.proposal.profesional && (
+                            <div>Profesional: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.profesional}</span></div>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

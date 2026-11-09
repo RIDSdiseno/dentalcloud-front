@@ -426,14 +426,16 @@ function ConsentTypeCard({
         >
           Ver / Firmar consentimiento
         </button>
-        <button
-          type="button"
-          onClick={handleSend}
-          disabled={!patient.email || isSending}
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSending ? 'Enviando...' : hasBeenSent ? 'Reenviar consentimiento' : 'Enviar consentimiento'}
-        </button>
+        {consent?.status !== 'firmado' && (
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!patient.email || isSending}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isSending ? 'Enviando...' : hasBeenSent ? 'Reenviar consentimiento' : 'Enviar consentimiento'}
+          </button>
+        )}
       </div>
 
       {showPreview && (

@@ -24,20 +24,26 @@ type PatientFormModalProps = {
   onSaved: (patient: Patient) => void;
 };
 
-function parsePhone(phone: string | null | undefined) {
-  if (!phone) return { dialCode: '+34', local: '' };
+// Prefijo por defecto = el del país de la clínica (antes era siempre +34,
+// España, aunque la clínica fuera de Chile). Sin país conocido: +56.
+function defaultDialCode(pais: string | null | undefined) {
+  return COUNTRIES.find((c) => c.name === pais)?.dialCode ?? '+56';
+}
+
+function parsePhone(phone: string | null | undefined, fallbackDial: string) {
+  if (!phone) return { dialCode: fallbackDial, local: '' };
   const match = [...COUNTRIES].sort((a, b) => b.dialCode.length - a.dialCode.length).find((c) =>
     phone.startsWith(c.dialCode)
   );
   return match
     ? { dialCode: match.dialCode, local: phone.slice(match.dialCode.length).trim() }
-    : { dialCode: '+34', local: phone };
+    : { dialCode: fallbackDial, local: phone };
 }
 
 export function PatientFormModal({ patient, onClose, onSaved }: PatientFormModalProps) {
   const { user } = useAuth();
   const isEditing = Boolean(patient);
-  const initialPhone = parsePhone(patient?.phone);
+  const initialPhone = parsePhone(patient?.phone, defaultDialCode(user?.clinicaPais));
   // Al editar se respeta el tipo guardado; al crear, el que corresponde al país
   // de la clínica: en España arranca en DNI, no en RUT.
   const [documentType, setDocumentType] = useState<DocumentType>(
