@@ -33,10 +33,16 @@ export type User = {
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  // Si la doble verificación está prendida, login devuelve el desafío (código
+  // por correo) en vez del usuario; se completa con verifyCode.
+  login: (email: string, password: string) => Promise<User | MfaChallenge>;
+  verifyCode: (challengeId: string, code: string, remember: boolean) => Promise<User>;
+  resendCode: (challengeId: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (patch: Partial<User>) => void;
 };
+
+export type MfaChallenge = { mfaRequired: true; challengeId: string; emailHint: string };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -68,12 +74,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string): Promise<User | MfaChallenge> {
     const { data } = await api.post('/auth/login', { email, password });
+    if (data?.mfaRequired) return data as MfaChallenge;
     authenticatedRef.current = true;
     setAccessToken(data.accessToken);
     setUser(data.user);
     return data.user as User;
+  }
+
+  async function verifyCode(challengeId: string, code: string, remember: boolean) {
+    const { data } = await api.post('/auth/login/verify', { challengeId, code, remember });
+    authenticatedRef.current = true;
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+    return data.user as User;
+  }
+
+  async function resendCode(challengeId: string) {
+    await api.post('/auth/login/resend', { challengeId });
   }
 
   async function logout() {
@@ -87,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, isLoading, login, verifyCode, resendCode, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
