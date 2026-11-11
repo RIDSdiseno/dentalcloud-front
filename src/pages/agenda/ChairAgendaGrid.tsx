@@ -41,7 +41,20 @@ export function ChairAgendaGrid({
   onAppointmentClick,
   onRemoveChair,
 }: ChairAgendaGridProps) {
-  const slots = generateTimeSlots(START_HOUR, END_HOUR, stepMinutes);
+  // 11-11-2026: el horario visible es 08:00–20:00, pero se estira solo si ese
+  // día hay citas antes o después (p. ej. una a las 20:00 agendada a mano o
+  // por el asistente): antes quedaban creadas pero invisibles en la grilla.
+  let startHour = START_HOUR;
+  let endHour = END_HOUR;
+  for (const a of [...appointments, ...cancelledAppointments]) {
+    const s = new Date(a.startAt);
+    const e = new Date(a.endAt);
+    if (!isSameDay(s, date)) continue;
+    startHour = Math.min(startHour, Math.floor(minutesSinceMidnight(s) / 60));
+    const endMin = isSameDay(e, date) ? minutesSinceMidnight(e) : 24 * 60;
+    endHour = Math.max(endHour, Math.min(24, Math.ceil(endMin / 60)));
+  }
+  const slots = generateTimeSlots(startHour, endHour, stepMinutes);
   const isToday = isSameDay(date, new Date());
   const [now, setNow] = useState(() => new Date());
 
@@ -52,8 +65,8 @@ export function ChairAgendaGrid({
   }, [isToday]);
 
   const nowMinutes = minutesSinceMidnight(now);
-  const showNowLine = isToday && nowMinutes >= START_HOUR * 60 && nowMinutes <= END_HOUR * 60;
-  const nowOffset = ((nowMinutes - START_HOUR * 60) / stepMinutes) * ROW_HEIGHT;
+  const showNowLine = isToday && nowMinutes >= startHour * 60 && nowMinutes <= endHour * 60;
+  const nowOffset = ((nowMinutes - startHour * 60) / stepMinutes) * ROW_HEIGHT;
 
   const gridTemplateColumns = `${TIME_COL_WIDTH}px repeat(${chairs.length}, minmax(190px, 1fr))`;
 
