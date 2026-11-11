@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { FormatosPanel } from './FormatosPanel';
 import { EmailSettingsPanel } from './EmailSettingsPanel';
 import { CompaniaPanel } from './CompaniaPanel';
@@ -25,7 +26,18 @@ function StubSection({ label }: { label: string }) {
 }
 
 export default function Configuracion() {
-  const [section, setSection] = useState<SectionKey>('formatos');
+  // ?seccion=… abre una sección directo (lo usa el asistente para "llévame a…").
+  const location = useLocation();
+  const fromUrl = (): SectionKey | null => {
+    const q = new URLSearchParams(location.search).get('seccion');
+    return SECTIONS.some((s) => s.key === q) ? (q as SectionKey) : null;
+  };
+  const [section, setSection] = useState<SectionKey>(() => fromUrl() ?? 'formatos');
+  useEffect(() => {
+    const s = fromUrl();
+    if (s) setSection(s);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">

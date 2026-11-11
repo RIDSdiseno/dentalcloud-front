@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { fetchAllPrestaciones, updatePrestacion, deletePrestacion, type Prestacion } from '../../api/catalogs';
 import { getErrorMessage } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -52,7 +53,18 @@ export default function Catalogo() {
   // El modo de odontograma sólo aplica a prestaciones dentales — se omite
   // por completo para clínicas puramente estéticas (nunca tienen ninguna).
   const showModeColumn = clinicaTipo !== 'estetica';
-  const [tab, setTab] = useState<TabKey>('prestaciones');
+  // ?tab=… abre una pestaña directo (lo usa el asistente, ej. "llévame al inventario").
+  const location = useLocation();
+  const tabFromUrl = (): TabKey | null => {
+    const q = new URLSearchParams(location.search).get('tab');
+    return TABS.some((t) => t.key === q) ? (q as TabKey) : null;
+  };
+  const [tab, setTab] = useState<TabKey>(() => tabFromUrl() ?? 'prestaciones');
+  useEffect(() => {
+    const t = tabFromUrl();
+    if (t) setTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
   const [prestaciones, setPrestaciones] = useState<Prestacion[]>([]);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'todas' | 'dental' | 'estetica'>('todas');

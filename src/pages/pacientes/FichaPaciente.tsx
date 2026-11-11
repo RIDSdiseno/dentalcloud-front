@@ -1027,8 +1027,21 @@ export default function FichaPaciente() {
   const [isLoading, setIsLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showNewAppointment, setShowNewAppointment] = useState(false);
-  const initialTab = (location.state as { tab?: TabKey } | null)?.tab;
+  // La pestaña inicial puede venir del estado de navegación o de ?tab=… (lo usa
+  // el asistente). Solo se respeta si esa pestaña es visible para este usuario
+  // (permisos y módulos); si no, se abre "Datos paciente".
+  const tabFromUrl = (): TabKey | null => {
+    const q = new URLSearchParams(location.search).get('tab');
+    return visibleTabs.some((t) => t.key === q) ? (q as TabKey) : null;
+  };
+  const stateTab = (location.state as { tab?: TabKey } | null)?.tab;
+  const initialTab = stateTab ?? tabFromUrl() ?? undefined;
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab ?? 'datos');
+  useEffect(() => {
+    const t = tabFromUrl();
+    if (t) setActiveTab(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
   const [debtSaldo, setDebtSaldo] = useState<number | null>(null);
   const [showDebtNotification, setShowDebtNotification] = useState(false);
   // Al presionar "Evolucionar" en un presupuesto (Tratamientos), se salta a
