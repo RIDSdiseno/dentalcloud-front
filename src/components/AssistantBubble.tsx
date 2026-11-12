@@ -232,6 +232,11 @@ export function AssistantBubble() {
         if (!text && m.alertasInventario) text = '(Le mostré las alertas de inventario: stock bajo y lotes por vencer.)';
         if (!text && m.reporte) text = '(Le mostré un reporte de la clínica.)';
         if (!text && m.proposal) text = '(Le propuse una acción al usuario para que la confirme.)';
+        if (!text && m.agenda) text = `(Le mostré la ${(m.agendaTitulo || 'agenda de hoy').toLowerCase()}.)`;
+        if (!text && m.horasLibres) text = `(Le mostré las horas libres del ${m.horasLibres.fecha}: ${m.horasLibres.slots.slice(0, 12).join(', ') || 'ninguna'}.)`;
+        // Cualquier otra tarjeta: igual se deja constancia, para que la IA no
+        // crea que el pedido anterior quedó sin responder y lo repita.
+        if (!text && m.role !== 'me') text = '(Le mostré el resultado en una tarjeta.)';
         return { role: m.role === 'me' ? 'user' : 'assistant', text };
       })
       .filter((h) => h.text.length > 0);
