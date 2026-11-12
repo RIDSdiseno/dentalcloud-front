@@ -90,6 +90,8 @@ type Msg = {
   saldo?: Saldo | null;
   prestaciones?: Prestacion[];
   agenda?: AgendaItem[];
+  agendaTitulo?: string;
+  agendaVariosDias?: boolean;
   horasLibres?: { fecha: string; slots: string[] };
   consentimientos?: Consentimiento[];
   seguimiento?: Seguimiento;
@@ -120,7 +122,7 @@ function msgFromResult(d: any): Msg {
   if (d.documentos) return { role: 'bot', documentos: d.documentos as Documento[], paciente: d.paciente ?? null };
   if (d.saldo !== undefined) return { role: 'bot', saldo: d.saldo as Saldo | null, paciente: d.paciente ?? null };
   if (d.prestaciones) return { role: 'bot', prestaciones: d.prestaciones as Prestacion[] };
-  if (d.agenda) return { role: 'bot', agenda: d.agenda as AgendaItem[] };
+  if (d.agenda) return { role: 'bot', agenda: d.agenda as AgendaItem[], agendaTitulo: typeof d.agendaTitulo === 'string' ? d.agendaTitulo : undefined, agendaVariosDias: Boolean(d.agendaVariosDias) };
   if (d.slots) return { role: 'bot', horasLibres: { fecha: d.fecha as string, slots: d.slots as string[] } };
   if (d.consentimientos) return { role: 'bot', consentimientos: d.consentimientos as Consentimiento[], paciente: d.paciente ?? null };
   if (d.seguimiento) return { role: 'bot', seguimiento: d.seguimiento as Seguimiento };
@@ -624,15 +626,15 @@ export function AssistantBubble() {
               ) : m.agenda ? (
                 <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
                   {m.agenda.length === 0 ? (
-                    <div className="text-slate-600 dark:text-slate-300">No hay citas para hoy.</div>
+                    <div className="text-slate-600 dark:text-slate-300">{m.agendaTitulo && m.agendaTitulo !== 'Agenda de hoy' ? `No hay citas agendadas (${m.agendaTitulo.replace(/^Agenda /, '')}).` : 'No hay citas para hoy.'}</div>
                   ) : (
                     <>
-                      <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">Agenda de hoy</div>
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-brand-600">{m.agendaTitulo || 'Agenda de hoy'}</div>
                       <ul className="mt-1.5 space-y-1.5">
                         {m.agenda.map((a, j) => (
                           <li key={j} className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900/40">
                             <span className="font-medium text-slate-700 dark:text-slate-200">
-                              {new Date(a.hora).toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' })}
+                              {m.agendaVariosDias ? new Date(a.hora).toLocaleString('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : new Date(a.hora).toLocaleTimeString('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' })}
                             </span>
                             <span className="text-slate-500 dark:text-slate-400"> · {a.paciente} · {a.estado}</span>
                           </li>
