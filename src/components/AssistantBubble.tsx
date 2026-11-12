@@ -75,6 +75,7 @@ type Reporte = {
   sinIniciar?: number;
   enTratamiento?: number;
   terminados?: number;
+  pagos?: { paciente: string; monto: number; metodo?: string | null; fecha?: string }[];
 };
 type Msg = {
   role: 'bot' | 'me';
@@ -755,6 +756,27 @@ export function AssistantBubble() {
                     ) : (
                       <div className="mt-1 text-slate-600 dark:text-slate-300">Nadie tiene saldo pendiente. 🎉</div>
                     ))}
+                  {m.reporte.tipo === 'pagos_consulta' && (
+                    <div className="mt-1">
+                      <div className="text-slate-600 dark:text-slate-300">Pagos de consulta {m.reporte.periodoTxt}</div>
+                      <div className="mt-0.5 text-2xl font-bold tabular-nums text-slate-800 dark:text-slate-100">${(m.reporte.total ?? 0).toLocaleString('es-CL')}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{m.reporte.count ?? 0} pago(s)</div>
+                      {m.reporte.pagos && m.reporte.pagos.length > 0 && (
+                        <ul className="mt-1.5 space-y-1">
+                          {m.reporte.pagos.map((p, j) => (
+                            <li key={j} className="flex justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs dark:border-slate-600 dark:bg-slate-900/40">
+                              <span className="text-slate-700 dark:text-slate-200">
+                                {p.paciente}
+                                {p.fecha ? <span className="text-slate-400"> · {new Date(p.fecha).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}</span> : null}
+                                {p.metodo ? <span className="text-slate-400"> · {p.metodo}</span> : null}
+                              </span>
+                              <span className="font-medium tabular-nums text-slate-800 dark:text-slate-100">${p.monto.toLocaleString('es-CL')}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : m.consentimientos ? (
                 <div key={i} className="mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
@@ -907,7 +929,7 @@ export function AssistantBubble() {
                         <div>Cita actual: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaActual).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
                       )}
                       {m.proposal.fechaHora && (
-                        <div>{m.proposal.tipo === 'reagendar_cita' ? 'Nueva hora' : m.proposal.tipo === 'cancelar_cita' ? 'Cita' : 'Fecha'}: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaHora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+                        <div>{m.proposal.tipo === 'reagendar_cita' ? 'Nueva hora' : m.proposal.tipo === 'cancelar_cita' ? 'Cita' : m.proposal.tipo === 'publicar_horas' ? 'Desde' : 'Fecha'}: <span className="font-medium text-slate-700 dark:text-slate-200">{new Date(m.proposal.fechaHora).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' })}</span></div>
                       )}
                       {m.proposal.tipo === 'agendar_cita' && (
                         <>
@@ -917,6 +939,20 @@ export function AssistantBubble() {
                             <div>Profesional: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.profesional}</span></div>
                           )}
                         </>
+                      )}
+                      {m.proposal.tipo === 'publicar_horas' && (
+                        <>
+                          <div>Horas: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.cantidad ?? 1} de {m.proposal.duracionMin ?? 30} min seguidas</span></div>
+                          <div>Sillón: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.sillon || 'el primero libre'}</span></div>
+                          <div>Profesional: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.profesional || 'usted'}</span></div>
+                          <div>Se verán en: <span className="font-medium text-slate-700 dark:text-slate-200">el Portal de Pacientes</span></div>
+                        </>
+                      )}
+                      {m.proposal.tipo === 'registrar_pago_consulta' && m.proposal.correo && (
+                        <div>Correo: <span className="font-medium text-slate-700 dark:text-slate-200">{m.proposal.correo}</span></div>
+                      )}
+                      {m.proposal.tipo === 'enviar_cartola' && (
+                        <div>Se envía: <span className="font-medium text-slate-700 dark:text-slate-200">la cartola en PDF al correo del paciente</span></div>
                       )}
                     </div>
                   )}
